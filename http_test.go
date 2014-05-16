@@ -13,8 +13,8 @@ import (
 	"strings"
 
 	"github.com/juju/testing"
-	gc "launchpad.net/gocheck"
 	jc "github.com/juju/testing/checkers"
+	gc "launchpad.net/gocheck"
 
 	"launchpad.net/juju-core/utils"
 )

@@ -11,7 +11,7 @@ import (
 	"github.com/juju/testing"
 	gc "launchpad.net/gocheck"
 
-	"github.com/juju/juju/utils/parallel"
+	"github.com/juju/utils/parallel"
 )
 
 type parallelSuite struct {

@@ -10,7 +10,7 @@ import (
 	jc "github.com/juju/testing/checkers"
 	gc "launchpad.net/gocheck"
 
-	"github.com/juju/juju/utils"
+	"github.com/juju/utils"
 )
 
 type IsUbuntuSuite struct {

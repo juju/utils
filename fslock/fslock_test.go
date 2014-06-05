@@ -16,7 +16,7 @@ import (
 	gc "launchpad.net/gocheck"
 	"launchpad.net/tomb"
 
-	"github.com/juju/juju/utils/fslock"
+	"github.com/juju/utils/fslock"
 )
 
 const (

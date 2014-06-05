@@ -13,7 +13,7 @@ import (
 	"github.com/juju/testing"
 	gc "launchpad.net/gocheck"
 
-	"github.com/juju/juju/utils"
+	"github.com/juju/utils"
 )
 
 type utilsSuite struct {

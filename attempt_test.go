@@ -5,7 +5,7 @@ import (
 
 	gc "launchpad.net/gocheck"
 
-	"github.com/juju/juju/utils"
+	"github.com/juju/utils"
 )
 
 func doSomething() (int, error) { return 0, nil }

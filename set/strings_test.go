@@ -9,7 +9,7 @@ import (
 	"github.com/juju/testing"
 	gc "launchpad.net/gocheck"
 
-	"github.com/juju/juju/utils/set"
+	"github.com/juju/utils/set"
 )
 
 type stringSetSuite struct {

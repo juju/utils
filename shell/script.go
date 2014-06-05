@@ -6,7 +6,7 @@ package shell
 import (
 	"fmt"
 
-	"github.com/juju/juju/utils"
+	"github.com/juju/utils"
 )
 
 // DumpFileOnErrorScript returns a bash script that

@@ -11,7 +11,7 @@ import (
 	jc "github.com/juju/testing/checkers"
 	gc "launchpad.net/gocheck"
 
-	"github.com/juju/juju/utils/registry"
+	"github.com/juju/utils/registry"
 )
 
 type registrySuite struct {

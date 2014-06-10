@@ -1,16 +1,16 @@
 // Copyright 2014 Canonical Ltd.
 // Licensed under the LGPLv3, see LICENCE file for details.
 
-package copydir_test
+package fs_test
 
 import (
 	"path/filepath"
 	"testing"
 
 	ft "github.com/juju/testing/filetesting"
-
-	"github.com/juju/utils/copydir"
 	gc "launchpad.net/gocheck"
+
+	"github.com/juju/utils/fs"
 )
 
 type copySuite struct{}
@@ -74,7 +74,7 @@ func (*copySuite) TestCopy(c *gc.C) {
 		test.src.Create(c, src)
 		test.dst.Create(c, dst)
 		path := test.src[0].GetPath()
-		err := copydir.Copy(
+		err := fs.Copy(
 			filepath.Join(src, path),
 			filepath.Join(dst, path),
 		)

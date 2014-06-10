@@ -1,7 +1,7 @@
 // Copyright 2014 Canonical Ltd.
 // Licensed under the LGPLv3, see LICENCE file for details.
 
-package copydir
+package fs
 
 import (
 	"fmt"
@@ -10,12 +10,12 @@ import (
 	"path/filepath"
 )
 
-// Copy recursively copies the file at src to dst. The destination must
-// not exist.Symbolic links are
-// not followed.
+// Copy recursively copies the file, directory or symbolic link at src
+// to dst. The destination must not exist. Symbolic links are not
+// followed.
 //
-// If the copy fails half way through, the destination might be
-// left partially written. 
+// If the copy fails half way through, the destination might be left
+// partially written.
 func Copy(src, dst string) error {
 	srcInfo, srcErr := os.Lstat(src)
 	if srcErr != nil {

@@ -11,6 +11,8 @@ var (
 
 	procCreateSymbolicLinkW = modkernel32.NewProc("CreateSymbolicLinkW")
 	procGetFinalPathNameByHandleW = modkernel32.NewProc("GetFinalPathNameByHandleW")
+	procCreateFileW = modkernel32.NewProc("CreateFileW")
+	procCloseHandle = modkernel32.NewProc("CloseHandle")
 
 )
 
@@ -26,10 +28,35 @@ func createSymbolicLink(symlinkname *uint16, targetname *uint16, flags uint32) (
 	return
 }
 
-func getFinalPathNameByHandle(handle syscall.Handle, buf *uint16, buflen uint32, flags uint32) (n uint32, err error) {
+func getFinalPathNameByHandle(handle Handle, buf *uint16, buflen uint32, flags uint32) (n uint32, err error) {
 	r0, _, e1 := syscall.Syscall6(procGetFinalPathNameByHandleW.Addr(), 4, uintptr(handle), uintptr(unsafe.Pointer(buf)), uintptr(buflen), uintptr(flags), 0, 0)
 	n = uint32(r0)
 	if n == 0 {
+		if e1 != 0 {
+			err = error(e1)
+		} else {
+			err = syscall.EINVAL
+		}
+	}
+	return
+}
+
+func createFile(name *uint16, access uint32, mode uint32, sa *syscall.SecurityAttributes, createmode uint32, attrs uint32, templatefile int32) (handle Handle, err error) {
+	r0, _, e1 := syscall.Syscall9(procCreateFileW.Addr(), 7, uintptr(unsafe.Pointer(name)), uintptr(access), uintptr(mode), uintptr(unsafe.Pointer(sa)), uintptr(createmode), uintptr(attrs), uintptr(templatefile), 0, 0)
+	handle = Handle(r0)
+	if handle == InvalidHandle {
+		if e1 != 0 {
+			err = error(e1)
+		} else {
+			err = syscall.EINVAL
+		}
+	}
+	return
+}
+
+func CloseHandle(handle Handle) (err error) {
+	r1, _, e1 := syscall.Syscall(procCloseHandle.Addr(), 1, uintptr(handle), 0, 0)
+	if r1 == 0 {
 		if e1 != 0 {
 			err = error(e1)
 		} else {

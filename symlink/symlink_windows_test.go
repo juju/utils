@@ -21,15 +21,18 @@ func Test(t *testing.T) {
 }
 
 func (*SymlinkSuite) TestCreateSymLink(c *gc.C) {
-	target := c.MkDir()
+	target, err := symlink.GetLongPath(filepath.FromSlash(c.MkDir()))
+    c.Assert(err, gc.IsNil)
 
 	link := filepath.Join(target, "link")
 
-	err := symlink.New(target, link)
+	err = symlink.New(target, link)
 	if err != nil {
 		log.Print(err)
 	}
-	compare, err := symlink.Read(link)
+    link, err = symlink.Read(link)
+    c.Assert(err, gc.IsNil)
+	compare, err := symlink.GetLongPath(link)
 	c.Assert(err, gc.IsNil)
 	c.Assert(compare, gc.Equals, target)
 }
@@ -54,5 +57,5 @@ func (*SymlinkSuite) TestReadData(c *gc.C) {
 	b, err := ioutil.ReadFile(newname)
 	c.Assert(err, gc.IsNil)
 
-	c.Assert(b, gc.Equals, data)
+	c.Assert(string(b), gc.Equals, string(data))
 }

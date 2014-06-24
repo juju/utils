@@ -12,8 +12,13 @@ import (
 	"unicode/utf16"
 )
 
+type Handle uintptr
+const InvalidHandle = ^Handle(0)
+
 //sys createSymbolicLink(symlinkname *uint16, targetname *uint16, flags uint32) (err error) = CreateSymbolicLinkW
-//sys getFinalPathNameByHandle(handle syscall.Handle, buf *uint16, buflen uint32, flags uint32) (n uint32, err error) = GetFinalPathNameByHandleW
+//sys getFinalPathNameByHandle(handle Handle, buf *uint16, buflen uint32, flags uint32) (n uint32, err error) = GetFinalPathNameByHandleW
+//sys createFile(name *uint16, access uint32, mode uint32, sa *syscall.SecurityAttributes, createmode uint32, attrs uint32, templatefile int32) (handle Handle, err error) [failretval==InvalidHandle] = CreateFileW
+//sys CloseHandle(handle Handle) (err error)
 
 // New creates newname as a symbolic link to oldname.
 // If there is an error, it will be of type *LinkError.
@@ -51,18 +56,18 @@ func Read(link string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	h, err := syscall.CreateFile(
+	h, err := createFile(
 		linkp,
 		syscall.GENERIC_READ,
 		syscall.FILE_SHARE_READ,
 		nil,
 		syscall.OPEN_EXISTING,
-		syscall.GENERIC_EXECUTE,
+		33554432, // for some reason, syscall.GENERIC_EXECUTE results in "Access Denied" error
 		0)
 	if err != nil {
 		return "", &os.PathError{"readlink", link, err}
 	}
-	defer syscall.CloseHandle(h)
+	defer CloseHandle(h)
 
 	pathw := make([]uint16, syscall.MAX_PATH)
 	n, err := getFinalPathNameByHandle(h, &pathw[0], uint32(len(pathw)), 0)
@@ -85,4 +90,25 @@ func Read(link string) (string, error) {
 		return ret[4:], nil
 	}
 	return ret, nil
+}
+
+func GetLongPath(path string) (string, error) {
+    p, err := syscall.UTF16FromString(path)
+    if err != nil {
+        return "", err
+    }
+    b := p
+    n, err := syscall.GetLongPathName(&p[0], &b[0], uint32(len(b)))
+    if err != nil {
+        return "", err
+    }
+    if n > uint32(len(b)) {
+        b = make([]uint16, n)
+        n, err = syscall.GetLongPathName(&p[0], &b[0], uint32(len(b)))
+        if err != nil {
+            return "", err
+        }
+    }
+    b = b[:n]
+    return syscall.UTF16ToString(b), nil
 }

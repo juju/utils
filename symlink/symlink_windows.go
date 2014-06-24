@@ -31,7 +31,7 @@ func fileOrFolder(target string) (dwFlag int, err error) {
 	return dwFlag, err
 }
 
-func CreateSymLink(link, target string) error {
+func New(target, link string) error {
 	dwFlag, err := fileOrFolder(target)
 	if err != nil {
 		return err
@@ -53,7 +53,7 @@ func CreateSymLink(link, target string) error {
 	return nil
 }
 
-func Readlink(link string) (string, error) {
+func Read(link string) (string, error) {
 	var (
 		kernel                        = syscall.MustLoadDLL("kernel32.dll")
 		CreateFile                    = kernel.MustFindProc("CreateFileW")
@@ -96,7 +96,7 @@ func Readlink(link string) (string, error) {
 	return target, nil
 }
 
-func GetLongPath(path string) (string, error) {
+func getLongPath(path string) (string, error) {
 	p, err := syscall.UTF16FromString(path)
 	if err != nil {
 		return "", err
@@ -115,8 +115,4 @@ func GetLongPath(path string) (string, error) {
 	}
 	b = b[:n]
 	return syscall.UTF16ToString(b), nil
-}
-
-func Symlink(oldname, newname string) error {
-	return CreateSymLink(newname, oldname)
 }

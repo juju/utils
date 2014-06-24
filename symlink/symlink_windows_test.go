@@ -30,11 +30,11 @@ func (s *PathSuite) TestCreateSymLink(c *gc.C) {
 	target := filepath.FromSlash(s.Target)
 	target = filepath.FromSlash(target)
 
-	err := symlink.CreateSymLink(s.Link, target)
+	err := symlink.New(target, s.Link)
 	if err != nil {
 		log.Print(err)
 	}
-	compare, err := symlink.Readlink(s.Link)
+	compare, err := symlink.Read(s.Link)
 	if err != nil {
 		log.Print(err)
 	}

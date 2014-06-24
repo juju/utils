@@ -13,6 +13,7 @@ import (
 )
 
 type Handle uintptr
+
 const InvalidHandle = ^Handle(0)
 
 //sys createSymbolicLink(symlinkname *uint16, targetname *uint16, flags uint32) (err error) = CreateSymbolicLinkW
@@ -93,22 +94,22 @@ func Read(link string) (string, error) {
 }
 
 func GetLongPath(path string) (string, error) {
-    p, err := syscall.UTF16FromString(path)
-    if err != nil {
-        return "", err
-    }
-    b := p
-    n, err := syscall.GetLongPathName(&p[0], &b[0], uint32(len(b)))
-    if err != nil {
-        return "", err
-    }
-    if n > uint32(len(b)) {
-        b = make([]uint16, n)
-        n, err = syscall.GetLongPathName(&p[0], &b[0], uint32(len(b)))
-        if err != nil {
-            return "", err
-        }
-    }
-    b = b[:n]
-    return syscall.UTF16ToString(b), nil
+	p, err := syscall.UTF16FromString(path)
+	if err != nil {
+		return "", err
+	}
+	b := p
+	n, err := syscall.GetLongPathName(&p[0], &b[0], uint32(len(b)))
+	if err != nil {
+		return "", err
+	}
+	if n > uint32(len(b)) {
+		b = make([]uint16, n)
+		n, err = syscall.GetLongPathName(&p[0], &b[0], uint32(len(b)))
+		if err != nil {
+			return "", err
+		}
+	}
+	b = b[:n]
+	return syscall.UTF16ToString(b), nil
 }

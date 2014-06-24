@@ -22,7 +22,7 @@ func Test(t *testing.T) {
 
 func (*SymlinkSuite) TestCreateSymLink(c *gc.C) {
 	target, err := symlink.GetLongPath(filepath.FromSlash(c.MkDir()))
-    c.Assert(err, gc.IsNil)
+	c.Assert(err, gc.IsNil)
 
 	link := filepath.Join(target, "link")
 
@@ -30,8 +30,8 @@ func (*SymlinkSuite) TestCreateSymLink(c *gc.C) {
 	if err != nil {
 		log.Print(err)
 	}
-    link, err = symlink.Read(link)
-    c.Assert(err, gc.IsNil)
+	link, err = symlink.Read(link)
+	c.Assert(err, gc.IsNil)
 	compare, err := symlink.GetLongPath(link)
 	c.Assert(err, gc.IsNil)
 	c.Assert(compare, gc.Equals, target)

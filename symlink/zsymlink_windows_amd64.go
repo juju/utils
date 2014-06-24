@@ -9,11 +9,10 @@ import "syscall"
 var (
 	modkernel32 = syscall.NewLazyDLL("kernel32.dll")
 
-	procCreateSymbolicLinkW = modkernel32.NewProc("CreateSymbolicLinkW")
+	procCreateSymbolicLinkW       = modkernel32.NewProc("CreateSymbolicLinkW")
 	procGetFinalPathNameByHandleW = modkernel32.NewProc("GetFinalPathNameByHandleW")
-	procCreateFileW = modkernel32.NewProc("CreateFileW")
-	procCloseHandle = modkernel32.NewProc("CloseHandle")
-
+	procCreateFileW               = modkernel32.NewProc("CreateFileW")
+	procCloseHandle               = modkernel32.NewProc("CloseHandle")
 )
 
 func createSymbolicLink(symlinkname *uint16, targetname *uint16, flags uint32) (err error) {
@@ -65,5 +64,3 @@ func CloseHandle(handle Handle) (err error) {
 	}
 	return
 }
-
-

@@ -28,7 +28,7 @@ func (s *PathSuite) TearDownTest(c *gc.C) {
 
 func (s *PathSuite) TestCreateSymLink(c *gc.C) {
 	target := filepath.FromSlash(s.Target)
-	target, _ = filepath.FromSlash(target)
+	target = filepath.FromSlash(target)
 
 	err := symlink.CreateSymLink(s.Link, target)
 	if err != nil {

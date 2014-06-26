@@ -8,111 +8,82 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 	"syscall"
-	"unsafe"
+	"unicode/utf16"
 )
 
-func fileOrFolder(target string) (dwFlag int, err error) {
-	f, err := os.Open(target)
-	if err != nil {
-		return
-	}
-	defer f.Close()
-	fi, err := f.Stat()
-	if err != nil {
-		return
-	}
-	switch mode := fi.Mode(); {
-	case mode.IsDir():
-		dwFlag = 1
-	case mode.IsRegular():
-		dwFlag = 0
-	}
-	return dwFlag, err
-}
+//sys createSymbolicLink(symlinkname *uint16, targetname *uint16, flags uint32) (err error) = CreateSymbolicLinkW
+//sys getFinalPathNameByHandle(handle syscall.Handle, buf *uint16, buflen uint32, flags uint32) (n uint32, err error) = GetFinalPathNameByHandleW
 
-func New(target, link string) error {
-	dwFlag, err := fileOrFolder(target)
+// Symlink creates newname as a symbolic link to oldname.
+// If there is an error, it will be of type *LinkError.
+func New(oldname, newname string) error {
+	fi, err := os.Stat(target)
 	if err != nil {
-		return err
+		return &LinkError{"symlink", oldname, newname, err}
 	}
-	var (
-		kernel32, _            = syscall.LoadLibrary("kernel32.dll")
-		CreateSymbolicLinkW, _ = syscall.GetProcAddress(kernel32, "CreateSymbolicLinkW")
-	)
-	var nargs uintptr = 3
-	_, _, callErr := syscall.Syscall(
-		uintptr(CreateSymbolicLinkW), nargs,
-		uintptr(unsafe.Pointer(syscall.StringToUTF16Ptr(link))),
-		uintptr(unsafe.Pointer(syscall.StringToUTF16Ptr(target))),
-		uintptr(dwFlag))
-	if callErr != 0 {
-		return errors.New(fmt.Sprintf("CreateSymbolicLinkW Error: %v", callErr))
+	var flag int
+	if fi.IsDir() {
+		flag = 1
 	}
-	defer syscall.FreeLibrary(kernel32)
+
+	targetp, err := syscall.UTF16PtrFromString(oldname)
+	if err != nil {
+		return &LinkError{"symlink", oldname, newname, err}
+	}
+
+	linkp, err := syscall.UTF16PtrFromString(newname)
+	if err != nil {
+		return &LinkError{"symlink", oldname, newname, err}
+	}
+
+	err = createSymbolicLink(linkp, targetp, flag)
+	if err != nil {
+		return &LinkError{"symlink", oldname, newname, err}
+	}
 	return nil
 }
 
+// Read returns the destination of the named symbolic link.
+// If there is an error, it will be of type *PathError.
 func Read(link string) (string, error) {
-	var (
-		kernel                        = syscall.MustLoadDLL("kernel32.dll")
-		CreateFile                    = kernel.MustFindProc("CreateFileW")
-		GetFinalPathNameByHandleW     = kernel.MustFindProc("GetFinalPathNameByHandleW")
-		buf_size                  int = 526
-		buf                       [526]byte
-		target                    string
-	)
-
-	handle, _, callErr := CreateFile.Call(
-		uintptr(unsafe.Pointer(syscall.StringToUTF16Ptr(link))),
-		uintptr(syscall.GENERIC_READ),
+	linkp, err := syscall.UTF16PtrFromString(link)
+	if err != nil {
+		return "", err
+	}
+	h, err := syscall.CreateFile(
+		linkp,
+		syscall.GENERIC_READ,
 		syscall.FILE_SHARE_READ,
-		0,
+		nil,
 		syscall.OPEN_EXISTING,
-		uintptr(33554432),
+		syscall.GENERIC_EXECUTE,
 		0)
-	if callErr.Error() != "The operation completed successfully." {
-		return "", errors.New(fmt.Sprintf("ReadFile Error: %v", callErr))
-	}
-
-	_, _, callErr = GetFinalPathNameByHandleW.Call(
-		uintptr(unsafe.Pointer(handle)),
-		uintptr(unsafe.Pointer(&buf)),
-		uintptr(buf_size), 0)
-	if callErr.Error() != "The operation completed successfully." {
-		return "", errors.New(fmt.Sprintf("GetFinalPathNameByHandleW Error: %v", callErr))
-	}
-
-	for i, _ := range buf {
-		if buf[i] != 0 {
-			target += string(buf[i])
-		}
-	}
-	if len(target) > 4 {
-		if target[:4] == `\\?\` {
-			target = target[4:]
-		}
-	}
-	return target, nil
-}
-
-func getLongPath(path string) (string, error) {
-	p, err := syscall.UTF16FromString(path)
 	if err != nil {
-		return "", err
+		return "", &PathError{"readlink", link, err}
 	}
-	b := p
-	n, err := syscall.GetLongPathName(&p[0], &b[0], uint32(len(b)))
+	defer syscall.CloseHandle(h)
+
+	pathw := make([]uint16, syscall.MAX_PATH)
+	n, err := getFinalPathNameByHandle(h, &pathw[0], uint32(len(pathw)), 0)
 	if err != nil {
-		return "", err
+		return "", &PathError{"readlink", link, err}
 	}
-	if n > uint32(len(b)) {
-		b = make([]uint16, n)
-		n, err = syscall.GetLongPathName(&p[0], &b[0], uint32(len(b)))
+	if n > uint32(len(pathw)) {
+		pathw = make([]uint16, n)
+		n, err = getFinalPathNameByHandle(h, &pathw[0], uint32(len(pathw)), 0)
 		if err != nil {
-			return "", err
+			return "", &PathError{"readlink", link, err}
+		}
+		if n > uint32(len(pathw)) {
+			return "", &PathError{"readlink", link, errors.New("link length too long")}
 		}
 	}
-	b = b[:n]
-	return syscall.UTF16ToString(b), nil
+	ret := string(utf16.Decode(pathw[0:n]))
+
+	if strings.HasPrefix(ret, `\\?\`) {
+		return ret[4:], nil
+	}
+	return ret, nil
 }

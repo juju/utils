@@ -12,14 +12,12 @@ import (
 	"unicode/utf16"
 )
 
-type Handle uintptr
-
-const InvalidHandle = ^Handle(0)
+const (
+	SYMBOLIC_LINK_FLAG_DIRECTORY = 1
+)
 
 //sys createSymbolicLink(symlinkname *uint16, targetname *uint16, flags uint32) (err error) = CreateSymbolicLinkW
 //sys getFinalPathNameByHandle(handle Handle, buf *uint16, buflen uint32, flags uint32) (n uint32, err error) = GetFinalPathNameByHandleW
-//sys createFile(name *uint16, access uint32, mode uint32, sa *syscall.SecurityAttributes, createmode uint32, attrs uint32, templatefile int32) (handle Handle, err error) [failretval==InvalidHandle] = CreateFileW
-//sys CloseHandle(handle Handle) (err error)
 
 // New creates newname as a symbolic link to oldname.
 // If there is an error, it will be of type *LinkError.
@@ -30,10 +28,10 @@ func New(oldname, newname string) error {
 	}
 	var flag uint32
 	if fi.IsDir() {
-		flag = 1
+		flag = SYMBOLIC_LINK_FLAG_DIRECTORY
 	}
 
-	targetp, err := syscall.UTF16PtrFromString(oldname)
+	targetp, err := getLongPath(oldname)
 	if err != nil {
 		return &os.LinkError{"symlink", oldname, newname, err}
 	}
@@ -43,7 +41,7 @@ func New(oldname, newname string) error {
 		return &os.LinkError{"symlink", oldname, newname, err}
 	}
 
-	err = createSymbolicLink(linkp, targetp, flag)
+	err = createSymbolicLink(linkp, &targetp[0], flag)
 	if err != nil {
 		return &os.LinkError{"symlink", oldname, newname, err}
 	}
@@ -53,12 +51,12 @@ func New(oldname, newname string) error {
 // Read returns the destination of the named symbolic link.
 // If there is an error, it will be of type *PathError.
 func Read(link string) (string, error) {
-	linkp, err := syscall.UTF16PtrFromString(link)
+	linkp, err := getLongPath(link)
 	if err != nil {
 		return "", err
 	}
-	h, err := createFile(
-		linkp,
+	h, err := syscall.CreateFile(
+		&linkp[0],
 		syscall.GENERIC_READ,
 		syscall.FILE_SHARE_READ,
 		nil,
@@ -68,7 +66,7 @@ func Read(link string) (string, error) {
 	if err != nil {
 		return "", &os.PathError{"readlink", link, err}
 	}
-	defer CloseHandle(h)
+	defer syscall.CloseHandle(h)
 
 	pathw := make([]uint16, syscall.MAX_PATH)
 	n, err := getFinalPathNameByHandle(h, &pathw[0], uint32(len(pathw)), 0)
@@ -90,26 +88,35 @@ func Read(link string) (string, error) {
 	if strings.HasPrefix(ret, `\\?\`) {
 		return ret[4:], nil
 	}
-	return ret, nil
+
+	retp, err := getLongPath(ret)
+	if err != nil {
+		return "", &os.PathError{"readlink", link, err}
+	}
+	return syscall.UTF16ToString(retp), nil
 }
 
-func GetLongPath(path string) (string, error) {
-	p, err := syscall.UTF16FromString(path)
+// getLongPath converts windows 8.1 short style paths (c:\Progra~1\foo) to full
+// long paths.
+func getLongPath(path string) ([]uint16, error) {
+	pathp, err := syscall.UTF16FromString(path)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	b := p
-	n, err := syscall.GetLongPathName(&p[0], &b[0], uint32(len(b)))
+
+	longp := pathp
+	n, err := syscall.GetLongPathName(&pathp[0], &longp[0], uint32(len(longp)))
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	if n > uint32(len(b)) {
-		b = make([]uint16, n)
-		n, err = syscall.GetLongPathName(&p[0], &b[0], uint32(len(b)))
+	if n > uint32(len(longp)) {
+		longp = make([]uint16, n)
+		n, err = syscall.GetLongPathName(&pathp[0], &longp[0], uint32(len(longp)))
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 	}
-	b = b[:n]
-	return syscall.UTF16ToString(b), nil
+	longp = longp[:n]
+
+	return longp, nil
 }

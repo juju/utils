@@ -23,7 +23,6 @@ func (*SymlinkSuite) TestCreateSymLink(c *gc.C) {
 	target := c.MkDir()
 
 	link := filepath.Join(target, "link")
-	c.Logf("Making link %q to %q", link, target)
 
 	_, err := os.Stat(target)
 	c.Assert(err, gc.IsNil)

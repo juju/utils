@@ -14,6 +14,7 @@ import (
 
 const (
 	SYMBOLIC_LINK_FLAG_DIRECTORY = 1
+    GENERIC_EXECUTION = 33554432
 )
 
 //sys createSymbolicLink(symlinkname *uint16, targetname *uint16, flags uint32) (err error) = CreateSymbolicLinkW
@@ -61,7 +62,7 @@ func Read(link string) (string, error) {
 		syscall.FILE_SHARE_READ,
 		nil,
 		syscall.OPEN_EXISTING,
-		33554432, // for some reason, syscall.GENERIC_EXECUTE results in "Access Denied" error
+		GENERIC_EXECUTION, // for some reason, syscall.GENERIC_EXECUTE results in "Access Denied" error
 		0)
 	if err != nil {
 		return "", &os.PathError{"readlink", link, err}

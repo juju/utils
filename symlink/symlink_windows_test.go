@@ -2,7 +2,6 @@ package symlink_test
 
 import (
 	"io/ioutil"
-	"log"
 	"os"
 	"path/filepath"
 	"testing"
@@ -21,20 +20,20 @@ func Test(t *testing.T) {
 }
 
 func (*SymlinkSuite) TestCreateSymLink(c *gc.C) {
-	target, err := symlink.GetLongPath(filepath.FromSlash(c.MkDir()))
-	c.Assert(err, gc.IsNil)
+	target := c.MkDir()
 
 	link := filepath.Join(target, "link")
+	c.Logf("Making link %q to %q", link, target)
+
+	_, err := os.Stat(target)
+	c.Assert(err, gc.IsNil)
 
 	err = symlink.New(target, link)
-	if err != nil {
-		log.Print(err)
-	}
+	c.Assert(err, gc.IsNil)
+
 	link, err = symlink.Read(link)
 	c.Assert(err, gc.IsNil)
-	compare, err := symlink.GetLongPath(link)
-	c.Assert(err, gc.IsNil)
-	c.Assert(compare, gc.Equals, target)
+	c.Assert(link, gc.Equals, filepath.FromSlash(target))
 }
 
 func (*SymlinkSuite) TestReadData(c *gc.C) {

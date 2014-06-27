@@ -1,45 +1,58 @@
 package symlink_test
 
 import (
+	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
+	"testing"
 
 	gc "launchpad.net/gocheck"
 
 	"github.com/juju/utils/symlink"
 )
 
-type PathSuite struct {
-	Target string
-	Link   string
+type SymlinkSuite struct{}
+
+var _ = gc.Suite(&SymlinkSuite{})
+
+func Test(t *testing.T) {
+	gc.TestingT(t)
 }
 
-var _ = gc.Suite(&PathSuite{})
+func (*SymlinkSuite) TestCreateSymLink(c *gc.C) {
+	target := c.MkDir()
 
-func (s *PathSuite) SetUpTest(c *gc.C) {
-	s.Target = c.MkDir()
-	s.Link = "symlink"
-}
+	link := filepath.Join(target, "link")
 
-func (s *PathSuite) TearDownTest(c *gc.C) {
-	os.Remove(s.Link)
-}
-
-func (s *PathSuite) TestCreateSymLink(c *gc.C) {
-	target := filepath.FromSlash(s.Target)
-	target = filepath.FromSlash(target)
-
-	err := symlink.New(target, s.Link)
+	err := symlink.New(target, link)
 	if err != nil {
 		log.Print(err)
 	}
-	compare, err := symlink.Read(s.Link)
-	if err != nil {
-		log.Print(err)
-	}
-
-	c.Assert(err, gc.IsNil)
+	compare, err := symlink.Read(link)
 	c.Assert(err, gc.IsNil)
 	c.Assert(compare, gc.Equals, target)
+}
+
+func (*SymlinkSuite) TestReadData(c *gc.C) {
+	dir := c.MkDir()
+	sub := filepath.Join(dir, "sub")
+
+	err := os.Mkdir(sub, 0700)
+	c.Assert(err, gc.IsNil)
+
+	oldname := filepath.Join(sub, "foo")
+	data := []byte("data")
+
+	err = ioutil.WriteFile(oldname, data, 0644)
+	c.Assert(err, gc.IsNil)
+
+	newname := filepath.Join(dir, "bar")
+	err = symlink.New(oldname, newname)
+	c.Assert(err, gc.IsNil)
+
+	b, err := ioutil.ReadFile(newname)
+	c.Assert(err, gc.IsNil)
+
+	c.Assert(b, gc.Equals, data)
 }

@@ -41,7 +41,7 @@ func New(oldname, newname string) error {
 		return &os.LinkError{"symlink", oldname, newname, err}
 	}
 
-	err = createSymbolicLink(linkp, targetp, flag)
+	err = createSymbolicLink(linkp, &targetp[0], flag)
 	if err != nil {
 		return &os.LinkError{"symlink", oldname, newname, err}
 	}
@@ -56,7 +56,7 @@ func Read(link string) (string, error) {
 		return "", err
 	}
 	h, err := syscall.CreateFile(
-		linkp,
+		&linkp[0],
 		syscall.GENERIC_READ,
 		syscall.FILE_SHARE_READ,
 		nil,
@@ -88,12 +88,17 @@ func Read(link string) (string, error) {
 	if strings.HasPrefix(ret, `\\?\`) {
 		return ret[4:], nil
 	}
-	return ret, nil
+
+	retp, err := getLongPath(ret)
+	if err != nil {
+		return "", &os.PathError{"readlink", link, err}
+	}
+	return syscall.UTF16ToString(retp), nil
 }
 
 // getLongPath converts windows 8.1 short style paths (c:\Progra~1\foo) to full
 // long paths.
-func getLongPath(path string) (*uint16, error) {
+func getLongPath(path string) ([]uint16, error) {
 	pathp, err := syscall.UTF16FromString(path)
 	if err != nil {
 		return nil, err
@@ -113,5 +118,5 @@ func getLongPath(path string) (*uint16, error) {
 	}
 	longp = longp[:n]
 
-	return &longp[0], nil
+	return longp, nil
 }

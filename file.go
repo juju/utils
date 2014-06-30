@@ -107,7 +107,7 @@ func AtomicWriteFileAndChange(filename string, contents []byte, change func(*os.
 	if err != nil {
 		return fmt.Errorf("cannot create temp file: %v", err)
 	}
-    defer f.Close()
+	defer f.Close()
 	defer func() {
 		if err != nil {
 			// Don't leave the temp file lying around on error.

@@ -30,8 +30,11 @@ func WriteYaml(path string, obj interface{}) error {
 	if err != nil {
 		return err
 	}
-	defer f.Close()
-	if _, err = f.Write(data); err != nil {
+	_, err = f.Write(data)
+	// Explicitly close the file before moving it. This is needed on Windows
+	// where the OS will not allow us to move a file that still has an open file handle
+	f.Close()
+	if err != nil {
 		return err
 	}
 	return ReplaceFile(prep, path)

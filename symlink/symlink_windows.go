@@ -1,3 +1,4 @@
+// Copyright 2014 Canonical Ltd.
 // Copyright 2014 Cloudbase Solutions SRL
 // Licensed under the AGPLv3, see LICENCE file for details.
 // Author: Robert Tingirica
@@ -124,7 +125,7 @@ func getLongPath(path string) ([]uint16, error) {
 	return longp, nil
 }
 
-func GetLongPathAsString(path string) (string, error) {
+func getLongPathAsString(path string) (string, error) {
 	longp, err := getLongPath(path)
 	if err != nil {
 		return "", err

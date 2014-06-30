@@ -107,6 +107,7 @@ func AtomicWriteFileAndChange(filename string, contents []byte, change func(*os.
 	if err != nil {
 		return fmt.Errorf("cannot create temp file: %v", err)
 	}
+    defer f.Close()
 	defer func() {
 		if err != nil {
 			// Don't leave the temp file lying around on error.
@@ -131,10 +132,7 @@ func AtomicWriteFileAndChange(filename string, contents []byte, change func(*os.
 // path.
 func AtomicWriteFile(filename string, contents []byte, perms os.FileMode) (err error) {
 	return AtomicWriteFileAndChange(filename, contents, func(f *os.File) error {
-		if runtime.GOOS == "windows" {
-			return nil
-		}
-		if err := f.Chmod(perms); err != nil {
+		if err := os.Chmod(f.Name(), perms); err != nil {
 			return fmt.Errorf("cannot set permissions: %v", err)
 		}
 		return nil

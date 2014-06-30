@@ -123,3 +123,11 @@ func getLongPath(path string) ([]uint16, error) {
 
 	return longp, nil
 }
+
+func GetLongPathAsString(path string) (string, error) {
+	longp, err := getLongPath(path)
+	if err != nil {
+		return "", err
+	}
+	return syscall.UTF16ToString(longp), nil
+}

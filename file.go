@@ -120,6 +120,7 @@ func AtomicWriteFileAndChange(filename string, contents []byte, change func(*os.
 	if err := change(f); err != nil {
 		return err
 	}
+	f.Close()
 	if err := ReplaceFile(f.Name(), filename); err != nil {
 		return fmt.Errorf("cannot replace %q with %q: %v", f.Name(), filename, err)
 	}
@@ -131,7 +132,7 @@ func AtomicWriteFileAndChange(filename string, contents []byte, change func(*os.
 // path.
 func AtomicWriteFile(filename string, contents []byte, perms os.FileMode) (err error) {
 	return AtomicWriteFileAndChange(filename, contents, func(f *os.File) error {
-		if err := f.Chmod(perms); err != nil {
+		if err := os.Chmod(f.Name(), perms); err != nil {
 			return fmt.Errorf("cannot set permissions: %v", err)
 		}
 		return nil

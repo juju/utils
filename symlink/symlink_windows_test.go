@@ -1,30 +1,34 @@
+// Copyright 2014 Canonical Ltd.
+// Copyright 2014 Cloudbase Solutions SRL
+// Licensed under the AGPLv3, see LICENCE file for details.
+
 package symlink_test
 
 import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"testing"
 
 	gc "launchpad.net/gocheck"
 
 	"github.com/juju/utils/symlink"
 )
 
-type SymlinkSuite struct{}
-
-var _ = gc.Suite(&SymlinkSuite{})
-
-func Test(t *testing.T) {
-	gc.TestingT(t)
+func (*SymlinkSuite) TestLongPath(c *gc.C) {
+	programFiles := `C:\PROGRA~1`
+	longProg := `C:\Program Files`
+	target, err := symlink.GetLongPathAsString(programFiles)
+	c.Assert(err, gc.IsNil)
+	c.Assert(target, gc.Equals, longProg)
 }
 
 func (*SymlinkSuite) TestCreateSymLink(c *gc.C) {
-	target := c.MkDir()
+	target, err := symlink.GetLongPathAsString(c.MkDir())
+	c.Assert(err, gc.IsNil)
 
 	link := filepath.Join(target, "link")
 
-	_, err := os.Stat(target)
+	_, err = os.Stat(target)
 	c.Assert(err, gc.IsNil)
 
 	err = symlink.New(target, link)

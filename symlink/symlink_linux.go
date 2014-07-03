@@ -13,3 +13,9 @@ func New(oldname, newname string) error {
 func Read(link string) (string, error) {
 	return os.Readlink(link)
 }
+
+// getLongPathAsString does nothing on linux. Its here for compatibillity
+// with the windows implementation
+func getLongPathAsString(path string) (string, error) {
+	return path, nil
+}

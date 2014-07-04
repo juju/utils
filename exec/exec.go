@@ -5,7 +5,10 @@ package exec
 
 import (
 	"bytes"
+	"os"
 	"os/exec"
+	"runtime"
+	"strings"
 	"syscall"
 
 	"github.com/juju/loggo"
@@ -31,13 +34,68 @@ type ExecResponse struct {
 	Stderr []byte
 }
 
+// mergeEnvironment takes in a string array representing the desired environment
+// and merges it with the current environment. On Windows, clearing the environment,
+// or having missing environment variables, may lead to standard go packages not working
+// (os.TempDir relies on $env:TEMP), and powershell erroring out
+// Currently this function is only used for windows
+func mergeEnvironment(env []string) []string {
+	if env == nil {
+		return nil
+	}
+	m := make(map[string]string)
+	var tmpEnv []string
+	for _, val := range os.Environ() {
+		varSplit := strings.SplitN(val, "=", 2)
+		m[varSplit[0]] = varSplit[1]
+	}
+
+	for _, val := range env {
+		varSplit := strings.SplitN(val, "=", 2)
+		m[varSplit[0]] = varSplit[1]
+	}
+
+	for key, val := range m {
+		tmpEnv = append(tmpEnv, key+"="+val)
+	}
+
+	return tmpEnv
+}
+
+// shellAndArgs is a helper function that returns an OS specific
+// shell and arguments for that particular shell
+func shellAndArgs() (string, []string) {
+	var com []string
+	switch runtime.GOOS {
+	case "windows":
+		com = []string{
+			"powershell.exe",
+			"-noprofile",
+			"-noninteractive",
+			"-command",
+			"try{$input|iex; exit $LastExitCode}catch{Write-Error -Message $Error[0]; exit 1}",
+		}
+	default:
+		com = []string{
+			"/bin/bash",
+			"-s",
+		}
+	}
+	return com[0], com[1:]
+}
+
 // RunCommands executes the Commands specified in the RunParams using
-// '/bin/bash -s', passing the commands through as stdin, and collecting
+// powershell on windows, and '/bin/bash -s' on everything else,
+// passing the commands through as stdin, and collecting
 // stdout and stderr.  If a non-zero return code is returned, this is
 // collected as the code for the response and this does not classify as an
 // error.
 func RunCommands(run RunParams) (*ExecResponse, error) {
-	ps := exec.Command("/bin/bash", "-s")
+	if runtime.GOOS == "windows" {
+		run.Environment = mergeEnvironment(run.Environment)
+	}
+	shell, args := shellAndArgs()
+	ps := exec.Command(shell, args...)
 	if run.Environment != nil {
 		ps.Env = run.Environment
 	}

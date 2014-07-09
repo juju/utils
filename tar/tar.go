@@ -74,9 +74,6 @@ func writeContents(fileName, strip string, tarw *tar.Writer) error {
 		}
 		return nil
 	}
-	if !strings.HasSuffix(fileName, string(os.PathSeparator)) {
-		fileName = fileName + string(os.PathSeparator)
-	}
 
 	for {
 		names, err := f.Readdirnames(100)
@@ -97,6 +94,24 @@ func writeContents(fileName, strip string, tarw *tar.Writer) error {
 
 }
 
+func createAndFill(filePath string, mode int64, content io.Reader) error {
+	fh, err := os.Create(filePath)
+	defer fh.Close()
+	if err != nil {
+		return fmt.Errorf("some of the tar contents cannot be written to disk: %v", err)
+	}
+	_, err = io.Copy(fh, content)
+	if err != nil {
+		return fmt.Errorf("failed while reading tar contents: %v", err)
+	}
+	err = fh.Chmod(os.FileMode(mode))
+	if err != nil {
+		return fmt.Errorf("cannot set proper mode on file %q: %v", filePath, err)
+	}
+	return nil
+}
+
+
 // UntarFiles will extract the contents of tarFile using
 // outputFolder as root
 func UntarFiles(tarFile io.Reader, outputFolder string) error {
@@ -105,7 +120,7 @@ func UntarFiles(tarFile io.Reader, outputFolder string) error {
 		hdr, err := tr.Next()
 		if err == io.EOF {
 			// end of tar archive
-			break
+			return nil
 		}
 		if err != nil {
 			return fmt.Errorf("failed while reading tar header: %v", err)
@@ -117,22 +132,8 @@ func UntarFiles(tarFile io.Reader, outputFolder string) error {
 			}
 			continue
 		}
-		if err != nil {
-			return fmt.Errorf("failed while reading tar contents: %v", err)
-		}
-		fh, err := os.Create(fullPath)
-		if err != nil {
-			return fmt.Errorf("some of the tar contents cannot be written to disk: %v", err)
-		}
-		_, err = io.Copy(fh, tr)
-		if err != nil {
-			fh.Close()
-			return fmt.Errorf("failed while reading tar contents: %v", err)
-		}
-		err = fh.Chmod(os.FileMode(hdr.Mode))
-		fh.Close()
-		if err != nil {
-			return fmt.Errorf("cannot set proper mode on file %q: %v", fullPath, err)
+		if err = createAndFill(fullPath, hdr.Mode, tr); err != nil {
+			return fmt.Errorf("cannot extract file %q: %v", fullPath, err)
 		}
 
 	}

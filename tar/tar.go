@@ -1,6 +1,9 @@
 // Copyright 2014 Canonical Ltd.
 // Licensed under the LGPLv3, see LICENCE file for details.
 
+// This package provides convenience helpers on top of archive/tar
+// to be able to tar/untar files with a functionality closer
+// to gnu tar command.
 package tar
 
 import (
@@ -110,7 +113,6 @@ func createAndFill(filePath string, mode int64, content io.Reader) error {
 	}
 	return nil
 }
-
 
 // UntarFiles will extract the contents of tarFile using
 // outputFolder as root

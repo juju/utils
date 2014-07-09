@@ -18,24 +18,24 @@ import (
 
 	gc "launchpad.net/gocheck"
 
-	"github.com/juju/juju/testing"
+	"github.com/juju/testing"
 )
 
-func Test(t *stdtesting.T) {
-	testing.MgoTestPackage(t)
+func TestPackage(t *stdtesting.T) {
+	gc.TestingT(t)
 }
 
 var _ = gc.Suite(&TarSuite{})
 
 type TarSuite struct {
-	testing.BaseSuite
+	testing.IsolationSuite
 	cwd       string
 	testFiles []string
 }
 
 func (t *TarSuite) SetUpTest(c *gc.C) {
 	t.cwd = c.MkDir()
-	t.BaseSuite.SetUpTest(c)
+	t.IsolationSuite.SetUpTest(c)
 }
 
 func (t *TarSuite) createTestFiles(c *gc.C) {
@@ -195,6 +195,7 @@ func (t *TarSuite) TestTarFiles(c *gc.C) {
 	t.removeTestFiles(c)
 	t.assertTarContents(c, testExpectedTarContents, bytes.NewBuffer(outputBytes))
 }
+
 // UnTar
 func (t *TarSuite) TestUnTarFilesUncompressed(c *gc.C) {
 	t.createTestFiles(c)

@@ -14,19 +14,18 @@ import (
 	"strings"
 )
 
-// TarFiles creates a tar archive at targetPath holding the files listed
-// in fileList. If compress is true, the archive will also be gzip
-// compressed.
 // TarFiles writes a tar stream into target holding the files listed
 // in fileList. strip will be removed from the beginning of all the paths
 // when stored (much like gnu tar -C option)
+// Returns a Sha sum of the tar and nil if everything went well
+// or empty sting and error in case of error.
+// We use a base64 encoded sha1 hash, because this is the hash
+// used by RFC 3230 Digest headers in http responses
 func TarFiles(fileList []string, target io.Writer, strip string) (shaSum string, err error) {
 	shahash := sha1.New()
 	if err := tarAndHashFiles(fileList, target, strip, shahash); err != nil {
 		return "", err
 	}
-	// we use a base64 encoded sha1 hash, because this is the hash
-	// used by RFC 3230 Digest headers in http responses
 	encodedHash := base64.StdEncoding.EncodeToString(shahash.Sum(nil))
 	return encodedHash, nil
 }
@@ -34,7 +33,7 @@ func TarFiles(fileList []string, target io.Writer, strip string) (shaSum string,
 func tarAndHashFiles(fileList []string, target io.Writer, strip string, hashw io.Writer) (err error) {
 	checkClose := func(w io.Closer) {
 		if closeErr := w.Close(); closeErr != nil && err == nil {
-			err = fmt.Errorf("error closing backup file: %v", closeErr)
+			err = fmt.Errorf("error closing tar writer: %v", closeErr)
 		}
 	}
 
@@ -43,7 +42,7 @@ func tarAndHashFiles(fileList []string, target io.Writer, strip string, hashw io
 	defer checkClose(tarw)
 	for _, ent := range fileList {
 		if err := writeContents(ent, strip, tarw); err != nil {
-			return fmt.Errorf("backup failed: %v", err)
+			return fmt.Errorf("write to tar file failed: %v", err)
 		}
 	}
 	return nil
@@ -81,8 +80,9 @@ func writeContents(fileName, strip string, tarw *tar.Writer) error {
 
 	for {
 		names, err := f.Readdirnames(100)
-		// this can happen if there are less than 100 names remaining
-		if err == io.EOF && len(names) == 0 {
+		// will return at most 100 names and if less than 100 remaining
+		// next call will return io.EOF and no names
+		if err == io.EOF {
 			return nil
 		}
 		if err != nil {

@@ -1,5 +1,5 @@
 // Copyright 2012, 2013 Canonical Ltd.
-// Licensed under the AGPLv3, see LICENCE file for details.
+// Licensed under the LGPLv3, see LICENCE file for details.
 
 // Package voyeur implements a concurrency-safe value that can be watched for
 // changes.

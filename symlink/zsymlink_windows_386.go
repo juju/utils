@@ -25,7 +25,7 @@ func createSymbolicLink(symlinkname *uint16, targetname *uint16, flags uint32) (
 	return
 }
 
-func getFinalPathNameByHandle(handle Handle, buf *uint16, buflen uint32, flags uint32) (n uint32, err error) {
+func getFinalPathNameByHandle(handle syscall.Handle, buf *uint16, buflen uint32, flags uint32) (n uint32, err error) {
 	r0, _, e1 := syscall.Syscall6(procGetFinalPathNameByHandleW.Addr(), 4, uintptr(handle), uintptr(unsafe.Pointer(buf)), uintptr(buflen), uintptr(flags), 0, 0)
 	n = uint32(r0)
 	if n == 0 {

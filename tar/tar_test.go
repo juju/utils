@@ -1,7 +1,7 @@
 // Copyright 2014 Canonical Ltd.
 // Licensed under the LGPLv3, see LICENCE file for details.
 
-package tar
+package tar_test
 
 import (
 	"archive/tar"
@@ -14,16 +14,12 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	stdtesting "testing"
-
-	gc "launchpad.net/gocheck"
 
 	"github.com/juju/testing"
-)
+	gc "launchpad.net/gocheck"
 
-func TestPackage(t *stdtesting.T) {
-	gc.TestingT(t)
-}
+	tarutil "github.com/juju/utils/tar"
+)
 
 var _ = gc.Suite(&TarSuite{})
 
@@ -187,7 +183,7 @@ func (t *TarSuite) TestTarFiles(c *gc.C) {
 	t.createTestFiles(c)
 	var outputTar bytes.Buffer
 	trimPath := fmt.Sprintf("%s/", t.cwd)
-	shaSum, err := TarFiles(t.testFiles, &outputTar, trimPath)
+	shaSum, err := tarutil.TarFiles(t.testFiles, &outputTar, trimPath)
 	c.Check(err, gc.IsNil)
 	outputBytes := outputTar.Bytes()
 	fileShaSum := shaSumFile(c, bytes.NewBuffer(outputBytes))
@@ -201,13 +197,13 @@ func (t *TarSuite) TestUnTarFilesUncompressed(c *gc.C) {
 	t.createTestFiles(c)
 	var outputTar bytes.Buffer
 	trimPath := fmt.Sprintf("%s/", t.cwd)
-	_, err := TarFiles(t.testFiles, &outputTar, trimPath)
+	_, err := tarutil.TarFiles(t.testFiles, &outputTar, trimPath)
 	c.Check(err, gc.IsNil)
 
 	outputDir := filepath.Join(t.cwd, "TarOuputFolder")
 	err = os.Mkdir(outputDir, os.FileMode(0755))
 	c.Check(err, gc.IsNil)
 
-	UntarFiles(&outputTar, outputDir)
+	tarutil.UntarFiles(&outputTar, outputDir)
 	t.assertFilesWhereUntared(c, testExpectedTarContents, outputDir)
 }

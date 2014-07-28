@@ -5,13 +5,12 @@ package utils
 
 import (
 	"os"
-	"path"
 	"path/filepath"
 )
 
 // Home returns the os-specific home path as specified in the environment.
 func Home() string {
-	return path.Join(os.Getenv("HOMEDRIVE"), os.Getenv("HOMEPATH"))
+	return filepath.Join(os.Getenv("HOMEDRIVE"), os.Getenv("HOMEPATH"))
 }
 
 // SetHome sets the os-specific home path in the environment.

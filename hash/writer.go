@@ -10,33 +10,40 @@ import (
 	"io"
 )
 
+// HashingWriter wraps an io.Writer, providing the checksum of all data
+// written to it.
 type HashingWriter struct {
-	file   io.Writer
-	hasher hash.Hash
-	multiw io.Writer
+	wrapped io.Writer
+	hasher  hash.Hash
 }
 
-func NewHashingWriter(file io.Writer, hasher hash.Hash) *HashingWriter {
-	writer := HashingWriter{
-		file:   file,
-		hasher: hasher,
+func NewHashingWriter(writer io.Writer, hasher hash.Hash) *HashingWriter {
+	hashingWriter := HashingWriter{
+		wrapped: writer,
+		hasher:  hasher,
 	}
-	return &writer
+	return &hashingWriter
 }
 
+// Write writes to both the wrapped file and the hash.
 func (h *HashingWriter) Write(data []byte) (int, error) {
-	if h.multiw == nil {
-		h.multiw = io.MultiWriter(h.file, h.hasher)
-	}
-	return h.multiw.Write(data)
+	h.hasher.Write(data)
+	return h.wrapped.Write(data)
 }
 
-func (h *HashingWriter) Hash() string {
+// Sum returns the raw checksum.
+func (h *HashingWriter) Sum() []byte {
+	return h.hasher.Sum(nil)
+}
+
+// Base64Sum returns the base64 encoded hash.
+func (h *HashingWriter) Base64Sum() string {
 	raw := h.hasher.Sum(nil)
 	return base64.StdEncoding.EncodeToString(raw)
 }
 
-func (h *HashingWriter) RawHash() string {
+// HexSum returns the hex-ified checksum.
+func (h *HashingWriter) HexSum() string {
 	raw := h.hasher.Sum(nil)
 	return fmt.Sprintf("%x", raw)
 }

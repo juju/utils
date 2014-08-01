@@ -8,10 +8,11 @@ import (
 	"io"
 )
 
-func NewSHA1Proxy(file io.Writer) *HashingWriter {
+// NewSHA1Proxy returns a HashingWriter with an underlying SHA-1 hash.
+func NewSHA1Proxy(writer io.Writer) *HashingWriter {
 	proxy := HashingWriter{
-		file:   file,
-		hasher: sha1.New(),
+		wrapped: writer,
+		hasher:  sha1.New(),
 	}
 	return &proxy
 }

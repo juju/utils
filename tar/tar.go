@@ -15,6 +15,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/juju/utils/symlink"
 )
 
 // TarFiles writes a tar stream into target holding the files listed
@@ -59,17 +61,31 @@ func writeContents(fileName, strip string, tarw *tar.Writer) error {
 		return err
 	}
 	defer f.Close()
-	fInfo, err := f.Stat()
+	fInfo, err := os.Lstat(fileName)
 	if err != nil {
 		return err
 	}
-	h, err := tar.FileInfoHeader(fInfo, "")
+	link := ""
+
+	if fInfo.Mode()&os.ModeSymlink == os.ModeSymlink {
+		link, err = filepath.EvalSymlinks(fileName)
+
+		if err != nil {
+			return fmt.Errorf("cannnot dereference symlink: %v", err)
+		}
+
+		link = filepath.ToSlash(strings.TrimPrefix(link, strip))
+	}
+	h, err := tar.FileInfoHeader(fInfo, link)
 	if err != nil {
 		return fmt.Errorf("cannot create tar header for %q: %v", fileName, err)
 	}
 	h.Name = filepath.ToSlash(strings.TrimPrefix(fileName, strip))
 	if err := tarw.WriteHeader(h); err != nil {
 		return fmt.Errorf("cannot write header for %q: %v", fileName, err)
+	}
+	if fInfo.Mode()&os.ModeSymlink == os.ModeSymlink {
+		return nil
 	}
 	if !fInfo.IsDir() {
 		if _, err := io.Copy(tarw, f); err != nil {
@@ -131,6 +147,12 @@ func UntarFiles(tarFile io.Reader, outputFolder string) error {
 		if hdr.Typeflag == tar.TypeDir {
 			if err = os.MkdirAll(fullPath, os.FileMode(hdr.Mode)); err != nil {
 				return fmt.Errorf("cannot extract directory %q: %v", fullPath, err)
+			}
+			continue
+		}
+		if hdr.Typeflag == tar.TypeSymlink {
+			if err = symlink.New(hdr.Linkname, fullPath); err != nil {
+				return fmt.Errorf("cannot extract symlink %q to %q: %v", hdr.Linkname, fullPath, err)
 			}
 			continue
 		}

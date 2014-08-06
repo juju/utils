@@ -47,11 +47,19 @@ func (t *TarSuite) createTestFiles(c *gc.C) {
 	err = os.Mkdir(tarDirP, os.FileMode(0755))
 	c.Check(err, gc.IsNil)
 
+	tarlink1 := filepath.Join(t.cwd, "TarLink")
+	err = os.Symlink(tarDirP, tarlink1)
+	c.Check(err, gc.IsNil)
+
 	tarSubFile1 := filepath.Join(tarDirP, "TarSubFile1")
 	tarSubFile1Handle, err := os.Create(tarSubFile1)
 	c.Check(err, gc.IsNil)
 	tarSubFile1Handle.WriteString("TarSubFile1")
 	tarSubFile1Handle.Close()
+
+	tarSublink1 := filepath.Join(tarDirP, "TarSubLink")
+	err = os.Symlink(tarSubFile1, tarSublink1)
+	c.Check(err, gc.IsNil)
 
 	tarSubDir := filepath.Join(tarDirP, "TarDirectoryPopulatedSubDirectory")
 	err = os.Mkdir(tarSubDir, os.FileMode(0755))
@@ -68,7 +76,7 @@ func (t *TarSuite) createTestFiles(c *gc.C) {
 	c.Check(err, gc.IsNil)
 	tarFile2Handle.WriteString("TarFile2")
 	tarFile2Handle.Close()
-	t.testFiles = []string{tarDirE, tarDirP, tarFile1, tarFile2}
+	t.testFiles = []string{tarDirE, tarDirP, tarlink1, tarFile1, tarFile2}
 
 }
 
@@ -87,7 +95,9 @@ type expectedTarContents struct {
 var testExpectedTarContents = []expectedTarContents{
 	{"TarDirectoryEmpty", ""},
 	{"TarDirectoryPopulated", ""},
+	{"TarLink", ""},
 	{"TarDirectoryPopulated/TarSubFile1", "TarSubFile1"},
+	{"TarDirectoryPopulated/TarSubLink", ""},
 	{"TarDirectoryPopulated/TarDirectoryPopulatedSubDirectory", ""},
 	{"TarFile1", "TarFile1"},
 	{"TarFile2", "TarFile2"},
@@ -140,10 +150,11 @@ func (t *TarSuite) assertFilesWhereUntared(c *gc.C,
 		}
 		fileName := strings.TrimPrefix(path, tarOutputFolder)
 		fileName = strings.TrimPrefix(fileName, string(os.PathSeparator))
+		c.Log(fileName)
 		if fileName == "" {
 			return nil
 		}
-		if finfo.IsDir() {
+		if finfo.IsDir() || finfo.Mode()&os.ModeSymlink == os.ModeSymlink {
 			tarContents[fileName] = ""
 		} else {
 			readable, err := os.Open(path)
@@ -161,7 +172,7 @@ func (t *TarSuite) assertFilesWhereUntared(c *gc.C,
 	for _, expectedContent := range expectedContents {
 		fullExpectedContent := strings.TrimPrefix(expectedContent.Name, string(os.PathSeparator))
 		expectedPath := filepath.Join(tarOutputFolder, fullExpectedContent)
-		_, err := os.Stat(expectedPath)
+		_, err := os.Lstat(expectedPath)
 		c.Assert(err, gc.Equals, nil)
 		body, ok := tarContents[fullExpectedContent]
 		c.Log(fmt.Sprintf("checking for presence of %q on untar files", fullExpectedContent))
@@ -203,6 +214,7 @@ func (t *TarSuite) TestUnTarFilesUncompressed(c *gc.C) {
 	trimPath := fmt.Sprintf("%s/", t.cwd)
 	_, err := TarFiles(t.testFiles, &outputTar, trimPath)
 	c.Check(err, gc.IsNil)
+	t.removeTestFiles(c)
 
 	outputDir := filepath.Join(t.cwd, "TarOuputFolder")
 	err = os.Mkdir(outputDir, os.FileMode(0755))

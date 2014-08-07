@@ -57,16 +57,22 @@ func (s *metadataStorage) ListDocs() ([]interface{}, error) {
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
-	docs := make([]interface{}, len(list))
-	for _, meta := range list {
-		docs = append(docs, meta)
+	docs := []interface{}{}
+	for _, doc := range list {
+		if doc == nil {
+			continue
+		}
+		docs = append(docs, doc)
 	}
 	return docs, nil
 }
 
 func (s *metadataStorage) ListMetadata() ([]Metadata, error) {
-	list := make([]Metadata, len(s.metadata))
+	list := []Metadata{}
 	for _, meta := range s.metadata {
+		if meta == nil {
+			continue
+		}
 		list = append(list, meta)
 	}
 	return list, nil
@@ -78,18 +84,16 @@ func (s *metadataStorage) AddDoc(doc interface{}) (string, error) {
 		return "", errors.Errorf("doc must be a Metadata")
 	}
 
-	id := meta.ID()
-	if id == "" {
-		uuid, err := utils.NewUUID()
-		if err != nil {
-			return "", errors.Annotate(err, "error while creating ID")
-		}
-		id = uuid.String()
-		err = meta.SetID(id)
-		if err != nil {
-			return "", errors.Annotate(err, "error while setting ID")
-		}
+	uuid, err := utils.NewUUID()
+	if err != nil {
+		return "", errors.Annotate(err, "error while creating ID")
 	}
+	id := uuid.String()
+	alreadySet := meta.SetID(id)
+	if alreadySet {
+		return "", errors.AlreadyExistsf("ID already set (tried %q)", id)
+	}
+
 	s.metadata[id] = meta
 	return id, nil
 }

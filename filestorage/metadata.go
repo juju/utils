@@ -5,8 +5,6 @@ package filestorage
 
 import (
 	"time"
-
-	"github.com/juju/errors"
 )
 
 type Metadata interface {
@@ -26,11 +24,14 @@ type Metadata interface {
 	// Doc returns a storable copy of the metadata.
 	Doc() interface{}
 	// SetID sets the ID of the metadata.  If the ID is already set,
-	// SetID() should return an error.
-	SetID(id string) error
+	// SetID() should return true (false otherwise).
+	SetID(id string) (alreadySet bool)
 	// SetStored sets Stored to true the metadata.
 	SetStored()
 }
+
+// Ensure FileMetadata implements Metadata.
+var _ = Metadata(&FileMetadata{})
 
 // FileMetadata contains the metadata for a single stored file.
 type FileMetadata struct {
@@ -54,7 +55,7 @@ func NewMetadata(
 		checksum:       checksum,
 		checksumFormat: checksumFormat,
 	}
-	if timestamp != nil {
+	if timestamp == nil {
 		meta.timestamp = time.Now().UTC()
 	} else {
 		meta.timestamp = *timestamp
@@ -90,12 +91,12 @@ func (m *FileMetadata) Doc() interface{} {
 	return m
 }
 
-func (m *FileMetadata) SetID(id string) error {
+func (m *FileMetadata) SetID(id string) bool {
 	if m.id != "" {
-		return errors.Errorf("ID already set")
+		return true
 	}
 	m.id = id
-	return nil
+	return false
 }
 
 func (m *FileMetadata) SetStored() {

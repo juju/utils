@@ -11,19 +11,12 @@ import (
 
 	gc "launchpad.net/gocheck"
 
+	"github.com/juju/utils/path"
 	"github.com/juju/utils/symlink"
 )
 
-func (*SymlinkSuite) TestLongPath(c *gc.C) {
-	programFiles := `C:\PROGRA~1`
-	longProg := `C:\Program Files`
-	target, err := symlink.GetLongPathAsString(programFiles)
-	c.Assert(err, gc.IsNil)
-	c.Assert(target, gc.Equals, longProg)
-}
-
 func (*SymlinkSuite) TestCreateSymLink(c *gc.C) {
-	target, err := symlink.GetLongPathAsString(c.MkDir())
+	target, err := path.GetLongPathAsString(c.MkDir())
 	c.Assert(err, gc.IsNil)
 
 	link := filepath.Join(target, "link")

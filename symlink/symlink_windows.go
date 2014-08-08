@@ -11,6 +11,8 @@ import (
 	"strings"
 	"syscall"
 	"unicode/utf16"
+
+	"github.com/juju/utils/path"
 )
 
 const (
@@ -35,7 +37,7 @@ func New(oldname, newname string) error {
 		flag = SYMBOLIC_LINK_FLAG_DIRECTORY
 	}
 
-	targetp, err := getLongPath(oldname)
+	targetp, err := path.GetLongPathAsString(oldname)
 	if err != nil {
 		return &os.LinkError{"symlink", oldname, newname, err}
 	}
@@ -45,7 +47,12 @@ func New(oldname, newname string) error {
 		return &os.LinkError{"symlink", oldname, newname, err}
 	}
 
-	err = createSymbolicLink(linkp, &targetp[0], flag)
+	targetpUtf, err := syscall.UTF16FromString(targetp)
+	if err != nil {
+		return &os.LinkError{"symlink", oldname, newname, err}
+	}
+
+	err = createSymbolicLink(linkp, &targetpUtf[0], flag)
 	if err != nil {
 		return &os.LinkError{"symlink", oldname, newname, err}
 	}
@@ -55,12 +62,18 @@ func New(oldname, newname string) error {
 // Read returns the destination of the named symbolic link.
 // If there is an error, it will be of type *PathError.
 func Read(link string) (string, error) {
-	linkp, err := getLongPath(link)
+	linkp, err := path.GetLongPathAsString(link)
 	if err != nil {
 		return "", err
 	}
+
+	linkpUtf, err := syscall.UTF16FromString(linkp)
+	if err != nil {
+		return "", &os.PathError{"readlink", link, err}
+	}
+
 	h, err := syscall.CreateFile(
-		&linkp[0],
+		&linkpUtf[0],
 		syscall.GENERIC_READ,
 		syscall.FILE_SHARE_READ,
 		nil,
@@ -93,42 +106,9 @@ func Read(link string) (string, error) {
 		return ret[4:], nil
 	}
 
-	retp, err := getLongPath(ret)
+	retp, err := path.GetLongPathAsString(ret)
 	if err != nil {
 		return "", &os.PathError{"readlink", link, err}
 	}
-	return syscall.UTF16ToString(retp), nil
-}
-
-// getLongPath converts windows 8.1 short style paths (c:\Progra~1\foo) to full
-// long paths.
-func getLongPath(path string) ([]uint16, error) {
-	pathp, err := syscall.UTF16FromString(path)
-	if err != nil {
-		return nil, err
-	}
-
-	longp := pathp
-	n, err := syscall.GetLongPathName(&pathp[0], &longp[0], uint32(len(longp)))
-	if err != nil {
-		return nil, err
-	}
-	if n > uint32(len(longp)) {
-		longp = make([]uint16, n)
-		n, err = syscall.GetLongPathName(&pathp[0], &longp[0], uint32(len(longp)))
-		if err != nil {
-			return nil, err
-		}
-	}
-	longp = longp[:n]
-
-	return longp, nil
-}
-
-func getLongPathAsString(path string) (string, error) {
-	longp, err := getLongPath(path)
-	if err != nil {
-		return "", err
-	}
-	return syscall.UTF16ToString(longp), nil
+	return retp, nil
 }

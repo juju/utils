@@ -10,6 +10,7 @@ import (
 
 	gc "launchpad.net/gocheck"
 
+	"github.com/juju/utils/path"
 	"github.com/juju/utils/symlink"
 )
 
@@ -22,9 +23,9 @@ func Test(t *testing.T) {
 }
 
 func (*SymlinkSuite) TestReplace(c *gc.C) {
-	target, err := symlink.GetLongPathAsString(c.MkDir())
+	target, err := path.GetLongPathAsString(c.MkDir())
 	c.Assert(err, gc.IsNil)
-	target_second, err := symlink.GetLongPathAsString(c.MkDir())
+	target_second, err := path.GetLongPathAsString(c.MkDir())
 	c.Assert(err, gc.IsNil)
 	link := filepath.Join(target, "link")
 

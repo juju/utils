@@ -12,7 +12,6 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
-	"runtime"
 )
 
 // UserHomeDir returns the home directory for the specified user, or the
@@ -24,14 +23,10 @@ func UserHomeDir(userName string) (homeDir string, err error) {
 		// Ordinarily, we'd always use user.Current() to get the current user
 		// and then get the HomeDir from that. But our tests rely on poking
 		// a value into $HOME in order to override the normal home dir for the
-		// current user. So on *nix, we're forced to use Home() to make
-		// the tests pass. All of our tests currently construct paths with the
-		// default user in mind eg "~/foo".
-		if runtime.GOOS == "windows" {
-			u, err = user.Current()
-		} else {
-			return Home(), nil
-		}
+		// current user. So we're forced to use Home() to make the tests pass.
+		// All of our tests currently construct paths with the default user in
+		// mind eg "~/foo".
+		return Home(), nil
 	} else {
 		u, err = user.Lookup(userName)
 		if err != nil {
@@ -41,14 +36,14 @@ func UserHomeDir(userName string) (homeDir string, err error) {
 	return u.HomeDir, nil
 }
 
-var userHomePathRegexp = regexp.MustCompile("(~(?P<user>[^/]*))(?P<path>.*)")
+// Only match paths starting with ~ (~user/test, ~/test). This will prevent
+// accidental expansion on Windows when short form paths are present (C:\users\ADMINI~1\test)
+var userHomePathRegexp = regexp.MustCompile("(^~(?P<user>[^/]*))(?P<path>.*)")
 
 // NormalizePath expands a path containing ~ to its absolute form,
 // and removes any .. or . path elements.
 func NormalizePath(dir string) (string, error) {
-	// Disable tilde expansion on windows, as it is not relevant.
-	// We can however simply do a filepath.Clean()
-	if runtime.GOOS != "windows" && userHomePathRegexp.MatchString(dir) {
+	if userHomePathRegexp.MatchString(dir) {
 		user := userHomePathRegexp.ReplaceAllString(dir, "$user")
 		userHomeDir, err := UserHomeDir(user)
 		if err != nil {

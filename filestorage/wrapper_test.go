@@ -19,6 +19,7 @@ type WrapperSuite struct {
 	testing.IsolationSuite
 	rawstor  filestorage.RawFileStorage
 	metastor filestorage.MetadataStorage
+	original filestorage.Metadata
 }
 
 func (s *WrapperSuite) SetUpTest(c *gc.C) {
@@ -28,6 +29,8 @@ func (s *WrapperSuite) SetUpTest(c *gc.C) {
 	s.rawstor, err = filestorage.NewRawFileStorage(c.MkDir())
 	c.Assert(err, gc.IsNil)
 	s.metastor = filestorage.NewMetadataStorage()
+	s.original = filestorage.NewMetadata(nil)
+	s.original.SetFile(10, "", "")
 }
 
 func (s *WrapperSuite) TestFileStorageNewFileStorage(c *gc.C) {
@@ -38,26 +41,24 @@ func (s *WrapperSuite) TestFileStorageNewFileStorage(c *gc.C) {
 
 func (s *WrapperSuite) TestFileStorageMetadata(c *gc.C) {
 	stor := filestorage.NewFileStorage(s.metastor, s.rawstor)
-	original := filestorage.NewMetadata(10, "", "", nil)
-	id, err := stor.Add(original, nil)
+	id, err := stor.Add(s.original, nil)
 	c.Assert(err, gc.IsNil)
 	meta, err := stor.Metadata(id)
 	c.Check(err, gc.IsNil)
 
-	c.Check(meta, gc.DeepEquals, original)
+	c.Check(meta, gc.DeepEquals, s.original)
 }
 
 func (s *WrapperSuite) TestFileStorageGet(c *gc.C) {
 	stor := filestorage.NewFileStorage(s.metastor, s.rawstor)
-	original := filestorage.NewMetadata(10, "", "", nil)
 	data := bytes.NewBufferString("spam")
-	id, err := stor.Add(original, data)
+	id, err := stor.Add(s.original, data)
 	c.Assert(err, gc.IsNil)
 	meta, file, err := stor.Get(id)
 	c.Check(err, gc.IsNil)
 	content, err := ioutil.ReadAll(file)
 
-	c.Check(meta, gc.DeepEquals, original)
+	c.Check(meta, gc.DeepEquals, s.original)
 	c.Check(string(content), gc.Equals, "spam")
 }
 
@@ -71,8 +72,7 @@ func (s *WrapperSuite) TestFileStorageListEmpty(c *gc.C) {
 
 func (s *WrapperSuite) TestFileStorageListOne(c *gc.C) {
 	stor := filestorage.NewFileStorage(s.metastor, s.rawstor)
-	original := filestorage.NewMetadata(10, "", "", nil)
-	id, err := stor.Add(original, nil)
+	id, err := stor.Add(s.original, nil)
 	c.Assert(err, gc.IsNil)
 	list, err := stor.List()
 	c.Check(err, gc.IsNil)
@@ -84,10 +84,10 @@ func (s *WrapperSuite) TestFileStorageListOne(c *gc.C) {
 
 func (s *WrapperSuite) TestFileStorageListTwo(c *gc.C) {
 	stor := filestorage.NewFileStorage(s.metastor, s.rawstor)
-	original1 := filestorage.NewMetadata(10, "", "", nil)
+	original1 := filestorage.NewMetadata(nil)
 	id1, err := stor.Add(original1, nil)
 	c.Assert(err, gc.IsNil)
-	original2 := filestorage.NewMetadata(10, "", "", nil)
+	original2 := filestorage.NewMetadata(nil)
 	id2, err := stor.Add(original2, nil)
 	c.Assert(err, gc.IsNil)
 	list, err := stor.List()
@@ -105,22 +105,20 @@ func (s *WrapperSuite) TestFileStorageListTwo(c *gc.C) {
 
 func (s *WrapperSuite) TestFileStorageAddMeta(c *gc.C) {
 	stor := filestorage.NewFileStorage(s.metastor, s.rawstor)
-	original := filestorage.NewMetadata(10, "", "", nil)
-	id, err := stor.Add(original, nil)
+	id, err := stor.Add(s.original, nil)
 	c.Check(err, gc.IsNil)
 
 	meta, err := stor.Metadata(id)
 	c.Assert(err, gc.IsNil)
 
-	c.Check(meta, gc.DeepEquals, original)
+	c.Check(meta, gc.DeepEquals, s.original)
 	c.Check(meta.Stored(), gc.Equals, false)
 }
 
 func (s *WrapperSuite) TestFileStorageAddFile(c *gc.C) {
 	stor := filestorage.NewFileStorage(s.metastor, s.rawstor)
-	original := filestorage.NewMetadata(10, "", "", nil)
 	data := bytes.NewBufferString("spam")
-	id, err := stor.Add(original, data)
+	id, err := stor.Add(s.original, data)
 	c.Check(err, gc.IsNil)
 
 	meta, file, err := stor.Get(id)
@@ -128,24 +126,22 @@ func (s *WrapperSuite) TestFileStorageAddFile(c *gc.C) {
 	content, err := ioutil.ReadAll(file)
 	c.Assert(err, gc.IsNil)
 
-	c.Check(meta, gc.DeepEquals, original)
+	c.Check(meta, gc.DeepEquals, s.original)
 	c.Check(string(content), gc.Equals, "spam")
 	c.Check(meta.Stored(), gc.Equals, true)
 }
 
 func (s *WrapperSuite) TestFileStorageAddIDAlreadySet(c *gc.C) {
 	stor := filestorage.NewFileStorage(s.metastor, s.rawstor)
-	original := filestorage.NewMetadata(10, "", "", nil)
-	original.SetID("eggs")
-	_, err := stor.Add(original, nil)
+	s.original.SetID("eggs")
+	_, err := stor.Add(s.original, nil)
 
 	c.Check(err, gc.ErrorMatches, "ID already set .*")
 }
 
 func (s *WrapperSuite) TestFileStorageSetFile(c *gc.C) {
 	stor := filestorage.NewFileStorage(s.metastor, s.rawstor)
-	original := filestorage.NewMetadata(10, "", "", nil)
-	id, err := stor.Add(original, nil)
+	id, err := stor.Add(s.original, nil)
 	c.Assert(err, gc.IsNil)
 
 	_, _, err = stor.Get(id)
@@ -166,8 +162,7 @@ func (s *WrapperSuite) TestFileStorageSetFile(c *gc.C) {
 
 func (s *WrapperSuite) TestFileStorageRemove(c *gc.C) {
 	stor := filestorage.NewFileStorage(s.metastor, s.rawstor)
-	original := filestorage.NewMetadata(10, "", "", nil)
-	id, err := stor.Add(original, nil)
+	id, err := stor.Add(s.original, nil)
 	c.Assert(err, gc.IsNil)
 	_, err = stor.Metadata(id)
 	c.Assert(err, gc.IsNil)

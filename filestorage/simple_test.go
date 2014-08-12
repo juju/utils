@@ -20,6 +20,13 @@ var _ = gc.Suite(&MetadataStorageSuite{})
 
 type MetadataStorageSuite struct {
 	testing.IsolationSuite
+	original filestorage.Metadata
+}
+
+func (s *MetadataStorageSuite) SetUpTest(c *gc.C) {
+	s.IsolationSuite.SetUpTest(c)
+	s.original = filestorage.NewMetadata(nil)
+	s.original.SetFile(0, "", "")
 }
 
 func (s *MetadataStorageSuite) TestMetadataStorageNewMetadataStorage(c *gc.C) {
@@ -30,32 +37,29 @@ func (s *MetadataStorageSuite) TestMetadataStorageNewMetadataStorage(c *gc.C) {
 
 func (s *MetadataStorageSuite) TestMetadataStorageDoc(c *gc.C) {
 	stor := filestorage.NewMetadataStorage()
-	original := filestorage.NewMetadata(10, "", "", nil)
-	id, err := stor.AddDoc(original)
+	id, err := stor.AddDoc(s.original)
 	c.Assert(err, gc.IsNil)
 
 	doc, err := stor.Doc(id)
 	c.Assert(err, gc.IsNil)
 	meta, ok := doc.(filestorage.Metadata)
 	c.Assert(ok, gc.Equals, true)
-	c.Check(meta, gc.DeepEquals, original)
+	c.Check(meta, gc.DeepEquals, s.original)
 }
 
 func (s *MetadataStorageSuite) TestMetadataStorageMetadata(c *gc.C) {
 	stor := filestorage.NewMetadataStorage()
-	original := filestorage.NewMetadata(10, "", "", nil)
-	id, err := stor.AddDoc(original)
+	id, err := stor.AddDoc(s.original)
 	c.Assert(err, gc.IsNil)
 
 	meta, err := stor.Metadata(id)
 	c.Assert(err, gc.IsNil)
-	c.Check(meta, gc.DeepEquals, original)
+	c.Check(meta, gc.DeepEquals, s.original)
 }
 
 func (s *MetadataStorageSuite) TestMetadataStorageListDocs(c *gc.C) {
 	stor := filestorage.NewMetadataStorage()
-	original := filestorage.NewMetadata(10, "", "", nil)
-	id, err := stor.AddDoc(original)
+	id, err := stor.AddDoc(s.original)
 	c.Assert(err, gc.IsNil)
 
 	list, err := stor.ListDocs()
@@ -69,8 +73,7 @@ func (s *MetadataStorageSuite) TestMetadataStorageListDocs(c *gc.C) {
 
 func (s *MetadataStorageSuite) TestMetadataStorageListMetadata(c *gc.C) {
 	stor := filestorage.NewMetadataStorage()
-	original := filestorage.NewMetadata(10, "", "", nil)
-	id, err := stor.AddDoc(original)
+	id, err := stor.AddDoc(s.original)
 	c.Assert(err, gc.IsNil)
 
 	list, err := stor.ListMetadata()
@@ -86,18 +89,16 @@ func (s *MetadataStorageSuite) TestMetadataStorageAddDoc(c *gc.C) {
 	c.Assert(err, gc.IsNil)
 	c.Assert(list, gc.HasLen, 0)
 
-	original := filestorage.NewMetadata(10, "", "", nil)
-	id, err := stor.AddDoc(original)
+	id, err := stor.AddDoc(s.original)
 
 	meta, err := stor.Metadata(id)
 	c.Assert(err, gc.IsNil)
-	c.Check(meta, gc.DeepEquals, original)
+	c.Check(meta, gc.DeepEquals, s.original)
 }
 
 func (s *MetadataStorageSuite) TestMetadataStorageRemoveDoc(c *gc.C) {
 	stor := filestorage.NewMetadataStorage()
-	original := filestorage.NewMetadata(10, "", "", nil)
-	id, err := stor.AddDoc(original)
+	id, err := stor.AddDoc(s.original)
 	c.Assert(err, gc.IsNil)
 
 	err = stor.RemoveDoc(id)
@@ -115,8 +116,7 @@ func (s *MetadataStorageSuite) TestMetadataStorageNew(c *gc.C) {
 
 func (s *MetadataStorageSuite) TestMetadataStorageSetStored(c *gc.C) {
 	stor := filestorage.NewMetadataStorage()
-	original := filestorage.NewMetadata(10, "", "", nil)
-	id, err := stor.AddDoc(original)
+	id, err := stor.AddDoc(s.original)
 	c.Assert(err, gc.IsNil)
 	meta, err := stor.Metadata(id)
 	c.Assert(err, gc.IsNil)

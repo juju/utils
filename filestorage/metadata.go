@@ -5,6 +5,8 @@ package filestorage
 
 import (
 	"time"
+
+	"github.com/juju/errors"
 )
 
 type Metadata interface {
@@ -26,7 +28,9 @@ type Metadata interface {
 	// SetID sets the ID of the metadata.  If the ID is already set,
 	// SetID() should return true (false otherwise).
 	SetID(id string) (alreadySet bool)
-	// SetStored sets Stored to true the metadata.
+	// SetFile sets the file info on the metadata.
+	SetFile(size int64, checksum, checksumFormat string) error
+	// SetStored sets Stored to true on the metadata.
 	SetStored()
 }
 
@@ -44,17 +48,11 @@ type FileMetadata struct {
 }
 
 // NewMetadata returns a new Metadata for a file.  ID is left unset (use
-// SetID() for that).  If no timestamp is provided, the current one is
-// used.  Everything else should be provided.
-func NewMetadata(
-	size int64, checksum, checksumFormat string, timestamp *time.Time,
-) Metadata {
-	meta := FileMetadata{
-		// id is omitted.
-		size:           size,
-		checksum:       checksum,
-		checksumFormat: checksumFormat,
-	}
+// SetID() for that).  Size, Checksum, and ChecksumFormat are left unset
+// (use SetFile() for those).  If no timestamp is provided, the
+// current one is used.
+func NewMetadata(timestamp *time.Time) Metadata {
+	meta := FileMetadata{}
 	if timestamp == nil {
 		meta.timestamp = time.Now().UTC()
 	} else {
@@ -97,6 +95,41 @@ func (m *FileMetadata) SetID(id string) bool {
 	}
 	m.id = id
 	return false
+}
+
+func (m *FileMetadata) SetFile(size int64, checksum, format string) error {
+	// Fall back to existing values.
+	if size == 0 {
+		size = m.size
+	}
+	if checksum == "" {
+		checksum = m.checksum
+	}
+	if format == "" {
+		format = m.checksumFormat
+	}
+	if checksum != "" {
+		if format == "" {
+			return errors.Errorf("missing checksum format")
+		}
+	} else if format != "" {
+		return errors.Errorf("missing checksum")
+	}
+	// Only allow setting once.
+	if m.size != 0 && size != m.size {
+		return errors.Errorf("file information (size) already set")
+	}
+	if m.checksum != "" && checksum != m.checksum {
+		return errors.Errorf("file information (checksum) already set")
+	}
+	if m.checksumFormat != "" && format != m.checksumFormat {
+		return errors.Errorf("file information (checksum format) already set")
+	}
+	// Set the values.
+	m.size = size
+	m.checksum = checksum
+	m.checksumFormat = format
+	return nil
 }
 
 func (m *FileMetadata) SetStored() {

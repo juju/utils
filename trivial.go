@@ -14,7 +14,7 @@ import (
 	"strings"
 	"unicode"
 
-	"launchpad.net/goyaml"
+	goyaml "gopkg.in/yaml.v1"
 )
 
 // WriteYaml marshals obj as yaml and then writes it to a file, atomically,

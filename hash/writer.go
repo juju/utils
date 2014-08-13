@@ -11,12 +11,20 @@ import (
 )
 
 // HashingWriter wraps an io.Writer, providing the checksum of all data
-// written to it.
+// written to it.  A HashingWriter may be used in place of the writer it
+// wraps.
 type HashingWriter struct {
 	wrapped io.Writer
 	hasher  hash.Hash
 }
 
+// NewHashingWriter returns a new HashingWriter that wraps the provided
+// writer and the hasher.
+//
+// Example:
+//   hw := NewHashingWriter(w, sha1.New())
+//   io.Copy(hw, reader)
+//   hash := hw.Base64Sum()
 func NewHashingWriter(writer io.Writer, hasher hash.Hash) *HashingWriter {
 	hashingWriter := HashingWriter{
 		wrapped: writer,

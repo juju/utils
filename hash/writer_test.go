@@ -41,30 +41,27 @@ func (h *fakeHasher) Reset()         {}
 func (h *fakeHasher) Size() int      { return -1 }
 func (h *fakeHasher) BlockSize() int { return -1 }
 
-//---------------------------
-// HashingWriter.Write()
-
 func (s *WriterSuite) TestHashingWriterWriteEmpty(c *gc.C) {
-	file := bytes.NewBuffer(nil)
+	var buf bytes.Buffer
 	hasher := fakeHasher{}
-	w := hash.NewHashingWriter(file, &hasher)
+	w := hash.NewHashingWriter(&buf, &hasher)
 	n, err := w.Write(nil)
 
 	c.Check(err, gc.IsNil)
 	c.Check(n, gc.Equals, 0)
-	c.Check(file.String(), gc.Equals, "")
+	c.Check(buf.String(), gc.Equals, "")
 	c.Check(hasher.String(), gc.Equals, "")
 }
 
 func (s *WriterSuite) TestHashingWriterWriteSmall(c *gc.C) {
-	file := bytes.NewBuffer(nil)
+	var buf bytes.Buffer
 	hasher := fakeHasher{}
-	w := hash.NewHashingWriter(file, &hasher)
+	w := hash.NewHashingWriter(&buf, &hasher)
 	n, err := w.Write([]byte("spam"))
 
 	c.Check(err, gc.IsNil)
 	c.Check(n, gc.Equals, 4)
-	c.Check(file.String(), gc.Equals, "spam")
+	c.Check(buf.String(), gc.Equals, "spam")
 	c.Check(hasher.String(), gc.Equals, "spam")
 }
 
@@ -77,37 +74,28 @@ func (s *WriterSuite) TestHashingWriterWriteFileError(c *gc.C) {
 	c.Check(err, gc.ErrorMatches, "failed!")
 }
 
-//---------------------------
-// HashingWriter.Sum()
-
 func (s *WriterSuite) TestHashingWriterSum(c *gc.C) {
-	file := bytes.NewBuffer(nil)
+	var buf bytes.Buffer
 	hasher := fakeHasher{sum: []byte("spam")}
-	w := hash.NewHashingWriter(file, &hasher)
+	w := hash.NewHashingWriter(&buf, &hasher)
 	b64hash := string(w.Sum())
 
 	c.Check(b64hash, gc.Equals, "spam")
 }
 
-//---------------------------
-// HashingWriter.Base64Sum()
-
-func (s *WriterSuite) TestHashingWriterHash(c *gc.C) {
-	file := bytes.NewBuffer(nil)
+func (s *WriterSuite) TestHashingWriterBase64Sum(c *gc.C) {
+	var buf bytes.Buffer
 	hasher := fakeHasher{sum: []byte("spam")}
-	w := hash.NewHashingWriter(file, &hasher)
+	w := hash.NewHashingWriter(&buf, &hasher)
 	b64hash := w.Base64Sum()
 
 	c.Check(b64hash, gc.Equals, "c3BhbQ==")
 }
 
-//---------------------------
-// HashingWriter.HexSum()
-
-func (s *WriterSuite) TestHashingWriterRawHash(c *gc.C) {
-	file := bytes.NewBuffer(nil)
+func (s *WriterSuite) TestHashingWriterHexSum(c *gc.C) {
+	var buf bytes.Buffer
 	hasher := fakeHasher{sum: []byte("spam")}
-	w := hash.NewHashingWriter(file, &hasher)
+	w := hash.NewHashingWriter(&buf, &hasher)
 	rawhash := w.HexSum()
 
 	c.Check(rawhash, gc.Equals, "7370616d")

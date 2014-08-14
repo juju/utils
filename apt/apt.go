@@ -122,7 +122,9 @@ func GetPreparePackages(packages []string, series string) [][]string {
 	}
 }
 
-// GetInstall runs 'apt-get install packages' for the packages listed here
+// GetInstall runs 'apt-get install packages' for the packages listed
+// here. apt-get install calls are retried for 30 times with a 1
+// second sleep between attempts.
 func GetInstall(packages ...string) error {
 	cmdArgs := append([]string(nil), getCommand...)
 	cmdArgs = append(cmdArgs, "install")
@@ -133,12 +135,28 @@ func GetInstall(packages ...string) error {
 
 	var err error
 	var out []byte
+	// Retry APT operations for 30 times, sleeping a second
+	// between attempts. This avoids failure in the case of
+	// something else having the dpkg lock (e.g. a charm on the
+	// machine we're deploying containers to).
 	for i := 0; i < 30; i++ {
 		out, err = CommandOutput(cmd)
 		if err == nil {
 			return nil
 		}
-		if err.(*exec.ExitError).ProcessState.Sys().(syscall.WaitStatus).ExitStatus() != 100 {
+		exitError, ok := err.(*exec.ExitError)
+		if !ok {
+			err = fmt.Errorf("unexpected error type %T", err)
+			break
+		}
+		waitStatus, ok := exitError.ProcessState.Sys().(syscall.WaitStatus)
+		if !ok {
+			err = fmt.Errorf("unexpected process state type %T", exitError.ProcessState.Sys())
+			break
+		}
+		// From apt-get(8) "apt-get returns zero on normal
+		// operation, decimal 100 on error."
+		if waitStatus.ExitStatus() != 100 {
 			break
 		}
 		time.Sleep(10 * time.Second)

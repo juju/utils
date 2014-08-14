@@ -10,6 +10,8 @@ import (
 	"os/exec"
 	"regexp"
 	"strings"
+	"syscall"
+	"time"
 
 	"github.com/juju/loggo"
 
@@ -128,7 +130,19 @@ func GetInstall(packages ...string) error {
 	logger.Infof("Running: %s", cmdArgs)
 	cmd := exec.Command(cmdArgs[0], cmdArgs[1:]...)
 	cmd.Env = append(os.Environ(), getEnvOptions...)
-	out, err := CommandOutput(cmd)
+
+	var err error
+	var out []byte
+	for i := 0; i < 30; i++ {
+		out, err = CommandOutput(cmd)
+		if err == nil {
+			return nil
+		}
+		if err.(*exec.ExitError).ProcessState.Sys().(syscall.WaitStatus).ExitStatus() != 100 {
+			break
+		}
+		time.Sleep(10 * time.Second)
+	}
 	if err != nil {
 		logger.Errorf("apt-get command failed: %v\nargs: %#v\n%s",
 			err, cmdArgs, string(out))

@@ -5,6 +5,8 @@ package apt_test
 
 import (
 	"fmt"
+	"os"
+	"os/exec"
 	"io/ioutil"
 	"path/filepath"
 
@@ -43,9 +45,11 @@ func (s *AptSuite) TestAptGetPreparePackages(c *gc.C) {
 
 func (s *AptSuite) TestAptGetError(c *gc.C) {
 	const expected = `E: frobnicator failure detected`
-	cmdError := fmt.Errorf("error")
-	cmdExpectedError := fmt.Errorf("apt-get failed: error")
-	cmdChan := s.HookCommandOutput(&apt.CommandOutput, []byte(expected), cmdError)
+	state := os.ProcessState{}
+	cmdError := &exec.ExitError{&state}
+
+	cmdExpectedError := fmt.Errorf("apt-get failed: exit status 0")
+	cmdChan := s.HookCommandOutput(&apt.CommandOutput, []byte(expected), error(cmdError))
 	err := apt.GetInstall("foo")
 	c.Assert(err, gc.DeepEquals, cmdExpectedError)
 	cmd := <-cmdChan

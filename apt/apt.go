@@ -135,11 +135,12 @@ func GetInstall(packages ...string) error {
 
 	var err error
 	var out []byte
-	// Retry APT operations for 30 times, sleeping a second
+	// Retry APT operations for 30 times, sleeping 10 seconds
 	// between attempts. This avoids failure in the case of
 	// something else having the dpkg lock (e.g. a charm on the
 	// machine we're deploying containers to).
-	for i := 0; i < 30; i++ {
+	attempt := utils.AttemptStrategy{Delay: 10 * time.Second, Min: 30}
+	for a := attempt.Start(); a.Next(); {
 		out, err = CommandOutput(cmd)
 		if err == nil {
 			return nil
@@ -159,7 +160,6 @@ func GetInstall(packages ...string) error {
 		if waitStatus.ExitStatus() != 100 {
 			break
 		}
-		time.Sleep(10 * time.Second)
 	}
 	if err != nil {
 		logger.Errorf("apt-get command failed: %v\nargs: %#v\n%s",

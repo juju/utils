@@ -67,9 +67,6 @@ type MetadataStorage interface {
 	SetStored(meta Metadata) error
 }
 
-//---------------------------
-// wrapper implementation
-
 // Ensure fileStorage implements FileStorage.
 var _ = FileStorage(&fileStorage{})
 

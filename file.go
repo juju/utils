@@ -8,7 +8,6 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
-	"os/user"
 	"path"
 	"path/filepath"
 	"regexp"
@@ -16,8 +15,7 @@ import (
 
 // UserHomeDir returns the home directory for the specified user, or the
 // home directory for the current user if the specified user is empty.
-func UserHomeDir(userName string) (homeDir string, err error) {
-	var u *user.User
+func UserHomeDir(userName string) (hDir string, err error) {
 	if userName == "" {
 		// TODO (wallyworld) - fix tests on Windows
 		// Ordinarily, we'd always use user.Current() to get the current user
@@ -27,13 +25,12 @@ func UserHomeDir(userName string) (homeDir string, err error) {
 		// All of our tests currently construct paths with the default user in
 		// mind eg "~/foo".
 		return Home(), nil
-	} else {
-		u, err = user.Lookup(userName)
-		if err != nil {
-			return "", err
-		}
 	}
-	return u.HomeDir, nil
+	hDir, err = homeDir(userName)
+	if err != nil {
+		return "", err
+	}
+	return hDir, nil
 }
 
 // Only match paths starting with ~ (~user/test, ~/test). This will prevent
@@ -108,6 +105,9 @@ func AtomicWriteFileAndChange(filename string, contents []byte, change func(*os.
 	defer func() {
 		if err != nil {
 			// Don't leave the temp file lying around on error.
+			// Close the file before removing. Trying to remove an open file on
+			// Windows will fail.
+			f.Close()
 			os.Remove(f.Name())
 		}
 	}()
@@ -129,6 +129,7 @@ func AtomicWriteFileAndChange(filename string, contents []byte, change func(*os.
 // path.
 func AtomicWriteFile(filename string, contents []byte, perms os.FileMode) (err error) {
 	return AtomicWriteFileAndChange(filename, contents, func(f *os.File) error {
+		// FileMod.Chmod() is not implemented on Windows, however, os.Chmod() is
 		if err := os.Chmod(f.Name(), perms); err != nil {
 			return fmt.Errorf("cannot set permissions: %v", err)
 		}

@@ -123,7 +123,7 @@ func GetPreparePackages(packages []string, series string) [][]string {
 }
 
 // GetInstall runs 'apt-get install packages' for the packages listed
-// here. apt-get install calls are retried for 30 times with a 1
+// here. apt-get install calls are retried for 30 times with a 10
 // second sleep between attempts.
 func GetInstall(packages ...string) error {
 	cmdArgs := append([]string(nil), getCommand...)

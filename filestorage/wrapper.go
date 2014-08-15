@@ -68,7 +68,7 @@ type MetadataStorage interface {
 }
 
 // Ensure fileStorage implements FileStorage.
-var _ = FileStorage(&fileStorage{})
+var _ = FileStorage((*fileStorage)(nil))
 
 type fileStorage struct {
 	metadata MetadataStorage

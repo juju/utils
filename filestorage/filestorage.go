@@ -7,6 +7,9 @@ import (
 	"io"
 )
 
+// FileStorage is an abstraction of a system that can be used for the
+// storage of files.  The type exposes the essential capabilities of
+// such a system.
 type FileStorage interface {
 	Metadata(id string) (Metadata, error)
 	Get(id string) (Metadata, io.ReadCloser, error)

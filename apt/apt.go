@@ -10,6 +10,8 @@ import (
 	"os/exec"
 	"regexp"
 	"strings"
+	"syscall"
+	"time"
 
 	"github.com/juju/loggo"
 
@@ -120,7 +122,9 @@ func GetPreparePackages(packages []string, series string) [][]string {
 	}
 }
 
-// GetInstall runs 'apt-get install packages' for the packages listed here
+// GetInstall runs 'apt-get install packages' for the packages listed
+// here. apt-get install calls are retried for 30 times with a 10
+// second sleep between attempts.
 func GetInstall(packages ...string) error {
 	cmdArgs := append([]string(nil), getCommand...)
 	cmdArgs = append(cmdArgs, "install")
@@ -128,7 +132,35 @@ func GetInstall(packages ...string) error {
 	logger.Infof("Running: %s", cmdArgs)
 	cmd := exec.Command(cmdArgs[0], cmdArgs[1:]...)
 	cmd.Env = append(os.Environ(), getEnvOptions...)
-	out, err := CommandOutput(cmd)
+
+	var err error
+	var out []byte
+	// Retry APT operations for 30 times, sleeping 10 seconds
+	// between attempts. This avoids failure in the case of
+	// something else having the dpkg lock (e.g. a charm on the
+	// machine we're deploying containers to).
+	attempt := utils.AttemptStrategy{Delay: 10 * time.Second, Min: 30}
+	for a := attempt.Start(); a.Next(); {
+		out, err = CommandOutput(cmd)
+		if err == nil {
+			return nil
+		}
+		exitError, ok := err.(*exec.ExitError)
+		if !ok {
+			err = fmt.Errorf("unexpected error type %T", err)
+			break
+		}
+		waitStatus, ok := exitError.ProcessState.Sys().(syscall.WaitStatus)
+		if !ok {
+			err = fmt.Errorf("unexpected process state type %T", exitError.ProcessState.Sys())
+			break
+		}
+		// From apt-get(8) "apt-get returns zero on normal
+		// operation, decimal 100 on error."
+		if waitStatus.ExitStatus() != 100 {
+			break
+		}
+	}
 	if err != nil {
 		logger.Errorf("apt-get command failed: %v\nargs: %#v\n%s",
 			err, cmdArgs, string(out))

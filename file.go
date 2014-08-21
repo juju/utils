@@ -46,7 +46,9 @@ var userHomePathRegexp = regexp.MustCompile("(~(?P<user>[^/]*))(?P<path>.*)")
 // NormalizePath expands a path containing ~ to its absolute form,
 // and removes any .. or . path elements.
 func NormalizePath(dir string) (string, error) {
-	if userHomePathRegexp.MatchString(dir) {
+	// Disable tilde expansion on windows, as it is not relevant.
+	// We can however simply do a filepath.Clean()
+	if runtime.GOOS != "windows" && userHomePathRegexp.MatchString(dir) {
 		user := userHomePathRegexp.ReplaceAllString(dir, "$user")
 		userHomeDir, err := UserHomeDir(user)
 		if err != nil {

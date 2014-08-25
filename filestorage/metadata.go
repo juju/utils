@@ -51,7 +51,7 @@ type FileMetadata struct {
 // SetID() for that).  Size, Checksum, and ChecksumFormat are left unset
 // (use SetFile() for those).  If no timestamp is provided, the
 // current one is used.
-func NewMetadata(timestamp *time.Time) Metadata {
+func NewMetadata(timestamp *time.Time) *FileMetadata {
 	meta := FileMetadata{}
 	if timestamp == nil {
 		meta.timestamp = time.Now().UTC()

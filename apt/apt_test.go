@@ -5,15 +5,17 @@ package apt_test
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/exec"
-	"io/ioutil"
 	"path/filepath"
 
+	"github.com/juju/errors"
 	"github.com/juju/testing"
 	jc "github.com/juju/testing/checkers"
 	gc "launchpad.net/gocheck"
 
+	"github.com/juju/utils"
 	"github.com/juju/utils/apt"
 	"github.com/juju/utils/proxy"
 )
@@ -48,16 +50,44 @@ func (s *AptSuite) TestAptGetError(c *gc.C) {
 	state := os.ProcessState{}
 	cmdError := &exec.ExitError{&state}
 
-	cmdExpectedError := fmt.Errorf("apt-get failed: exit status 0")
 	cmdChan := s.HookCommandOutput(&apt.CommandOutput, []byte(expected), error(cmdError))
 	err := apt.GetInstall("foo")
-	c.Assert(err, gc.DeepEquals, cmdExpectedError)
+	c.Assert(err, gc.ErrorMatches, "apt-get failed: exit status 0")
 	cmd := <-cmdChan
 	c.Assert(cmd.Args, gc.DeepEquals, []string{
 		"apt-get", "--option=Dpkg::Options::=--force-confold",
 		"--option=Dpkg::options::=--force-unsafe-io", "--assume-yes", "--quiet",
 		"install", "foo",
 	})
+}
+
+type mockExitStatuser int
+
+func (m mockExitStatuser) ExitStatus() int {
+	return int(m)
+}
+
+func (s *AptSuite) TestAptGetUnexpectedError(c *gc.C) {
+	cmdError := errors.New("whatever")
+	_ = s.HookCommandOutput(&apt.CommandOutput, []byte{}, cmdError)
+	err := apt.GetInstall("test-package")
+	c.Assert(err, gc.ErrorMatches, "apt-get failed: unexpected error type \\*errors\\.Err: whatever")
+}
+
+func (s *AptSuite) TestAptGetRetry(c *gc.C) {
+	var calls int
+	state := os.ProcessState{}
+	cmdError := &exec.ExitError{&state}
+	s.PatchValue(apt.InstallAttemptStrategy, utils.AttemptStrategy{Min: 3})
+	s.PatchValue(apt.ProcessStateSys, func(*os.ProcessState) interface{} {
+		calls++
+		return mockExitStatuser(100 + calls - 1) // 100 is retried
+	})
+
+	_ = s.HookCommandOutput(&apt.CommandOutput, []byte{}, cmdError)
+	err := apt.GetInstall("test-package")
+	c.Check(err, gc.ErrorMatches, "apt-get failed: exit status.*")
+	c.Check(calls, gc.Equals, 2) // only 2 because second exit status != 100
 }
 
 func (s *AptSuite) TestConfigProxyEmpty(c *gc.C) {

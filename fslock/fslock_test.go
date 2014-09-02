@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"path"
+	"path/filepath"
 	"runtime"
 	"sync/atomic"
 	"time"
@@ -81,12 +81,16 @@ func (s *fslockSuite) TestNewLockWithExistingFileInPlace(c *gc.C) {
 	dir := c.MkDir()
 	err := os.MkdirAll(dir, 0755)
 	c.Assert(err, gc.IsNil)
-	path := path.Join(dir, "locks")
+	path := filepath.Join(dir, "locks")
 	err = ioutil.WriteFile(path, []byte("foo"), 0644)
 	c.Assert(err, gc.IsNil)
 
 	_, err = fslock.NewLock(path, "special")
-	c.Assert(err, gc.ErrorMatches, `.* not a directory`)
+	if runtime.GOOS == "linux" {
+		c.Assert(err, gc.ErrorMatches, `.* not a directory`)
+	} else if runtime.GOOS == "windows" {
+		c.Assert(err, gc.ErrorMatches, `.* The system cannot find the path specified`)
+	}
 }
 
 func (s *fslockSuite) TestIsLockHeldBasics(c *gc.C) {

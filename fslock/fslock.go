@@ -16,7 +16,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"path"
+	"path/filepath"
 	"regexp"
 	"time"
 
@@ -72,15 +72,15 @@ func NewLock(lockDir, name string) (*Lock, error) {
 }
 
 func (lock *Lock) lockDir() string {
-	return path.Join(lock.parent, lock.name)
+	return filepath.Join(lock.parent, lock.name)
 }
 
 func (lock *Lock) heldFile() string {
-	return path.Join(lock.lockDir(), "held")
+	return filepath.Join(lock.lockDir(), "held")
 }
 
 func (lock *Lock) messageFile() string {
-	return path.Join(lock.lockDir(), "message")
+	return filepath.Join(lock.lockDir(), "message")
 }
 
 // If message is set, it will write the message to the lock directory as the
@@ -104,12 +104,12 @@ func (lock *Lock) acquire(message string) (bool, error) {
 		return false, err // this shouldn't really fail...
 	}
 	// write nonce into the temp dir
-	err = ioutil.WriteFile(path.Join(tempDirName, heldFilename), lock.nonce, 0755)
+	err = ioutil.WriteFile(filepath.Join(tempDirName, heldFilename), lock.nonce, 0755)
 	if err != nil {
 		return false, err
 	}
 	if message != "" {
-		err = ioutil.WriteFile(path.Join(tempDirName, messageFilename), []byte(message), 0755)
+		err = ioutil.WriteFile(filepath.Join(tempDirName, messageFilename), []byte(message), 0755)
 		if err != nil {
 			return false, err
 		}
@@ -200,7 +200,7 @@ func (lock *Lock) Unlock() error {
 	}
 	// To ensure reasonable unlocking, we should rename to a temp name, and delete that.
 	tempLockName := fmt.Sprintf(".%s.%x", lock.name, lock.nonce)
-	tempDirName := path.Join(lock.parent, tempLockName)
+	tempDirName := filepath.Join(lock.parent, tempLockName)
 	// Now move the lock directory to the temp directory to release the lock.
 	if err := utils.ReplaceFile(lock.lockDir(), tempDirName); err != nil {
 		return err

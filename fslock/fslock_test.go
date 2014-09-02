@@ -86,7 +86,11 @@ func (s *fslockSuite) TestNewLockWithExistingFileInPlace(c *gc.C) {
 	c.Assert(err, gc.IsNil)
 
 	_, err = fslock.NewLock(path, "special")
-	c.Assert(err, gc.ErrorMatches, `.* not a directory`)
+	if runtime.GOOS == "linux" {
+		c.Assert(err, gc.ErrorMatches, `.* not a directory`)
+	} else if runtime.GOOS == "windows" {
+		c.Assert(err, gc.ErrorMatches, `.* The system cannot find the path specified`)
+	}
 }
 
 func (s *fslockSuite) TestIsLockHeldBasics(c *gc.C) {

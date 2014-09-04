@@ -104,6 +104,8 @@ func (s *WrapperSuite) TestFileStorageListTwo(c *gc.C) {
 }
 
 func (s *WrapperSuite) TestFileStorageAddMeta(c *gc.C) {
+	c.Assert(s.original.ID(), gc.Equals, "")
+
 	stor := filestorage.NewFileStorage(s.metastor, s.rawstor)
 	id, err := stor.Add(s.original, nil)
 	c.Check(err, gc.IsNil)
@@ -111,6 +113,7 @@ func (s *WrapperSuite) TestFileStorageAddMeta(c *gc.C) {
 	meta, err := stor.Metadata(id)
 	c.Assert(err, gc.IsNil)
 
+	c.Check(s.original.ID(), gc.Equals, id)
 	c.Check(meta, gc.DeepEquals, s.original)
 	c.Check(meta.Stored(), gc.Equals, false)
 }

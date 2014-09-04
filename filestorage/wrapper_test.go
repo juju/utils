@@ -8,6 +8,7 @@ import (
 	"io"
 	"io/ioutil"
 
+	"github.com/juju/errors"
 	"github.com/juju/testing"
 	jc "github.com/juju/testing/checkers"
 	gc "gopkg.in/check.v1"
@@ -181,6 +182,21 @@ func (s *WrapperSuite) TestFileStorageAddIDAlreadySet(c *gc.C) {
 	_, err := s.stor.Add(original, nil)
 
 	c.Check(err, gc.ErrorMatches, "ID already set .*")
+}
+
+func (s *WrapperSuite) TestFileStorageAddFileFailureDropsMetadata(c *gc.C) {
+	original := s.metadata()
+	failure := errors.New("failed!")
+	raw := &FakeRawFileStorage{err: failure}
+	stor := filestorage.NewFileStorage(s.metastor, raw)
+	_, err := stor.Add(original, &bytes.Buffer{})
+
+	c.Check(errors.Cause(err), gc.Equals, failure)
+
+	metalist, metaErr := s.metastor.ListMetadata()
+	c.Assert(metaErr, gc.IsNil)
+	c.Check(metalist, gc.HasLen, 0)
+	c.Check(original.ID(), gc.Equals, "")
 }
 
 func (s *WrapperSuite) TestFileStorageSetFile(c *gc.C) {

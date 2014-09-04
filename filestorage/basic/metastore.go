@@ -11,28 +11,29 @@ import (
 
 type metadataStorage struct {
 	filestorage.MetadataDocStorage
+	docStor *docStorage
 }
 
 // NewMetadataStorage provides a simple memory-backed MetadataStorage.
 func NewMetadataStorage() filestorage.MetadataStorage {
+	docStor := NewDocStorage()
 	stor := metadataStorage{
-		MetadataDocStorage: filestorage.MetadataDocStorage{NewDocStorage()},
+		MetadataDocStorage: filestorage.MetadataDocStorage{docStor},
+		docStor:            docStor.(*docStorage),
 	}
 	return &stor
 }
 
 // SetStored implements MetadataStorage.SetStored.
-func (s *metadataStorage) SetStored(meta filestorage.Metadata) error {
-	id := meta.ID()
-	if id == "" {
-		return errors.NotFoundf("metadata missing ID")
-	}
-	found, err := s.Metadata(id)
+func (s *metadataStorage) SetStored(id string) error {
+	doc, err := s.docStor.lookUp(id)
 	if err != nil {
 		return errors.Trace(err)
 	}
-
-	found.SetStored()
+	meta, ok := doc.(filestorage.Metadata)
+	if !ok {
+		return errors.Errorf("doc wasn't Metadata (got %v)", doc)
+	}
 	meta.SetStored()
 	return nil
 }

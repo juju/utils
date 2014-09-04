@@ -39,6 +39,7 @@ func (s *DocStorageSuite) TestDoc(c *gc.C) {
 	c.Assert(err, gc.IsNil)
 	meta, ok := doc.(filestorage.Metadata)
 	c.Assert(ok, gc.Equals, true)
+	s.original.SetID(id)
 	c.Check(meta, gc.DeepEquals, s.original)
 }
 
@@ -64,6 +65,7 @@ func (s *DocStorageSuite) TestAddDoc(c *gc.C) {
 
 	meta, err := s.stor.Doc(id)
 	c.Assert(err, gc.IsNil)
+	s.original.SetID(id)
 	c.Check(meta, gc.DeepEquals, s.original)
 }
 

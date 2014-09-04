@@ -38,6 +38,7 @@ func (s *MetadataStorageSuite) TestMetadata(c *gc.C) {
 
 	meta, err := s.stor.Metadata(id)
 	c.Assert(err, gc.IsNil)
+	s.original.SetID(id)
 	c.Check(meta, gc.DeepEquals, s.original)
 }
 
@@ -59,9 +60,11 @@ func (s *MetadataStorageSuite) TestSetStored(c *gc.C) {
 	c.Assert(err, gc.IsNil)
 	c.Check(meta.Stored(), gc.Equals, false)
 
-	err = s.stor.SetStored(meta)
+	err = s.stor.SetStored(id)
 	c.Assert(err, gc.IsNil)
-	meta, err = s.stor.Metadata(id)
+	c.Check(meta.Stored(), gc.Equals, false)
+
+	stored, err := s.stor.Metadata(id)
 	c.Assert(err, gc.IsNil)
-	c.Check(meta.Stored(), gc.Equals, true)
+	c.Check(stored.Stored(), gc.Equals, true)
 }

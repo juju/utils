@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 
 	"github.com/juju/testing"
+	jc "github.com/juju/testing/checkers"
 	gc "gopkg.in/check.v1"
 
 	"github.com/juju/utils/filestorage"
@@ -43,7 +44,12 @@ func (s *WrapperSuite) metadata() filestorage.Metadata {
 func (s *WrapperSuite) addmeta(c *gc.C, meta filestorage.Metadata, file io.Reader) string {
 	id, err := s.stor.Add(meta, file)
 	c.Assert(err, gc.IsNil)
+	alreadySet := meta.SetID(id)
+	c.Assert(alreadySet, jc.IsFalse)
 	c.Assert(meta.ID(), gc.Equals, id)
+	if file != nil {
+		meta.SetStored()
+	}
 	return id
 }
 
@@ -71,7 +77,7 @@ func (s *WrapperSuite) TestFileStorageGet(c *gc.C) {
 	data := bytes.NewBufferString("spam")
 	id, original := s.add(c, data)
 	meta, file, err := s.stor.Get(id)
-	c.Check(err, gc.IsNil)
+	c.Assert(err, gc.IsNil)
 	content, err := ioutil.ReadAll(file)
 
 	c.Check(meta, gc.DeepEquals, original)
@@ -113,12 +119,17 @@ func (s *WrapperSuite) TestFileStorageListTwo(c *gc.C) {
 
 func (s *WrapperSuite) TestFileStorageAddMeta(c *gc.C) {
 	original := s.metadata()
+	c.Assert(original.ID(), gc.Equals, "")
+
 	id, err := s.stor.Add(original, nil)
 	c.Check(err, gc.IsNil)
 
 	meta, err := s.stor.Metadata(id)
 	c.Assert(err, gc.IsNil)
 
+	c.Check(original.ID(), gc.Equals, "")
+
+	original.SetID(id)
 	c.Check(meta, gc.DeepEquals, original)
 	c.Check(meta.Stored(), gc.Equals, false)
 }
@@ -127,16 +138,31 @@ func (s *WrapperSuite) TestFileStorageAddFile(c *gc.C) {
 	original := s.metadata()
 	data := bytes.NewBufferString("spam")
 	id, err := s.stor.Add(original, data)
-	c.Check(err, gc.IsNil)
+	c.Assert(err, gc.IsNil)
 
 	meta, file, err := s.stor.Get(id)
 	c.Assert(err, gc.IsNil)
 	content, err := ioutil.ReadAll(file)
 	c.Assert(err, gc.IsNil)
 
+	c.Check(original.ID(), gc.Equals, "")
+	c.Check(original.Stored(), jc.IsFalse)
+
+	original.SetID(id)
+	original.SetStored()
 	c.Check(meta, gc.DeepEquals, original)
+
 	c.Check(string(content), gc.Equals, "spam")
 	c.Check(meta.Stored(), gc.Equals, true)
+}
+
+func (s *WrapperSuite) TestFileStorageAddIDNotSet(c *gc.C) {
+	original := s.metadata()
+	c.Assert(original.ID(), gc.Equals, "")
+	_, err := s.stor.Add(original, nil)
+	c.Check(err, gc.IsNil)
+
+	c.Check(original.ID(), gc.Equals, "")
 }
 
 func (s *WrapperSuite) TestFileStorageAddMetaOnly(c *gc.C) {

@@ -22,13 +22,21 @@ func NewDocStorage() filestorage.DocStorage {
 	return &storage
 }
 
-// Doc implements DocStorage.Doc.
-func (s *docStorage) Doc(id string) (filestorage.Doc, error) {
+func (s *docStorage) lookUp(id string) (filestorage.Doc, error) {
 	doc, ok := s.docs[id]
 	if !ok {
 		return nil, errors.NotFoundf(id)
 	}
 	return doc, nil
+}
+
+// Doc implements DocStorage.Doc.
+func (s *docStorage) Doc(id string) (filestorage.Doc, error) {
+	raw, err := s.lookUp(id)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	return raw.Copy(id), nil
 }
 
 // ListDocs implements DocStorage.ListDocs.
@@ -45,18 +53,18 @@ func (s *docStorage) ListDocs() ([]filestorage.Doc, error) {
 
 // AddDoc implements DocStorage.AddDoc.
 func (s *docStorage) AddDoc(doc filestorage.Doc) (string, error) {
+	if doc.ID() != "" {
+		return "", errors.AlreadyExistsf("ID already set")
+	}
+
 	uuid, err := utils.NewUUID()
 	if err != nil {
 		return "", errors.Annotate(err, "error while creating ID")
 	}
 	id := uuid.String()
+	// We let the caller call meta.SetID() if they so desire.
 
-	alreadySet := doc.SetID(id)
-	if alreadySet {
-		return "", errors.AlreadyExistsf("ID already set (tried %q)", id)
-	}
-
-	s.docs[id] = doc
+	s.docs[id] = doc.Copy(id)
 	return id, nil
 }
 

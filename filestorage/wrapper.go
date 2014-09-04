@@ -137,12 +137,12 @@ func (s *fileStorage) addFile(meta Metadata, file io.Reader) error {
 }
 
 // Add adds the file to the storage.  It returns the unique ID generated
-// by the storage for the file.  Any problem (including an existing
-// file, see errors.IsAlreadyExists) results in an error.
+// by the storage for the file.  If no file is provided, only the
+// metadata is stored.
 //
-// The metadata is added first, so if storing the raw file fails the
-// metadata will still be stored.  A non-empty returned ID indicates
-// that the metadata was stored successfully.
+// Any problem (including an existing file, see errors.IsAlreadyExists)
+// results in an error.  If there is an error while storing either the
+// file or metadata, neither will be stored.
 func (s *fileStorage) Add(meta Metadata, file io.Reader) (string, error) {
 	id, err := s.metadata.AddDoc(meta)
 	if err != nil {

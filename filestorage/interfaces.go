@@ -143,9 +143,8 @@ type MetadataStorage interface {
 
 	// SetStored updates the stored metadata to indicate that the
 	// associated file has been successfully stored in a RawFileStorage
-	// system.  It will also call SetStored() on the metadata.  If it
-	// does not find a stored metadata with the matching ID, it will
-	// return an error (see errors.IsNotFound).  It also returns an
-	// error if it fails to update the stored metadata.
-	SetStored(meta Metadata) error
+	// system.  If it does not find a stored metadata with the matching
+	// ID, it will return an error (see errors.IsNotFound).  It also
+	// returns an error if it fails to update the stored metadata.
+	SetStored(id string) error
 }

@@ -84,9 +84,9 @@ func (s *fileStorage) addFile(id string, size int64, file io.Reader) error {
 // new ID and "stored" flag will be saved in metadata storage.  Feel
 // free to explicitly call meta.SetID() and meta.SetStored() afterward.
 //
-// The metadata is added first, so if storing the raw file fails the
-// metadata will still be stored.  A non-empty returned ID indicates
-// that the metadata was stored successfully.
+// Any problem (including an existing file, see errors.IsAlreadyExists)
+// results in an error.  If there is an error while storing either the
+// file or metadata, neither will be stored.
 func (s *fileStorage) Add(meta Metadata, file io.Reader) (string, error) {
 	id, err := s.metaStor.AddMetadata(meta)
 	if err != nil {
@@ -96,7 +96,14 @@ func (s *fileStorage) Add(meta Metadata, file io.Reader) (string, error) {
 	if file != nil {
 		err = s.addFile(id, meta.Size(), file)
 		if err != nil {
-			return id, errors.Trace(err)
+			// Un-store the metadata.
+			context := err
+			err = s.metaStor.RemoveDoc(id)
+			if err != nil {
+				err = errors.Annotate(err, "while handling another error")
+				return "", errors.Wrap(context, err)
+			}
+			return "", errors.Trace(context)
 		}
 	}
 

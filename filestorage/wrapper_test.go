@@ -5,6 +5,7 @@ package filestorage_test
 
 import (
 	"bytes"
+	"io"
 	"io/ioutil"
 
 	"github.com/juju/testing"
@@ -140,6 +141,39 @@ func (s *WrapperSuite) TestFileStorageAddIDAlreadySet(c *gc.C) {
 	_, err := stor.Add(s.original, nil)
 
 	c.Check(err, gc.ErrorMatches, "ID already set .*")
+}
+
+type fakeRawStorage struct {
+	err string
+}
+
+func (s *fakeRawStorage) Error() string {
+	return s.err
+}
+
+func (s *fakeRawStorage) File(string) (io.ReadCloser, error) {
+	return nil, s
+}
+
+func (s *fakeRawStorage) AddFile(string, io.Reader, int64) error {
+	return s
+}
+
+func (s *fakeRawStorage) RemoveFile(string) error {
+	return s
+}
+
+func (s *WrapperSuite) TestFileStorageAddFileFailureDropsMetadata(c *gc.C) {
+	raw := &fakeRawStorage{"error!"}
+	stor := filestorage.NewFileStorage(s.metastor, raw)
+	_, err := stor.Add(s.original, &bytes.Buffer{})
+
+	c.Check(err, gc.ErrorMatches, "error!")
+
+	metalist, metaErr := s.metastor.ListMetadata()
+	c.Assert(metaErr, gc.IsNil)
+	c.Check(metalist, gc.HasLen, 0)
+	c.Check(s.original.ID(), gc.Equals, "")
 }
 
 func (s *WrapperSuite) TestFileStorageSetFile(c *gc.C) {

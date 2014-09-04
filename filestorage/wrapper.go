@@ -60,11 +60,10 @@ type MetadataStorage interface {
 	New() Metadata
 	// SetStored updates the stored metadata to indicate that the
 	// associated file has been successfully stored in a RawFileStorage
-	// system.  It will also call SetStored() on the metadata.  If it
-	// does not find a stored metadata with the matching ID, it will
-	// return an error (see errors.IsNotFound).  It also returns an
-	// error if it fails to update the stored metadata.
-	SetStored(meta Metadata) error
+	// system.  If it does not find a stored metadata with the matching
+	// ID, it will return an error (see errors.IsNotFound).  It also
+	// returns an error if it fails to update the stored metadata.
+	SetStored(id string) error
 }
 
 // Ensure fileStorage implements FileStorage.
@@ -124,12 +123,12 @@ func (s *fileStorage) List() ([]Metadata, error) {
 	return s.metadata.ListMetadata()
 }
 
-func (s *fileStorage) addFile(meta Metadata, file io.Reader) error {
-	err := s.files.AddFile(meta.ID(), file, meta.Size())
+func (s *fileStorage) addFile(id string, size int64, file io.Reader) error {
+	err := s.files.AddFile(id, file, size)
 	if err != nil {
 		return errors.Trace(err)
 	}
-	err = s.metadata.SetStored(meta)
+	err = s.metadata.SetStored(id)
 	if err != nil {
 		return errors.Trace(err)
 	}
@@ -138,7 +137,9 @@ func (s *fileStorage) addFile(meta Metadata, file io.Reader) error {
 
 // Add adds the file to the storage.  It returns the unique ID generated
 // by the storage for the file.  If no file is provided, only the
-// metadata is stored.
+// metadata is stored.  While the passed-in "meta" is not modified, the
+// new ID and "stored" flag will be saved in metadata storage.  Feel
+// free to explicitly call meta.SetID() and meta.SetStored() afterward.
 //
 // Any problem (including an existing file, see errors.IsAlreadyExists)
 // results in an error.  If there is an error while storing either the
@@ -148,10 +149,9 @@ func (s *fileStorage) Add(meta Metadata, file io.Reader) (string, error) {
 	if err != nil {
 		return "", errors.Trace(err)
 	}
-	meta.SetID(id)
 
 	if file != nil {
-		err = s.addFile(meta, file)
+		err = s.addFile(id, meta.Size(), file)
 		if err != nil {
 			return id, errors.Trace(err)
 		}
@@ -170,7 +170,7 @@ func (s *fileStorage) SetFile(id string, file io.Reader) error {
 	if err != nil {
 		return errors.Trace(err)
 	}
-	err = s.addFile(meta, file)
+	err = s.addFile(id, meta.Size(), file)
 	if err != nil {
 		return errors.Trace(err)
 	}

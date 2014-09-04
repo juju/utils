@@ -38,6 +38,7 @@ func (s *MetadataStorageSuite) TestMetadataStorageDoc(c *gc.C) {
 	c.Assert(err, gc.IsNil)
 	meta, ok := doc.(filestorage.Metadata)
 	c.Assert(ok, gc.Equals, true)
+	s.original.SetID(id)
 	c.Check(meta, gc.DeepEquals, s.original)
 }
 
@@ -48,6 +49,7 @@ func (s *MetadataStorageSuite) TestMetadataStorageMetadata(c *gc.C) {
 
 	meta, err := stor.Metadata(id)
 	c.Assert(err, gc.IsNil)
+	s.original.SetID(id)
 	c.Check(meta, gc.DeepEquals, s.original)
 }
 
@@ -87,6 +89,7 @@ func (s *MetadataStorageSuite) TestMetadataStorageAddDoc(c *gc.C) {
 
 	meta, err := stor.Metadata(id)
 	c.Assert(err, gc.IsNil)
+	s.original.SetID(id)
 	c.Check(meta, gc.DeepEquals, s.original)
 }
 
@@ -116,7 +119,7 @@ func (s *MetadataStorageSuite) TestMetadataStorageSetStored(c *gc.C) {
 	c.Assert(err, gc.IsNil)
 	c.Check(meta.Stored(), gc.Equals, false)
 
-	err = stor.SetStored(meta)
+	err = stor.SetStored(id)
 	c.Assert(err, gc.IsNil)
 	meta, err = stor.Metadata(id)
 	c.Assert(err, gc.IsNil)

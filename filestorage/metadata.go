@@ -32,7 +32,7 @@ type Metadata interface {
 	SetFile(size int64, checksum, checksumFormat string) error
 	// SetStored sets Stored to true on the metadata.
 	SetStored()
-	// Copy returns a new copy of the metadata with a new ID.
+	// Copy returns a new copy of the metadata updated with the given ID.
 	Copy(id string) Metadata
 }
 

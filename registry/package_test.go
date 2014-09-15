@@ -6,7 +6,7 @@ package registry_test
 import (
 	"testing"
 
-	gc "launchpad.net/gocheck"
+	gc "gopkg.in/check.v1"
 )
 
 func TestAll(t *testing.T) {

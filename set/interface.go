@@ -7,12 +7,12 @@ import (
 	"github.com/juju/names"
 )
 
-type Set interface {
+type baseSet interface {
 	Size() int
 	IsEmpty() bool
 }
 
-type TagSet interface {
+type tagSet interface {
 	Add(names.Tag)
 	Remove(names.Tag)
 	Contains(names.Tag) bool
@@ -23,5 +23,5 @@ type TagSet interface {
 	Intersection(Tags) Tags
 	Difference(Tags) Tags
 
-	Set
+	baseSet
 }

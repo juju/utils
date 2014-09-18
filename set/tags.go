@@ -10,13 +10,13 @@ import (
 	"github.com/juju/names"
 )
 
-// Tags represents the Set data structure, it implements TagSet
+// Tags represents the Set data structure, it implements tagSet
 // and contains names.Tag(s).
 type Tags struct {
 	values map[names.Tag]bool
 }
 
-var _ TagSet = (*Tags)(nil)
+var _ tagSet = (*Tags)(nil)
 
 // NewTags creates and initializes a Tags and populates it with
 // inital values as specified in the parameters.

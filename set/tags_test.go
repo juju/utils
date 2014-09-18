@@ -41,6 +41,19 @@ func (tagSetSuite) TestSize(c *gc.C) {
 	s := set.NewTags()
 	c.Assert(s.Size(), gc.Equals, 0)
 
+	s, err := set.NewTagsFromStrings(
+		"unit-wordpress-0",
+		"unit-rabbitmq-server-0",
+	)
+	c.Assert(err, gc.IsNil)
+	c.Assert(s.Size(), gc.Equals, 2)
+}
+
+func (tagSetSuite) TestSizeDuplicate(c *gc.C) {
+	// Empty sets are empty.
+	s := set.NewTags()
+	c.Assert(s.Size(), gc.Equals, 0)
+
 	// Size returns number of unique values.
 	s, err := set.NewTagsFromStrings(
 		"unit-wordpress-0",

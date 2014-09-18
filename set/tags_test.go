@@ -69,6 +69,14 @@ func (tagSetSuite) TestIsEmpty(c *gc.C) {
 func (tagSetSuite) TestAdd(c *gc.C) {
 	t := set.NewTags()
 	foo, _ := names.ParseTag("unit-wordpress-0")
+	t.Add(foo)
+	c.Assert(t.Size(), gc.Equals, 1)
+	c.Assert(t.Contains(foo), gc.Equals, true)
+}
+
+func (tagSetSuite) TestAddDuplicate(c *gc.C) {
+	t := set.NewTags()
+	foo, _ := names.ParseTag("unit-wordpress-0")
 	bar, _ := names.ParseTag("unit-rabbitmq-server-0")
 
 	t.Add(foo)
@@ -113,10 +121,7 @@ func (tagSetSuite) TestSortedValues(c *gc.C) {
 	t := set.NewTags(z2, a1, z1, m1)
 	values := t.SortedValues()
 
-	c.Assert(values[0], gc.Equals, m1)
-	c.Assert(values[1], gc.Equals, a1)
-	c.Assert(values[2], gc.Equals, z1)
-	c.Assert(values[3], gc.Equals, z2)
+	c.Assert(values, gc.DeepEquals, []names.Tag{m1, a1, z1, z2})
 }
 
 func (tagSetSuite) TestRemoveNonExistent(c *gc.C) {
@@ -140,10 +145,8 @@ func (tagSetSuite) TestUnion(c *gc.C) {
 	c.Assert(union1.Size(), gc.Equals, 4)
 	c.Assert(union2.Size(), gc.Equals, 4)
 
-	c.Assert(union1.Contains(foo), gc.Equals, true)
-	c.Assert(union1.Contains(bar), gc.Equals, true)
-	c.Assert(union1.Contains(baz), gc.Equals, true)
-	c.Assert(union1.Contains(bang), gc.Equals, true)
+	c.Assert(union1, gc.DeepEquals, union2)
+	c.Assert(union1, gc.DeepEquals, set.NewTags(foo, bar, baz, bang))
 }
 
 func (tagSetSuite) TestIntersection(c *gc.C) {
@@ -161,8 +164,8 @@ func (tagSetSuite) TestIntersection(c *gc.C) {
 	c.Assert(int1.Size(), gc.Equals, 1)
 	c.Assert(int2.Size(), gc.Equals, 1)
 
-	c.Assert(int1.Contains(foo), gc.Equals, true)
-	c.Assert(int2.Contains(foo), gc.Equals, true)
+	c.Assert(int1, gc.DeepEquals, int2)
+	c.Assert(int1, gc.DeepEquals, set.NewTags(foo))
 }
 
 func (tagSetSuite) TestDifference(c *gc.C) {
@@ -177,12 +180,8 @@ func (tagSetSuite) TestDifference(c *gc.C) {
 	diff1 := t1.Difference(t2)
 	diff2 := t2.Difference(t1)
 
-	c.Assert(diff1.Contains(bar), gc.Equals, true)
-	c.Assert(diff2.Contains(baz), gc.Equals, true)
-	c.Assert(diff2.Contains(bang), gc.Equals, true)
-
-	c.Assert(diff1.Contains(foo), gc.Equals, false)
-	c.Assert(diff2.Contains(foo), gc.Equals, false)
+	c.Assert(diff1, gc.DeepEquals, set.NewTags(bar))
+	c.Assert(diff2, gc.DeepEquals, set.NewTags(baz, bang))
 }
 
 func (tagSetSuite) TestUninitialized(c *gc.C) {

@@ -26,10 +26,17 @@ type FileStorage interface {
 	Remove(id string) error
 }
 
-// Metadata is the meta information for a stored file.
-type Metadata interface {
+type Doc interface {
 	// ID is the unique ID assigned by the storage system.
 	ID() string
+	// SetID sets the ID of the Doc.  If the ID is already set,
+	// SetID() should return true (false otherwise).
+	SetID(id string) (alreadySet bool)
+}
+
+// Metadata is the meta information for a stored file.
+type Metadata interface {
+	Doc
 	// Size is the size of the file (in bytes).
 	Size() int64
 	// Checksum is the checksum for the file.
@@ -43,9 +50,6 @@ type Metadata interface {
 
 	// Doc returns a storable copy of the metadata.
 	Doc() interface{}
-	// SetID sets the ID of the metadata.  If the ID is already set,
-	// SetID() should return true (false otherwise).
-	SetID(id string) (alreadySet bool)
 	// SetFile sets the file info on the metadata.
 	SetFile(size int64, checksum, checksumFormat string) error
 	// SetStored sets Stored to true on the metadata.
@@ -58,13 +62,13 @@ type DocStorage interface {
 	// Doc returns the doc that matches the ID.  If there is no match,
 	// an error is returned (see errors.IsNotFound).  Any other problem
 	// also results in an error.
-	Doc(id string) (interface{}, error)
+	Doc(id string) (Doc, error)
 	// ListDocs returns a list of all the docs in the storage.
-	ListDocs() ([]interface{}, error)
+	ListDocs() ([]Doc, error)
 	// AddDoc adds the doc to the storage.  If successful, the storage-
 	// generated ID for the doc is returned.  Otherwise an error is
 	// returned.
-	AddDoc(doc interface{}) (string, error)
+	AddDoc(doc Doc) (string, error)
 	// RemoveDoc removes the matching doc from the storage.  If there
 	// is no match an error is returned (see errors.IsNotFound).  Any
 	// other problem also results in an error.
@@ -97,10 +101,6 @@ type MetadataStorage interface {
 	Metadata(id string) (Metadata, error)
 	// ListMetadata returns a list of all metadata in the storage.
 	ListMetadata() ([]Metadata, error)
-	// New returns a new Metadata value, initialized by the storage.
-	// This value is not added to the storage until explicitly done so
-	// by a call to AddDoc().
-	New() Metadata
 	// SetStored updates the stored metadata to indicate that the
 	// associated file has been successfully stored in a RawFileStorage
 	// system.  It will also call SetStored() on the metadata.  If it

@@ -11,6 +11,7 @@ import (
 	gc "launchpad.net/gocheck"
 
 	"github.com/juju/utils/filestorage"
+	"github.com/juju/utils/filestorage/simple"
 )
 
 var _ = gc.Suite(&WrapperSuite{})
@@ -26,9 +27,9 @@ func (s *WrapperSuite) SetUpTest(c *gc.C) {
 	s.IsolationSuite.SetUpTest(c)
 
 	var err error
-	s.rawstor, err = filestorage.NewRawFileStorage(c.MkDir())
+	s.rawstor, err = simple.NewRawFileStorage(c.MkDir())
 	c.Assert(err, gc.IsNil)
-	s.metastor = filestorage.NewMetadataStorage()
+	s.metastor = simple.NewMetadataStorage()
 	s.original = filestorage.NewMetadata(nil)
 	s.original.SetFile(10, "", "")
 }

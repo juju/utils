@@ -1,13 +1,14 @@
 // Copyright 2014 Canonical Ltd.
 // Licensed under the LGPLv3, see LICENCE file for details.
 
-package filestorage_test
+package simple_test
 
 import (
 	"github.com/juju/testing"
 	gc "launchpad.net/gocheck"
 
 	"github.com/juju/utils/filestorage"
+	"github.com/juju/utils/filestorage/simple"
 )
 
 var _ = gc.Suite(&MetadataStorageSuite{})
@@ -22,11 +23,11 @@ func (s *MetadataStorageSuite) SetUpTest(c *gc.C) {
 	s.IsolationSuite.SetUpTest(c)
 	s.original = filestorage.NewMetadata(nil)
 	s.original.SetFile(0, "", "")
-	s.stor = filestorage.NewMetadataStorage()
+	s.stor = simple.NewMetadataStorage()
 }
 
 func (s *MetadataStorageSuite) TestMetadataStorageNewMetadataStorage(c *gc.C) {
-	var stor filestorage.MetadataStorage = filestorage.NewMetadataStorage()
+	var stor filestorage.MetadataStorage = simple.NewMetadataStorage()
 
 	c.Check(stor, gc.NotNil)
 }

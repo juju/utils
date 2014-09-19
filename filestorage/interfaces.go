@@ -10,6 +10,8 @@ import (
 
 // FileStorage is an abstraction that can be used for the storage of files.
 type FileStorage interface {
+	io.Closer
+
 	// Metadata returns a file's metadata.
 	Metadata(id string) (Metadata, error)
 
@@ -72,6 +74,8 @@ type Metadata interface {
 // DocStorage is an abstraction for a system that can store docs (structs).
 // The system is expected to generate its own unique ID for each doc.
 type DocStorage interface {
+	io.Closer
+
 	// Doc returns the doc that matches the ID.  If there is no match,
 	// an error is returned (see errors.IsNotFound).  Any other problem
 	// also results in an error.
@@ -94,6 +98,8 @@ type DocStorage interface {
 // RawFileStorage is an abstraction around a system that can store files.
 // The system is expected to rely on the user for unique IDs.
 type RawFileStorage interface {
+	io.Closer
+
 	// File returns the matching file.  If there is no match an error is
 	// returned (see errors.IsNotFound).  Any other problem also results
 	// in an error.

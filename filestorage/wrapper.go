@@ -137,3 +137,17 @@ func (s *fileStorage) Remove(id string) error {
 	}
 	return nil
 }
+
+// Close implements io.Closer.Close.
+func (s *fileStorage) Close() error {
+	ferr := s.files.Close()
+	merr := s.metadata.Close()
+	if ferr == nil {
+		return errors.Trace(merr)
+	} else if merr == nil {
+		return errors.Trace(ferr)
+	} else {
+		msg := "closing both failed: metadata (%v) and files (%v)"
+		return errors.Errorf(msg, merr, ferr)
+	}
+}

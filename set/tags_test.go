@@ -13,20 +13,40 @@ import (
 
 type tagSetSuite struct {
 	testing.IsolationSuite
+
+	foo  names.Tag
+	bar  names.Tag
+	baz  names.Tag
+	bang names.Tag
 }
 
-var _ = gc.Suite(tagSetSuite{})
+var _ = gc.Suite(&tagSetSuite{})
+
+func (s *tagSetSuite) SetUpTest(c *gc.C) {
+	s.IsolationSuite.SetUpTest(c)
+
+	var err error
+
+	s.foo, err = names.ParseTag("unit-wordpress-0")
+	c.Assert(err, gc.IsNil)
+
+	s.bar, err = names.ParseTag("unit-rabbitmq-server-0")
+	c.Assert(err, gc.IsNil)
+
+	s.baz, err = names.ParseTag("unit-mongodb-0")
+	c.Assert(err, gc.IsNil)
+
+	s.bang, err = names.ParseTag("machine-0")
+	c.Assert(err, gc.IsNil)
+}
 
 func (tagSetSuite) TestEmpty(c *gc.C) {
 	t := set.NewTags()
 	c.Assert(t.Size(), gc.Equals, 0)
 }
 
-func (tagSetSuite) TestInitialValues(c *gc.C) {
-	foo, _ := names.ParseTag("unit-wordpress-0")
-	bar, _ := names.ParseTag("unit-rabbitmq-server-0")
-
-	t := set.NewTags(foo, bar)
+func (s tagSetSuite) TestInitialValues(c *gc.C) {
+	t := set.NewTags(s.foo, s.bar)
 	c.Assert(t.Size(), gc.Equals, 2)
 }
 
@@ -64,94 +84,70 @@ func (tagSetSuite) TestSizeDuplicate(c *gc.C) {
 	c.Assert(s.Size(), gc.Equals, 2)
 }
 
-func (tagSetSuite) TestIsEmpty(c *gc.C) {
+func (s tagSetSuite) TestIsEmpty(c *gc.C) {
 	// Empty sets are empty.
-	s := set.NewTags()
-	c.Assert(s.IsEmpty(), gc.Equals, true)
+	t := set.NewTags()
+	c.Assert(t.IsEmpty(), gc.Equals, true)
 
 	// Non-empty sets are not empty.
-	tag, _ := names.ParseTag("unit-wordpress-0")
-	s = set.NewTags(tag)
-	c.Assert(s.IsEmpty(), gc.Equals, false)
+	t = set.NewTags(s.foo)
+	c.Assert(t.IsEmpty(), gc.Equals, false)
 
 	// Newly empty sets work too.
-	s.Remove(tag)
-	c.Assert(s.IsEmpty(), gc.Equals, true)
+	t.Remove(s.foo)
+	c.Assert(t.IsEmpty(), gc.Equals, true)
 }
 
-func (tagSetSuite) TestAdd(c *gc.C) {
+func (s tagSetSuite) TestAdd(c *gc.C) {
 	t := set.NewTags()
-	foo, _ := names.ParseTag("unit-wordpress-0")
-	t.Add(foo)
+	t.Add(s.foo)
 	c.Assert(t.Size(), gc.Equals, 1)
-	c.Assert(t.Contains(foo), gc.Equals, true)
+	c.Assert(t.Contains(s.foo), gc.Equals, true)
 }
 
-func (tagSetSuite) TestAddDuplicate(c *gc.C) {
+func (s tagSetSuite) TestAddDuplicate(c *gc.C) {
 	t := set.NewTags()
-	foo, _ := names.ParseTag("unit-wordpress-0")
-	bar, _ := names.ParseTag("unit-rabbitmq-server-0")
 
-	t.Add(foo)
-	t.Add(bar)
-
-	bar, _ = names.ParseTag("unit-wordpress-0")
-	t.Add(bar)
+	t.Add(s.foo)
+	t.Add(s.bar)
+	t.Add(s.bar)
 
 	c.Assert(t.Size(), gc.Equals, 2)
 }
 
-func (tagSetSuite) TestRemove(c *gc.C) {
-	foo, _ := names.ParseTag("unit-wordpress-0")
-	bar, _ := names.ParseTag("unit-rabbitmq-server-0")
+func (s tagSetSuite) TestRemove(c *gc.C) {
+	t := set.NewTags(s.foo, s.bar)
+	t.Remove(s.foo)
 
-	t := set.NewTags(foo, bar)
-	t.Remove(foo)
-
-	c.Assert(t.Contains(foo), gc.Equals, false)
-	c.Assert(t.Contains(bar), gc.Equals, true)
+	c.Assert(t.Contains(s.foo), gc.Equals, false)
+	c.Assert(t.Contains(s.bar), gc.Equals, true)
 }
 
-func (tagSetSuite) TestContains(c *gc.C) {
+func (s tagSetSuite) TestContains(c *gc.C) {
 	t, err := set.NewTagsFromStrings("unit-wordpress-0", "unit-rabbitmq-server-0")
 	c.Assert(err, gc.IsNil)
 
-	foo, _ := names.ParseTag("unit-wordpress-0")
-	bar, _ := names.ParseTag("unit-rabbitmq-server-0")
-	baz, _ := names.ParseTag("unit-mongodb-0")
-
-	c.Assert(t.Contains(foo), gc.Equals, true)
-	c.Assert(t.Contains(bar), gc.Equals, true)
-	c.Assert(t.Contains(baz), gc.Equals, false)
+	c.Assert(t.Contains(s.foo), gc.Equals, true)
+	c.Assert(t.Contains(s.bar), gc.Equals, true)
+	c.Assert(t.Contains(s.baz), gc.Equals, false)
 }
 
-func (tagSetSuite) TestSortedValues(c *gc.C) {
-	m1, _ := names.ParseTag("machine-0")
-	z1, _ := names.ParseTag("unit-z-server-0")
-	z2, _ := names.ParseTag("unit-z-server-1")
-	a1, _ := names.ParseTag("unit-a-server-0")
-
-	t := set.NewTags(z2, a1, z1, m1)
+func (s tagSetSuite) TestSortedValues(c *gc.C) {
+	t := set.NewTags(s.foo, s.bang, s.baz, s.bar)
 	values := t.SortedValues()
 
-	c.Assert(values, gc.DeepEquals, []names.Tag{m1, a1, z1, z2})
+	c.Assert(values, gc.DeepEquals, []names.Tag{s.bang, s.baz, s.bar, s.foo})
 }
 
-func (tagSetSuite) TestRemoveNonExistent(c *gc.C) {
+func (s tagSetSuite) TestRemoveNonExistent(c *gc.C) {
 	t := set.NewTags()
-	foo, _ := names.ParseTag("unit-wordpress-0")
-	t.Remove(foo)
+	t.Remove(s.foo)
 	c.Assert(t.Size(), gc.Equals, 0)
 }
 
-func (tagSetSuite) TestUnion(c *gc.C) {
-	foo, _ := names.ParseTag("unit-wordpress-0")
-	bar, _ := names.ParseTag("unit-mongodb-0")
-	baz, _ := names.ParseTag("unit-rabbitmq-server-0")
-	bang, _ := names.ParseTag("unit-mysql-server-0")
-
-	t1 := set.NewTags(foo, bar)
-	t2 := set.NewTags(foo, baz, bang)
+func (s tagSetSuite) TestUnion(c *gc.C) {
+	t1 := set.NewTags(s.foo, s.bar)
+	t2 := set.NewTags(s.foo, s.baz, s.bang)
 	union1 := t1.Union(t2)
 	union2 := t2.Union(t1)
 
@@ -159,17 +155,12 @@ func (tagSetSuite) TestUnion(c *gc.C) {
 	c.Assert(union2.Size(), gc.Equals, 4)
 
 	c.Assert(union1, gc.DeepEquals, union2)
-	c.Assert(union1, gc.DeepEquals, set.NewTags(foo, bar, baz, bang))
+	c.Assert(union1, gc.DeepEquals, set.NewTags(s.foo, s.bar, s.baz, s.bang))
 }
 
-func (tagSetSuite) TestIntersection(c *gc.C) {
-	foo, _ := names.ParseTag("unit-wordpress-0")
-	bar, _ := names.ParseTag("unit-mongodb-0")
-	baz, _ := names.ParseTag("unit-rabbitmq-server-0")
-	bang, _ := names.ParseTag("unit-mysql-server-0")
-
-	t1 := set.NewTags(foo, bar)
-	t2 := set.NewTags(foo, baz, bang)
+func (s tagSetSuite) TestIntersection(c *gc.C) {
+	t1 := set.NewTags(s.foo, s.bar)
+	t2 := set.NewTags(s.foo, s.baz, s.bang)
 
 	int1 := t1.Intersection(t2)
 	int2 := t2.Intersection(t1)
@@ -178,39 +169,31 @@ func (tagSetSuite) TestIntersection(c *gc.C) {
 	c.Assert(int2.Size(), gc.Equals, 1)
 
 	c.Assert(int1, gc.DeepEquals, int2)
-	c.Assert(int1, gc.DeepEquals, set.NewTags(foo))
+	c.Assert(int1, gc.DeepEquals, set.NewTags(s.foo))
 }
 
-func (tagSetSuite) TestDifference(c *gc.C) {
-	foo, _ := names.ParseTag("unit-wordpress-0")
-	bar, _ := names.ParseTag("unit-mongodb-0")
-	baz, _ := names.ParseTag("unit-rabbitmq-server-0")
-	bang, _ := names.ParseTag("unit-mysql-server-0")
-
-	t1 := set.NewTags(foo, bar)
-	t2 := set.NewTags(foo, baz, bang)
+func (s tagSetSuite) TestDifference(c *gc.C) {
+	t1 := set.NewTags(s.foo, s.bar)
+	t2 := set.NewTags(s.foo, s.baz, s.bang)
 
 	diff1 := t1.Difference(t2)
 	diff2 := t2.Difference(t1)
 
-	c.Assert(diff1, gc.DeepEquals, set.NewTags(bar))
-	c.Assert(diff2, gc.DeepEquals, set.NewTags(baz, bang))
+	c.Assert(diff1, gc.DeepEquals, set.NewTags(s.bar))
+	c.Assert(diff2, gc.DeepEquals, set.NewTags(s.baz, s.bang))
 }
 
-func (tagSetSuite) TestUninitialized(c *gc.C) {
+func (s tagSetSuite) TestUninitialized(c *gc.C) {
 	var uninitialized set.Tags
-
-	foo, _ := names.ParseTag("unit-wordpress-0")
-	bar, _ := names.ParseTag("unit-mongodb-0")
 
 	c.Assert(uninitialized.Size(), gc.Equals, 0)
 	c.Assert(uninitialized.IsEmpty(), gc.Equals, true)
 	// You can get values and sorted values from an unitialized set.
 	c.Assert(uninitialized.Values(), gc.DeepEquals, []names.Tag{})
 	// All contains checks are false
-	c.Assert(uninitialized.Contains(foo), gc.Equals, false)
+	c.Assert(uninitialized.Contains(s.foo), gc.Equals, false)
 	// Remove works on an uninitialized Strings
-	uninitialized.Remove(foo)
+	uninitialized.Remove(s.foo)
 
 	var other set.Tags
 	// Union returns a new set that is empty but initialized.
@@ -218,7 +201,7 @@ func (tagSetSuite) TestUninitialized(c *gc.C) {
 	c.Assert(uninitialized.Intersection(other), gc.DeepEquals, set.NewTags())
 	c.Assert(uninitialized.Difference(other), gc.DeepEquals, set.NewTags())
 
-	other = set.NewTags(foo, bar)
+	other = set.NewTags(s.foo, s.bar)
 	c.Assert(uninitialized.Union(other), gc.DeepEquals, other)
 	c.Assert(uninitialized.Intersection(other), gc.DeepEquals, set.NewTags())
 	c.Assert(uninitialized.Difference(other), gc.DeepEquals, set.NewTags())
@@ -227,6 +210,6 @@ func (tagSetSuite) TestUninitialized(c *gc.C) {
 	c.Assert(other.Difference(uninitialized), gc.DeepEquals, other)
 
 	// Once something is added, the set becomes initialized.
-	uninitialized.Add(foo)
-	c.Assert(uninitialized.Contains(foo), gc.Equals, true)
+	uninitialized.Add(s.foo)
+	c.Assert(uninitialized.Contains(s.foo), gc.Equals, true)
 }

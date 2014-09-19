@@ -35,6 +35,13 @@ func (d *DocWrapper) SetID(id string) bool {
 	return false
 }
 
+// Copy returns a copy of the document.
+func (d *DocWrapper) Copy(id string) Document {
+	copied := *d.Raw
+	copied.ID = id
+	return &DocWrapper{&copied}
+}
+
 // FileMetadata contains the metadata for a single stored file.
 type FileMetadata struct {
 	DocWrapper
@@ -121,4 +128,12 @@ func (m *FileMetadata) SetFile(size int64, checksum, format string) error {
 
 func (m *FileMetadata) SetStored() {
 	m.stored = true
+}
+
+// Copy returns a copy of the document.
+func (m *FileMetadata) Copy(id string) Document {
+	copied := *m
+	doc := m.DocWrapper.Copy(id).(*DocWrapper)
+	copied.DocWrapper = *doc
+	return &copied
 }

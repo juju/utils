@@ -30,6 +30,13 @@ func (d *doc) SetID(id string) bool {
 	return false
 }
 
+// Copy implements Doc.Copy.
+func (d *doc) Copy(id string) Doc {
+	copied := *d
+	copied.id = id
+	return &copied
+}
+
 // Ensure FileMetadata implements Metadata.
 var _ Metadata = (*FileMetadata)(nil)
 
@@ -118,4 +125,11 @@ func (m *FileMetadata) SetFile(size int64, checksum, format string) error {
 
 func (m *FileMetadata) SetStored() {
 	m.stored = true
+}
+
+// Copy implements Doc.Copy.
+func (m *FileMetadata) Copy(id string) Doc {
+	copied := *m
+	copied.id = id
+	return &copied
 }

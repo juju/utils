@@ -12,14 +12,21 @@ import (
 // storage of files.  The type exposes the essential capabilities of
 // such a system.
 type FileStorage interface {
+	// Metadata returns a file's metadata.
 	Metadata(id string) (Metadata, error)
+	// Get returns a file and its metadata.
 	Get(id string) (Metadata, io.ReadCloser, error)
+	// List returns the metadata for each stored file.
 	List() ([]Metadata, error)
+	// Add stores a file and its metadata.
 	Add(meta Metadata, archive io.Reader) (string, error)
+	// SetFile stores a file for an existing metadata entry.
 	SetFile(id string, file io.Reader) error
+	// Remove removes a file from storage.
 	Remove(id string) error
 }
 
+// Metadata is the meta information for a stored file.
 type Metadata interface {
 	// ID is the unique ID assigned by the storage system.
 	ID() string

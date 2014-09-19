@@ -9,12 +9,32 @@ import (
 	"github.com/juju/errors"
 )
 
+var _ Doc = (*doc)(nil)
+
+type doc struct {
+	id string
+}
+
+// ID implements Doc.ID.
+func (d *doc) ID() string {
+	return d.id
+}
+
+// SetID implements Doc.SetID.
+func (d *doc) SetID(id string) bool {
+	if d.id != "" {
+		return true
+	}
+	d.id = id
+	return false
+}
+
 // Ensure FileMetadata implements Metadata.
-var _ = Metadata(&FileMetadata{})
+var _ Metadata = (*FileMetadata)(nil)
 
 // FileMetadata contains the metadata for a single stored file.
 type FileMetadata struct {
-	id             string
+	doc
 	size           int64
 	checksum       string
 	checksumFormat string
@@ -34,10 +54,6 @@ func NewMetadata(timestamp *time.Time) *FileMetadata {
 		meta.timestamp = *timestamp
 	}
 	return &meta
-}
-
-func (m *FileMetadata) ID() string {
-	return m.id
 }
 
 func (m *FileMetadata) Size() int64 {
@@ -62,14 +78,6 @@ func (m *FileMetadata) Stored() bool {
 
 func (m *FileMetadata) Doc() interface{} {
 	return m
-}
-
-func (m *FileMetadata) SetID(id string) bool {
-	if m.id != "" {
-		return true
-	}
-	m.id = id
-	return false
 }
 
 func (m *FileMetadata) SetFile(size int64, checksum, format string) error {

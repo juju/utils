@@ -9,31 +9,6 @@ import (
 	"github.com/juju/errors"
 )
 
-type Metadata interface {
-	// ID is the unique ID assigned by the storage system.
-	ID() string
-	// Size is the size of the file (in bytes).
-	Size() int64
-	// Checksum is the checksum for the file.
-	Checksum() string
-	// ChecksumFormat is the kind (and encoding) of checksum.
-	ChecksumFormat() string
-	// Timestamp records when the file was created.
-	Timestamp() time.Time
-	// Stored indicates whether or not the file has been stored.
-	Stored() bool
-
-	// Doc returns a storable copy of the metadata.
-	Doc() interface{}
-	// SetID sets the ID of the metadata.  If the ID is already set,
-	// SetID() should return true (false otherwise).
-	SetID(id string) (alreadySet bool)
-	// SetFile sets the file info on the metadata.
-	SetFile(size int64, checksum, checksumFormat string) error
-	// SetStored sets Stored to true on the metadata.
-	SetStored()
-}
-
 // Ensure FileMetadata implements Metadata.
 var _ = Metadata(&FileMetadata{})
 

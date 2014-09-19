@@ -86,7 +86,7 @@ func (s *fileStorage) addFile(meta Metadata, file io.Reader) error {
 // metadata will still be stored.  A non-empty returned ID indicates
 // that the metadata was stored successfully.
 func (s *fileStorage) Add(meta Metadata, file io.Reader) (string, error) {
-	id, err := s.metadata.AddDoc(meta)
+	id, err := s.metadata.AddMetadata(meta)
 	if err != nil {
 		return "", errors.Trace(err)
 	}
@@ -131,7 +131,7 @@ func (s *fileStorage) Remove(id string) error {
 	if err != nil && !errors.IsNotFound(err) {
 		return errors.Trace(err)
 	}
-	err = s.metadata.RemoveDoc(id)
+	err = s.metadata.RemoveMetadata(id)
 	if err != nil {
 		return errors.Trace(err)
 	}

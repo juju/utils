@@ -107,6 +107,14 @@ type MetadataStorage interface {
 	Metadata(id string) (Metadata, error)
 	// ListMetadata returns a list of all metadata in the storage.
 	ListMetadata() ([]Metadata, error)
+	// AddMetadata adds the metadata to the storage.  If successful, the
+	// storage-generated ID for the metadata is returned.  Otherwise an
+	// error is returned.
+	AddMetadata(meta Metadata) (string, error)
+	// RemoveMetadata removes the matching metadata from the storage.
+	// If there is no match an error is returned (see errors.IsNotFound).
+	// Any other problem also results in an error.
+	RemoveMetadata(id string) error
 	// SetStored updates the stored metadata to indicate that the
 	// associated file has been successfully stored in a RawFileStorage
 	// system.  It will also call SetStored() on the metadata.  If it

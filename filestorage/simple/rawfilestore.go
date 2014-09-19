@@ -1,7 +1,7 @@
 // Copyright 2014 Canonical Ltd.
 // Licensed under the AGPLv3, see LICENCE file for details.
 
-package filestorage
+package simple
 
 import (
 	"io"
@@ -9,13 +9,15 @@ import (
 	"path/filepath"
 
 	"github.com/juju/errors"
+
+	"github.com/juju/utils/filestorage"
 )
 
 type fsStorage struct {
 	dirname string
 }
 
-func NewRawFileStorage(dirname string) (RawFileStorage, error) {
+func NewRawFileStorage(dirname string) (filestorage.RawFileStorage, error) {
 	stor := fsStorage{
 		dirname: dirname,
 	}

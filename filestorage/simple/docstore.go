@@ -1,24 +1,26 @@
 // Copyright 2014 Canonical Ltd.
 // Licensed under the AGPLv3, see LICENCE file for details.
 
-package filestorage
+package simple
 
 import (
 	"github.com/juju/errors"
 	"github.com/juju/utils"
+
+	"github.com/juju/utils/filestorage"
 )
 
 type docStorage struct {
-	docs map[string]Doc
+	docs map[string]filestorage.Doc
 }
 
 // NewDocStorage returns a simple memory-backed DocStorage.
-func NewDocStorage() DocStorage {
+func NewDocStorage() filestorage.DocStorage {
 	return &docStorage{}
 }
 
 // Doc implements DocStorage.Doc.
-func (s *docStorage) Doc(id string) (Doc, error) {
+func (s *docStorage) Doc(id string) (filestorage.Doc, error) {
 	doc, ok := s.docs[id]
 	if !ok {
 		return nil, errors.NotFoundf(id)
@@ -27,8 +29,8 @@ func (s *docStorage) Doc(id string) (Doc, error) {
 }
 
 // ListDocs implements DocStorage.ListDocs.
-func (s *docStorage) ListDocs() ([]Doc, error) {
-	var list []Doc
+func (s *docStorage) ListDocs() ([]filestorage.Doc, error) {
+	var list []filestorage.Doc
 	for _, doc := range s.docs {
 		if doc == nil {
 			continue
@@ -39,7 +41,7 @@ func (s *docStorage) ListDocs() ([]Doc, error) {
 }
 
 // AddDoc implements DocStorage.AddDoc.
-func (s *docStorage) AddDoc(doc Doc) (string, error) {
+func (s *docStorage) AddDoc(doc filestorage.Doc) (string, error) {
 	uuid, err := utils.NewUUID()
 	if err != nil {
 		return "", errors.Annotate(err, "error while creating ID")
@@ -52,7 +54,7 @@ func (s *docStorage) AddDoc(doc Doc) (string, error) {
 	}
 
 	if s.docs == nil {
-		s.docs = make(map[string]Doc)
+		s.docs = make(map[string]filestorage.Doc)
 	}
 	s.docs[id] = doc
 	return id, nil

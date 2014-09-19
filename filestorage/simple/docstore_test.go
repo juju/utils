@@ -1,13 +1,14 @@
 // Copyright 2014 Canonical Ltd.
 // Licensed under the LGPLv3, see LICENCE file for details.
 
-package filestorage_test
+package simple_test
 
 import (
 	"github.com/juju/testing"
 	gc "launchpad.net/gocheck"
 
 	"github.com/juju/utils/filestorage"
+	"github.com/juju/utils/filestorage/simple"
 )
 
 var _ = gc.Suite(&DocStorageSuite{})
@@ -21,11 +22,11 @@ type DocStorageSuite struct {
 func (s *DocStorageSuite) SetUpTest(c *gc.C) {
 	s.IsolationSuite.SetUpTest(c)
 	s.original = filestorage.NewMetadata(nil)
-	s.stor = filestorage.NewDocStorage()
+	s.stor = simple.NewDocStorage()
 }
 
 func (s *DocStorageSuite) TestNewDocStorage(c *gc.C) {
-	var stor filestorage.DocStorage = filestorage.NewDocStorage()
+	var stor filestorage.DocStorage = simple.NewDocStorage()
 
 	c.Check(stor, gc.NotNil)
 }

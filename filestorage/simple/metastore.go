@@ -1,26 +1,28 @@
 // Copyright 2014 Canonical Ltd.
 // Licensed under the AGPLv3, see LICENCE file for details.
 
-package filestorage
+package simple
 
 import (
 	"github.com/juju/errors"
+
+	"github.com/juju/utils/filestorage"
 )
 
 type metadataStorage struct {
-	MetadataDocStorage
+	filestorage.MetadataDocStorage
 }
 
 // NewMetadataStorage provides a simple memory-backed MetadataStorage.
-func NewMetadataStorage() MetadataStorage {
+func NewMetadataStorage() filestorage.MetadataStorage {
 	stor := metadataStorage{
-		MetadataDocStorage: MetadataDocStorage{&docStorage{}},
+		MetadataDocStorage: filestorage.MetadataDocStorage{&docStorage{}},
 	}
 	return &stor
 }
 
 // SetStored implements MetadataStorage.SetStored.
-func (s *metadataStorage) SetStored(meta Metadata) error {
+func (s *metadataStorage) SetStored(meta filestorage.Metadata) error {
 	id := meta.ID()
 	if id == "" {
 		return errors.NotFoundf("metadata missing ID")

@@ -185,3 +185,14 @@ func (s *WrapperSuite) TestFileStorageRemove(c *gc.C) {
 	_, err = s.stor.Metadata(id) // Ensure it isn't there.
 	c.Check(err, gc.NotNil)
 }
+
+func (s *WrapperSuite) TestClose(c *gc.C) {
+	metaStor := &FakeMetadataStorage{}
+	fileStor := &FakeRawFileStorage{}
+	stor := filestorage.NewFileStorage(metaStor, fileStor)
+	err := stor.Close()
+	c.Assert(err, gc.IsNil)
+
+	c.Check(metaStor.calls, gc.DeepEquals, []string{"Close"})
+	c.Check(fileStor.calls, gc.DeepEquals, []string{"Close"})
+}

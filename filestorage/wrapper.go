@@ -98,7 +98,7 @@ func (s *fileStorage) Add(meta Metadata, file io.Reader) (string, error) {
 		if err != nil {
 			// Un-store the metadata.
 			context := err
-			err = s.metaStor.RemoveDoc(id)
+			err = s.metaStor.RemoveMetadata(id)
 			if err != nil {
 				err = errors.Annotate(err, "while handling another error")
 				return "", errors.Wrap(context, err)

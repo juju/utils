@@ -33,7 +33,7 @@ func (s *MetadataStorageSuite) TestMetadataStorageNewMetadataStorage(c *gc.C) {
 }
 
 func (s *MetadataStorageSuite) TestMetadata(c *gc.C) {
-	id, err := s.stor.AddDoc(s.original)
+	id, err := s.stor.AddMetadata(s.original)
 	c.Assert(err, gc.IsNil)
 
 	meta, err := s.stor.Metadata(id)
@@ -43,7 +43,7 @@ func (s *MetadataStorageSuite) TestMetadata(c *gc.C) {
 }
 
 func (s *MetadataStorageSuite) TestListMetadata(c *gc.C) {
-	id, err := s.stor.AddDoc(s.original)
+	id, err := s.stor.AddMetadata(s.original)
 	c.Assert(err, gc.IsNil)
 
 	list, err := s.stor.ListMetadata()
@@ -54,7 +54,7 @@ func (s *MetadataStorageSuite) TestListMetadata(c *gc.C) {
 }
 
 func (s *MetadataStorageSuite) TestSetStored(c *gc.C) {
-	id, err := s.stor.AddDoc(s.original)
+	id, err := s.stor.AddMetadata(s.original)
 	c.Assert(err, gc.IsNil)
 	meta, err := s.stor.Metadata(id)
 	c.Assert(err, gc.IsNil)

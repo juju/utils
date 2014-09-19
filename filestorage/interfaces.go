@@ -121,7 +121,7 @@ type RawFileStorage interface {
 
 // MetadataStorage is an extension of DocStorage adapted to file metadata.
 type MetadataStorage interface {
-	DocStorage
+	io.Closer
 
 	// Metadata returns the matching Metadata.  It fails if there is no
 	// match (see errors.IsNotFound).  Any other problems likewise

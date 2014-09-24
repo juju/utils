@@ -1,7 +1,7 @@
 // Copyright 2014 Canonical Ltd.
 // Licensed under the LGPLv3, see LICENCE file for details.
 
-package simple_test
+package basic_test
 
 import (
 	"bytes"
@@ -11,7 +11,7 @@ import (
 	gc "gopkg.in/check.v1"
 
 	"github.com/juju/utils/filestorage"
-	"github.com/juju/utils/filestorage/simple"
+	"github.com/juju/utils/filestorage/basic"
 )
 
 var _ = gc.Suite(&RawFileSuite{})
@@ -23,14 +23,14 @@ type RawFileSuite struct {
 func (s *RawFileSuite) TestRawFileStorageNewRawFileStorage(c *gc.C) {
 	var err error
 	var stor filestorage.RawFileStorage
-	stor, err = simple.NewRawFileStorage(c.MkDir())
+	stor, err = basic.NewRawFileStorage(c.MkDir())
 	c.Assert(err, gc.IsNil)
 
 	c.Check(stor, gc.NotNil)
 }
 
 func (s *RawFileSuite) TestRawFileStorageFile(c *gc.C) {
-	stor, err := simple.NewRawFileStorage(c.MkDir())
+	stor, err := basic.NewRawFileStorage(c.MkDir())
 	c.Assert(err, gc.IsNil)
 	data := bytes.NewBufferString("spam")
 	err = stor.AddFile("eggs", data, 4)
@@ -44,7 +44,7 @@ func (s *RawFileSuite) TestRawFileStorageFile(c *gc.C) {
 }
 
 func (s *RawFileSuite) TestRawFileStorageAddFile(c *gc.C) {
-	stor, err := simple.NewRawFileStorage(c.MkDir())
+	stor, err := basic.NewRawFileStorage(c.MkDir())
 	c.Assert(err, gc.IsNil)
 	data := bytes.NewBufferString("spam")
 
@@ -61,7 +61,7 @@ func (s *RawFileSuite) TestRawFileStorageAddFile(c *gc.C) {
 }
 
 func (s *RawFileSuite) TestRawFileStorageRemoveFile(c *gc.C) {
-	stor, err := simple.NewRawFileStorage(c.MkDir())
+	stor, err := basic.NewRawFileStorage(c.MkDir())
 	c.Assert(err, gc.IsNil)
 	data := bytes.NewBufferString("spam")
 	err = stor.AddFile("eggs", data, 4)

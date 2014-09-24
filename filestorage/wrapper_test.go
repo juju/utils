@@ -12,7 +12,7 @@ import (
 	gc "gopkg.in/check.v1"
 
 	"github.com/juju/utils/filestorage"
-	"github.com/juju/utils/filestorage/simple"
+	"github.com/juju/utils/filestorage/basic"
 )
 
 var _ = gc.Suite(&WrapperSuite{})
@@ -28,9 +28,9 @@ func (s *WrapperSuite) SetUpTest(c *gc.C) {
 	s.IsolationSuite.SetUpTest(c)
 
 	var err error
-	s.rawstor, err = simple.NewRawFileStorage(c.MkDir())
+	s.rawstor, err = basic.NewRawFileStorage(c.MkDir())
 	c.Assert(err, gc.IsNil)
-	s.metastor = simple.NewMetadataStorage()
+	s.metastor = basic.NewMetadataStorage()
 	s.stor = filestorage.NewFileStorage(s.metastor, s.rawstor)
 }
 

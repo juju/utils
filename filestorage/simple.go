@@ -44,12 +44,20 @@ func (s *metadataStorage) Doc(id string) (interface{}, error) {
 	return interface{}(meta), nil
 }
 
-func (s *metadataStorage) Metadata(id string) (Metadata, error) {
+func (s *metadataStorage) lookUp(id string) (Metadata, error) {
 	meta, ok := s.metadata[id]
 	if !ok {
 		return nil, errors.NotFoundf(id)
 	}
 	return meta, nil
+}
+
+func (s *metadataStorage) Metadata(id string) (Metadata, error) {
+	raw, err := s.lookUp(id)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	return raw.Copy(id), nil
 }
 
 func (s *metadataStorage) ListDocs() ([]interface{}, error) {
@@ -84,17 +92,18 @@ func (s *metadataStorage) AddDoc(doc interface{}) (string, error) {
 		return "", errors.Errorf("doc must be a Metadata")
 	}
 
+	if meta.ID() != "" {
+		return "", errors.AlreadyExistsf("ID already set")
+	}
+
 	uuid, err := utils.NewUUID()
 	if err != nil {
 		return "", errors.Annotate(err, "error while creating ID")
 	}
 	id := uuid.String()
-	alreadySet := meta.SetID(id)
-	if alreadySet {
-		return "", errors.AlreadyExistsf("ID already set (tried %q)", id)
-	}
+	// We let the caller call meta.SetID() if they so desire.
 
-	s.metadata[id] = meta
+	s.metadata[id] = meta.Copy(id)
 	return id, nil
 }
 
@@ -110,7 +119,11 @@ func (s *metadataStorage) New() Metadata {
 	return &FileMetadata{timestamp: time.Now().UTC()}
 }
 
-func (s *metadataStorage) SetStored(meta Metadata) error {
+func (s *metadataStorage) SetStored(id string) error {
+	meta, err := s.lookUp(id)
+	if err != nil {
+		return errors.Trace(err)
+	}
 	meta.SetStored()
 	return nil
 }

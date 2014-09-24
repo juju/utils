@@ -32,6 +32,8 @@ type Metadata interface {
 	SetFile(size int64, checksum, checksumFormat string) error
 	// SetStored sets Stored to true on the metadata.
 	SetStored()
+	// Copy returns a new copy of the metadata updated with the given ID.
+	Copy(id string) Metadata
 }
 
 // Ensure FileMetadata implements Metadata.
@@ -134,4 +136,10 @@ func (m *FileMetadata) SetFile(size int64, checksum, format string) error {
 
 func (m *FileMetadata) SetStored() {
 	m.stored = true
+}
+
+func (m *FileMetadata) Copy(id string) Metadata {
+	copied := *m
+	copied.id = id
+	return &copied
 }

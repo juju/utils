@@ -108,3 +108,12 @@ func (s *MetadataSuite) TestFileMetadataSetStoredIdempotent(c *gc.C) {
 	meta.SetStored()
 	c.Check(meta.Stored(), gc.Equals, true)
 }
+
+func (s *MetadataSuite) TestFileMetadataCopy(c *gc.C) {
+	meta := filestorage.NewMetadata(nil)
+	meta.SetFile(10, "some sum", "SHA-1")
+	copied := meta.Copy("")
+
+	c.Check(copied, gc.Not(gc.Equals), meta)
+	c.Check(copied, gc.DeepEquals, meta)
+}

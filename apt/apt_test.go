@@ -5,9 +5,9 @@ package apt_test
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/exec"
-	"io/ioutil"
 	"path/filepath"
 
 	"github.com/juju/testing"

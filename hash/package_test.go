@@ -6,7 +6,7 @@ package hash_test
 import (
 	stdtesting "testing"
 
-	gc "launchpad.net/gocheck"
+	gc "gopkg.in/check.v1"
 )
 
 func Test(t *stdtesting.T) {

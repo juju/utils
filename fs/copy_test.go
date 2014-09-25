@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	ft "github.com/juju/testing/filetesting"
-	gc "launchpad.net/gocheck"
+	gc "gopkg.in/check.v1"
 
 	"github.com/juju/utils/fs"
 )

@@ -6,7 +6,7 @@ package set_test
 import (
 	"github.com/juju/names"
 	"github.com/juju/testing"
-	gc "launchpad.net/gocheck"
+	gc "gopkg.in/check.v1"
 
 	"github.com/juju/utils/set"
 )

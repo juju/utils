@@ -9,7 +9,7 @@ import (
 	"os"
 	"path/filepath"
 
-	gc "launchpad.net/gocheck"
+	gc "gopkg.in/check.v1"
 
 	"github.com/juju/utils/symlink"
 )

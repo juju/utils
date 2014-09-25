@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"github.com/juju/testing"
-	gc "launchpad.net/gocheck"
+	gc "gopkg.in/check.v1"
 	"launchpad.net/tomb"
 
 	"github.com/juju/utils/fslock"

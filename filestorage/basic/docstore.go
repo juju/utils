@@ -17,7 +17,6 @@ type docStorage struct {
 // NewDocStorage returns a simple memory-backed DocStorage.
 func NewDocStorage() filestorage.DocStorage {
 	storage := docStorage{
-		// We do this here since docStorage is private.
 		docs: make(map[string]filestorage.Doc),
 	}
 	return &storage

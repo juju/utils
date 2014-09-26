@@ -26,6 +26,7 @@ type FileStorage interface {
 	Remove(id string) error
 }
 
+// Doc is an identifiable document.
 type Doc interface {
 	// ID is the unique ID assigned by the storage system.
 	ID() string

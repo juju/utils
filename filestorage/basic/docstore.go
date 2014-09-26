@@ -16,7 +16,11 @@ type docStorage struct {
 
 // NewDocStorage returns a simple memory-backed DocStorage.
 func NewDocStorage() filestorage.DocStorage {
-	return &docStorage{}
+	storage := docStorage{
+		// We do this here since docStorage is private.
+		docs: make(map[string]filestorage.Doc),
+	}
+	return &storage
 }
 
 // Doc implements DocStorage.Doc.
@@ -53,9 +57,6 @@ func (s *docStorage) AddDoc(doc filestorage.Doc) (string, error) {
 		return "", errors.AlreadyExistsf("ID already set (tried %q)", id)
 	}
 
-	if s.docs == nil {
-		s.docs = make(map[string]filestorage.Doc)
-	}
 	s.docs[id] = doc
 	return id, nil
 }

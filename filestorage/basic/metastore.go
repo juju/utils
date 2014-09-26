@@ -16,7 +16,7 @@ type metadataStorage struct {
 // NewMetadataStorage provides a simple memory-backed MetadataStorage.
 func NewMetadataStorage() filestorage.MetadataStorage {
 	stor := metadataStorage{
-		MetadataDocStorage: filestorage.MetadataDocStorage{&docStorage{}},
+		MetadataDocStorage: filestorage.MetadataDocStorage{NewDocStorage()},
 	}
 	return &stor
 }

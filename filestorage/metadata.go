@@ -20,7 +20,8 @@ func (d *doc) ID() string {
 	return d.id
 }
 
-// SetID implements Doc.SetID.
+// SetID implements Doc.SetID.  If the ID is already set, SetID()
+// should return true (false otherwise).
 func (d *doc) SetID(id string) bool {
 	if d.id != "" {
 		return true

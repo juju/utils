@@ -147,7 +147,7 @@ func GetInstall(packages ...string) error {
 		}
 		exitError, ok := err.(*exec.ExitError)
 		if !ok {
-			err = fmt.Errorf("unexpected error type %T", err)
+			// Let the error from CommandOutput fall through
 			break
 		}
 		waitStatus, ok := exitError.ProcessState.Sys().(syscall.WaitStatus)

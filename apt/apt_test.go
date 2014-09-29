@@ -60,6 +60,21 @@ func (s *AptSuite) TestAptGetError(c *gc.C) {
 	})
 }
 
+func (s *AptSuite) TestAptGetLaunchError(c *gc.C) {
+	cmdError := fmt.Errorf("some strange error")
+	cmdExpectedError := fmt.Errorf("apt-get failed: some strange error")
+	cmdChan := s.HookCommandOutput(&apt.CommandOutput, nil, error(cmdError))
+	err := apt.GetInstall("foo")
+	c.Assert(err, gc.DeepEquals, cmdExpectedError)
+	cmd := <-cmdChan
+	c.Assert(cmd.Args, gc.DeepEquals, []string{
+		"apt-get", "--option=Dpkg::Options::=--force-confold",
+		"--option=Dpkg::options::=--force-unsafe-io", "--assume-yes",
+		"--quiet",
+		"install", "foo",
+	})
+}
+
 func (s *AptSuite) TestConfigProxyEmpty(c *gc.C) {
 	cmdChan := s.HookCommandOutput(&apt.CommandOutput, []byte{}, nil)
 	out, err := apt.ConfigProxy()

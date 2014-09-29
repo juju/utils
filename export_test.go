@@ -8,4 +8,5 @@ var (
 	NumCPU     = &numCPU
 	Dial       = dial
 	NetDial    = &netDial
+	NoSuchUser = noSuchUser
 )

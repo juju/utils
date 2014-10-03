@@ -3,9 +3,16 @@
 
 package document
 
+import (
+	"time"
+)
+
 // RawDoc holds the data exposed by the Document interface.
 type RawDoc struct {
+	// ID is the document's ID.
 	ID string
+	// Created is when the document was created.
+	Created time.Time
 }
 
 var _ Document = (*Doc)(nil)
@@ -17,13 +24,30 @@ type Doc struct {
 	Raw RawDoc
 }
 
+// NewDocument returns a new Document.  ID is left unset (use SetID()
+// for that).  If no created is provided, the current one is used.
+func NewDocument(created *time.Time) *Doc {
+	doc := Doc{}
+	if created == nil {
+		doc.Raw.Created = time.Now().UTC()
+	} else {
+		doc.Raw.Created = *created
+	}
+	return &doc
+}
+
 // ID implements Doc.ID.
 func (d *Doc) ID() string {
 	return d.Raw.ID
 }
 
+// Created implements Doc.Created.
+func (d *Doc) Created() time.Time {
+	return d.Raw.Created
+}
+
 // SetID implements Doc.SetID.  If the ID is already set, SetID()
-// should return true (false otherwise).
+// will return true (false otherwise).
 func (d *Doc) SetID(id string) bool {
 	if d.Raw.ID != "" {
 		return true

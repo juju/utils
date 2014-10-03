@@ -8,6 +8,7 @@ import (
 
 	docbasics "github.com/juju/utils/document/basic"
 	"github.com/juju/utils/filestorage"
+	"github.com/juju/utils/storage"
 )
 
 type metadataStorage struct {
@@ -31,10 +32,10 @@ func (s *metadataStorage) SetStored(id string) error {
 	if err != nil {
 		return errors.Trace(err)
 	}
-	meta, ok := doc.(filestorage.Metadata)
+	meta, ok := doc.(storage.Metadata)
 	if !ok {
 		return errors.Errorf("doc wasn't Metadata (got %v)", doc)
 	}
-	meta.SetStored()
+	meta.SetStored(nil)
 	return nil
 }

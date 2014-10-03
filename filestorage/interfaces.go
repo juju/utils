@@ -5,14 +5,13 @@ package filestorage
 
 import (
 	"io"
-	"time"
 
-	"github.com/juju/utils/document"
+	"github.com/juju/utils/storage"
 )
 
 // Metadata is the meta information for a stored file.
 type Metadata interface {
-	document.Document
+	storage.Metadata
 
 	// Size is the size of the file (in bytes).
 	Size() int64
@@ -20,17 +19,9 @@ type Metadata interface {
 	Checksum() string
 	// ChecksumFormat is the kind (and encoding) of checksum.
 	ChecksumFormat() string
-	// Timestamp records when the file was created.
-	Timestamp() time.Time
-	// Stored indicates whether or not the file has been stored.
-	Stored() bool
 
-	// Doc returns a storable copy of the metadata.
-	Doc() interface{}
 	// SetFile sets the file info on the metadata.
 	SetFile(size int64, checksum, checksumFormat string) error
-	// SetStored sets Stored to true on the metadata.
-	SetStored()
 }
 
 // FileStorage is an abstraction of a system that can be used for the

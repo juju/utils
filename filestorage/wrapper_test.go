@@ -49,7 +49,7 @@ func (s *WrapperSuite) addmeta(c *gc.C, meta filestorage.Metadata, file io.Reade
 	c.Assert(alreadySet, jc.IsFalse)
 	c.Assert(meta.ID(), gc.Equals, id)
 	if file != nil {
-		meta.SetStored()
+		meta.SetStored(nil)
 	}
 	return id
 }
@@ -81,7 +81,10 @@ func (s *WrapperSuite) TestFileStorageGet(c *gc.C) {
 	c.Assert(err, gc.IsNil)
 	content, err := ioutil.ReadAll(file)
 
-	c.Check(meta, gc.DeepEquals, original)
+	c.Check(meta.Size(), gc.Equals, original.Size())
+	c.Check(meta.Checksum(), gc.Equals, original.Checksum())
+	c.Check(meta.ChecksumFormat(), gc.Equals, original.ChecksumFormat())
+
 	c.Check(string(content), gc.Equals, "spam")
 }
 
@@ -132,7 +135,7 @@ func (s *WrapperSuite) TestFileStorageAddMeta(c *gc.C) {
 
 	original.SetID(id)
 	c.Check(meta, gc.DeepEquals, original)
-	c.Check(meta.Stored(), gc.Equals, false)
+	c.Check(meta.Stored(), gc.IsNil)
 }
 
 func (s *WrapperSuite) TestFileStorageAddFile(c *gc.C) {
@@ -147,14 +150,14 @@ func (s *WrapperSuite) TestFileStorageAddFile(c *gc.C) {
 	c.Assert(err, gc.IsNil)
 
 	c.Check(original.ID(), gc.Equals, "")
-	c.Check(original.Stored(), jc.IsFalse)
+	c.Check(original.Stored(), gc.IsNil)
 
-	original.SetID(id)
-	original.SetStored()
-	c.Check(meta, gc.DeepEquals, original)
+	c.Check(meta.Size(), gc.Equals, original.Size())
+	c.Check(meta.Checksum(), gc.Equals, original.Checksum())
+	c.Check(meta.ChecksumFormat(), gc.Equals, original.ChecksumFormat())
 
 	c.Check(string(content), gc.Equals, "spam")
-	c.Check(meta.Stored(), gc.Equals, true)
+	c.Check(meta.Stored(), gc.NotNil)
 }
 
 func (s *WrapperSuite) TestFileStorageAddIDNotSet(c *gc.C) {
@@ -173,7 +176,7 @@ func (s *WrapperSuite) TestFileStorageAddMetaOnly(c *gc.C) {
 	c.Assert(err, gc.IsNil)
 
 	c.Check(meta, gc.DeepEquals, original)
-	c.Check(meta.Stored(), gc.Equals, false)
+	c.Check(meta.Stored(), gc.IsNil)
 }
 
 func (s *WrapperSuite) TestFileStorageAddIDAlreadySet(c *gc.C) {
@@ -205,7 +208,7 @@ func (s *WrapperSuite) TestFileStorageSetFile(c *gc.C) {
 	c.Assert(err, gc.NotNil)
 	meta, err := s.stor.Metadata(id)
 	c.Assert(err, gc.IsNil)
-	c.Check(meta.Stored(), gc.Equals, false)
+	c.Check(meta.Stored(), gc.IsNil)
 
 	data := bytes.NewBufferString("spam")
 	err = s.stor.SetFile(id, data)
@@ -213,7 +216,7 @@ func (s *WrapperSuite) TestFileStorageSetFile(c *gc.C) {
 	c.Assert(err, gc.IsNil)
 	content, err := ioutil.ReadAll(file)
 	c.Assert(err, gc.IsNil)
-	c.Check(meta.Stored(), gc.Equals, true)
+	c.Check(meta.Stored(), gc.NotNil)
 	c.Check(string(content), gc.Equals, "spam")
 }
 

@@ -5,12 +5,15 @@ package document
 
 import (
 	"io"
+	"time"
 )
 
 // Document represents a uniquely identifiable structured document.
 type Document interface {
 	// ID is the unique ID assigned by the storage system.
 	ID() string
+	// Created records when the doc was created.
+	Created() time.Time
 
 	// SetID sets the ID of the Doc.  If the ID is already set, SetID()
 	// should return true (false otherwise).

@@ -20,6 +20,26 @@ type Document interface {
 	SetID(id string) (alreadySet bool)
 	// Copy returns a new copy of the metadata updated with the given ID.
 	Copy(id string) Document
+	// Dump writes the doc to the writer in the specified serialization
+	// format.  If the format is not supported, errors.NotSupported is
+	// returned.
+	Dump(w io.Writer, format string) error
+	// Load deserializes the doc, using the specified format, from the
+	// reader.  Values from reader overwrite the corresponding values
+	// that may already be set on the doc.  If the format is not
+	// supported, errors.NotSupported is returned.
+	Load(w io.Reader, format string) error
+	// DefaultID returns an ID string derived from the doc that may be
+	// used for the doc.  If the doc does not support a default ID,
+	// errors.NotSupported is returned.
+	DefaultID() (string, error)
+	// Validate checks that the doc is populated to the specified level
+	// and that the populated values are valid.  At least 2 levels are
+	// always supported: "full" and "initialized".  These correspond to
+	// the highest and lowest levels of validation, respectively.  If
+	// the level is unrecognized, errors.NotSupported is returned.  If
+	// the doc is not valid, errors.NotValid is returned.
+	Validate(level string) error
 }
 
 // DocumentStorage is an abstraction for a system that can store docs

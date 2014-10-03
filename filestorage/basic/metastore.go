@@ -6,27 +6,28 @@ package basic
 import (
 	"github.com/juju/errors"
 
+	docbasics "github.com/juju/utils/document/basic"
 	"github.com/juju/utils/filestorage"
 )
 
 type metadataStorage struct {
 	filestorage.MetadataDocStorage
-	docStor *docStorage
+	docStor *docbasics.DocStorage
 }
 
 // NewMetadataStorage provides a simple memory-backed MetadataStorage.
 func NewMetadataStorage() filestorage.MetadataStorage {
-	docStor := NewDocStorage()
+	docStor := docbasics.NewDocStorage()
 	stor := metadataStorage{
 		MetadataDocStorage: filestorage.MetadataDocStorage{docStor},
-		docStor:            docStor.(*docStorage),
+		docStor:            docStor.(*docbasics.DocStorage),
 	}
 	return &stor
 }
 
 // SetStored implements MetadataStorage.SetStored.
 func (s *metadataStorage) SetStored(id string) error {
-	doc, err := s.docStor.lookUp(id)
+	doc, err := s.docStor.LookUp(id)
 	if err != nil {
 		return errors.Trace(err)
 	}

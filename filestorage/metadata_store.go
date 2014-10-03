@@ -5,10 +5,12 @@ package filestorage
 
 import (
 	"github.com/juju/errors"
+
+	"github.com/juju/utils/document"
 )
 
 // Convert turns a Doc into a Metadata if possible.
-func Convert(doc Doc) (Metadata, error) {
+func Convert(doc document.Document) (Metadata, error) {
 	meta, ok := doc.(Metadata)
 	if !ok {
 		return nil, errors.Errorf("expected a Metadata doc, got %v", doc)
@@ -21,7 +23,7 @@ func Convert(doc Doc) (Metadata, error) {
 // this type must be embedded in a type that implements the remaining
 // methods.
 type MetadataDocStorage struct {
-	DocStorage
+	document.DocumentStorage
 }
 
 // Metadata implements MetadataStorage.Metadata.

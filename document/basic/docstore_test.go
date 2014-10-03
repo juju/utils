@@ -7,26 +7,26 @@ import (
 	"github.com/juju/testing"
 	gc "gopkg.in/check.v1"
 
-	"github.com/juju/utils/filestorage"
-	"github.com/juju/utils/filestorage/basic"
+	"github.com/juju/utils/document"
+	"github.com/juju/utils/document/basic"
 )
 
 var _ = gc.Suite(&DocStorageSuite{})
 
 type DocStorageSuite struct {
 	testing.IsolationSuite
-	original filestorage.Doc
-	stor     filestorage.DocStorage
+	original document.Document
+	stor     document.DocumentStorage
 }
 
 func (s *DocStorageSuite) SetUpTest(c *gc.C) {
 	s.IsolationSuite.SetUpTest(c)
-	s.original = filestorage.NewMetadata(nil)
+	s.original = &document.Doc{}
 	s.stor = basic.NewDocStorage()
 }
 
 func (s *DocStorageSuite) TestNewDocStorage(c *gc.C) {
-	var stor filestorage.DocStorage = basic.NewDocStorage()
+	var stor document.DocumentStorage = basic.NewDocStorage()
 
 	c.Check(stor, gc.NotNil)
 }
@@ -37,7 +37,7 @@ func (s *DocStorageSuite) TestDoc(c *gc.C) {
 
 	doc, err := s.stor.Doc(id)
 	c.Assert(err, gc.IsNil)
-	meta, ok := doc.(filestorage.Metadata)
+	meta, ok := doc.(document.Document)
 	c.Assert(ok, gc.Equals, true)
 	s.original.SetID(id)
 	c.Check(meta, gc.DeepEquals, s.original)
@@ -51,7 +51,7 @@ func (s *DocStorageSuite) TestListDocs(c *gc.C) {
 	c.Assert(err, gc.IsNil)
 	c.Assert(list, gc.HasLen, 1)
 	c.Assert(list[0], gc.NotNil)
-	meta, ok := list[0].(filestorage.Metadata)
+	meta, ok := list[0].(document.Document)
 	c.Assert(ok, gc.Equals, true)
 	c.Check(meta.ID(), gc.Equals, id)
 }

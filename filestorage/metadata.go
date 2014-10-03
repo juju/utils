@@ -7,42 +7,19 @@ import (
 	"time"
 
 	"github.com/juju/errors"
+
+	"github.com/juju/utils/document"
 )
-
-var _ Doc = (*doc)(nil)
-
-type doc struct {
-	id string
-}
-
-// ID implements Doc.ID.
-func (d *doc) ID() string {
-	return d.id
-}
-
-// SetID implements Doc.SetID.  If the ID is already set, SetID()
-// should return true (false otherwise).
-func (d *doc) SetID(id string) bool {
-	if d.id != "" {
-		return true
-	}
-	d.id = id
-	return false
-}
-
-// Copy implements Doc.Copy.
-func (d *doc) Copy(id string) Doc {
-	copied := *d
-	copied.id = id
-	return &copied
-}
 
 // Ensure FileMetadata implements Metadata.
 var _ Metadata = (*FileMetadata)(nil)
 
+type doc struct{ document.Doc } // ...to avoid a name conflict.
+
 // FileMetadata contains the metadata for a single stored file.
 type FileMetadata struct {
 	doc
+
 	size           int64
 	checksum       string
 	checksumFormat string
@@ -128,8 +105,8 @@ func (m *FileMetadata) SetStored() {
 }
 
 // Copy implements Doc.Copy.
-func (m *FileMetadata) Copy(id string) Doc {
+func (m *FileMetadata) Copy(id string) document.Document {
 	copied := *m
-	copied.id = id
+	copied.doc = doc{*(m.doc.Doc.Copy(id).(*document.Doc))}
 	return &copied
 }

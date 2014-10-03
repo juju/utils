@@ -7,22 +7,23 @@ import (
 	"github.com/juju/errors"
 	"github.com/juju/utils"
 
-	"github.com/juju/utils/filestorage"
+	"github.com/juju/utils/document"
 )
 
-type docStorage struct {
-	docs map[string]filestorage.Doc
+type DocStorage struct {
+	docs map[string]document.Document
 }
 
-// NewDocStorage returns a simple memory-backed DocStorage.
-func NewDocStorage() filestorage.DocStorage {
-	storage := docStorage{
-		docs: make(map[string]filestorage.Doc),
+// NewDocStorage returns a simple memory-backed DocumentStorage.
+func NewDocStorage() document.DocumentStorage {
+	storage := DocStorage{
+		docs: make(map[string]document.Document),
 	}
 	return &storage
 }
 
-func (s *docStorage) lookUp(id string) (filestorage.Doc, error) {
+// LookUp returns the stored doc (not a copy).
+func (s *DocStorage) LookUp(id string) (document.Document, error) {
 	doc, ok := s.docs[id]
 	if !ok {
 		return nil, errors.NotFoundf(id)
@@ -31,8 +32,8 @@ func (s *docStorage) lookUp(id string) (filestorage.Doc, error) {
 }
 
 // Doc implements DocStorage.Doc.
-func (s *docStorage) Doc(id string) (filestorage.Doc, error) {
-	raw, err := s.lookUp(id)
+func (s *DocStorage) Doc(id string) (document.Document, error) {
+	raw, err := s.LookUp(id)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
@@ -40,8 +41,8 @@ func (s *docStorage) Doc(id string) (filestorage.Doc, error) {
 }
 
 // ListDocs implements DocStorage.ListDocs.
-func (s *docStorage) ListDocs() ([]filestorage.Doc, error) {
-	var list []filestorage.Doc
+func (s *DocStorage) ListDocs() ([]document.Document, error) {
+	var list []document.Document
 	for _, doc := range s.docs {
 		if doc == nil {
 			continue
@@ -52,7 +53,7 @@ func (s *docStorage) ListDocs() ([]filestorage.Doc, error) {
 }
 
 // AddDoc implements DocStorage.AddDoc.
-func (s *docStorage) AddDoc(doc filestorage.Doc) (string, error) {
+func (s *DocStorage) AddDoc(doc document.Document) (string, error) {
 	if doc.ID() != "" {
 		return "", errors.AlreadyExistsf("ID already set")
 	}
@@ -69,7 +70,7 @@ func (s *docStorage) AddDoc(doc filestorage.Doc) (string, error) {
 }
 
 // RemoveDoc implements DocStorage.RemoveDoc.
-func (s *docStorage) RemoveDoc(id string) error {
+func (s *DocStorage) RemoveDoc(id string) error {
 	if _, ok := s.docs[id]; !ok {
 		return errors.NotFoundf(id)
 	}
@@ -78,6 +79,6 @@ func (s *docStorage) RemoveDoc(id string) error {
 }
 
 // Close implements io.Closer.Close.
-func (s *docStorage) Close() error {
+func (s *DocStorage) Close() error {
 	return nil
 }

@@ -17,5 +17,5 @@ func Uptime() (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	return info.Uptime, nil
+	return int64(info.Uptime), nil
 }

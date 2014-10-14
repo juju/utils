@@ -7,7 +7,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/juju/errgo"
+	"gopkg.in/errgo.v1"
 )
 
 // ErrorToResponse represents a function that can convert a Go error

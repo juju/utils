@@ -15,9 +15,9 @@ import (
 
 	"github.com/juju/testing"
 	jc "github.com/juju/testing/checkers"
+	ft "github.com/juju/testing/filetesting"
 	gc "gopkg.in/check.v1"
 
-	ft "github.com/juju/testing/filetesting"
 	"github.com/juju/utils/zip"
 )
 

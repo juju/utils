@@ -16,9 +16,8 @@ import (
 	"strings"
 	stdtesting "testing"
 
-	gc "gopkg.in/check.v1"
-
 	"github.com/juju/testing"
+	gc "gopkg.in/check.v1"
 )
 
 func TestPackage(t *stdtesting.T) {

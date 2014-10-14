@@ -10,8 +10,8 @@ import (
 	"net/http/httptest"
 
 	gc "gopkg.in/check.v1"
+	"gopkg.in/errgo.v1"
 
-	"github.com/juju/errgo"
 	"github.com/juju/utils/jsonhttp"
 )
 

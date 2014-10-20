@@ -90,6 +90,9 @@ func shellAndArgs() (string, []string) {
 	return com[0], com[1:]
 }
 
+// Run sets up the command environment (environment variables, working dir)
+// and starts the process. The commands are passed into '/bin/bash -s' through stdin
+// on Linux machines and to powershell on Windows machines.
 func (r *RunParams) Run() error {
 	if runtime.GOOS == "windows" {
 		r.Environment = mergeEnvironment(r.Environment)
@@ -117,6 +120,9 @@ func (r *RunParams) Run() error {
 	return nil
 }
 
+// Process returns the *os.Process instance of the current running process
+// This will allow us to kill the process if needed, or get more information
+// on the process
 func (r *RunParams) Process() *os.Process {
 	if r.ps != nil && r.ps.Process != nil {
 		return r.ps.Process
@@ -124,6 +130,10 @@ func (r *RunParams) Process() *os.Process {
 	return nil
 }
 
+// Wait blocks until the process exits, and returns an ExecResponse type
+// containing stdout, stderr and the return code of the process. If a non-zero
+// return code is returned, this is collected as the code for the response and
+// this does not classify as an error.
 func (r *RunParams) Wait() (*ExecResponse, error) {
 	var err error
 	if r.ps == nil {

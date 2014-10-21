@@ -1,11 +1,15 @@
 // Copyright 2013 Canonical Ltd.
 // Licensed under the LGPLv3, see LICENCE file for details.
 
+// +build windows
+
 package utils
 
 import (
 	"fmt"
 	"os"
+	"path/filepath"
+	"strings"
 	"syscall"
 	"unsafe"
 )
@@ -36,6 +40,39 @@ func ReplaceFile(source, destination string) error {
 		return &os.LinkError{"replace", source, destination, err}
 	}
 	return nil
+}
+
+// MakeFileURL returns a proper file URL for the given path/directory
+func MakeFileURL(in string) string {
+	var volumeName string
+	if strings.HasPrefix(in, "file://") {
+		volumeName = filepath.VolumeName(in[len("file://"):])
+	} else {
+		volumeName = filepath.VolumeName(in)
+	}
+
+	if volumeName != "" {
+
+        // Strip colon
+        volumeName := string(volumeName[:len(volumeName) - 1])
+
+        // Do not apply function twice
+	if strings.HasPrefix(in, "file://\\\\localhost\\") {
+		return in
+	}
+
+	in = filepath.ToSlash(in)
+	prefix := "file://\\\\localhost\\" + volumeName + "$"
+        if strings.HasPrefix(in, volumeName) {
+		return prefix + in[len(volumeName) + 1:]
+	}
+	if strings.HasPrefix(in, "file://" + volumeName) {
+		return prefix + in[len("file://" + volumeName) + 1:]
+	}
+
+	}
+
+	return in
 }
 
 func getUserSID(username string) (string, error) {

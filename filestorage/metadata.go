@@ -9,33 +9,35 @@ import (
 	"github.com/juju/errors"
 )
 
-var _ Doc = (*doc)(nil)
-
-type doc struct {
-	id string
+// RawDoc is a basic, uniquely identifiable document.
+type RawDoc struct {
+	// ID is the unique identifier for the document.
+	ID string
 }
 
-// ID implements Doc.ID.
-func (d *doc) ID() string {
-	return d.id
+// DocWrapper wraps a document in the Document interface.
+type DocWrapper struct {
+	Raw *RawDoc
 }
 
-// SetID implements Doc.SetID.  If the ID is already set, SetID()
-// should return true (false otherwise).
-func (d *doc) SetID(id string) bool {
-	if d.id != "" {
+// ID returns the document's unique identifier.
+func (d *DocWrapper) ID() string {
+	return d.Raw.ID
+}
+
+// SetID sets the document's unique identifier.  If the ID is already
+// set, SetID() returns true (false otherwise).
+func (d *DocWrapper) SetID(id string) bool {
+	if d.Raw.ID != "" {
 		return true
 	}
-	d.id = id
+	d.Raw.ID = id
 	return false
 }
 
-// Ensure FileMetadata implements Metadata.
-var _ Metadata = (*FileMetadata)(nil)
-
 // FileMetadata contains the metadata for a single stored file.
 type FileMetadata struct {
-	doc
+	DocWrapper
 	size           int64
 	checksum       string
 	checksumFormat string
@@ -49,6 +51,7 @@ type FileMetadata struct {
 // current one is used.
 func NewMetadata(timestamp *time.Time) *FileMetadata {
 	meta := FileMetadata{}
+	meta.DocWrapper.Raw = &RawDoc{}
 	if timestamp == nil {
 		meta.timestamp = time.Now().UTC()
 	} else {

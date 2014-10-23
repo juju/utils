@@ -7,8 +7,8 @@ import (
 	"github.com/juju/errors"
 )
 
-// Convert turns a Doc into a Metadata if possible.
-func Convert(doc Doc) (Metadata, error) {
+// Convert turns a Document into a Metadata if possible.
+func Convert(doc Document) (Metadata, error) {
 	meta, ok := doc.(Metadata)
 	if !ok {
 		return nil, errors.Errorf("expected a Metadata doc, got %v", doc)

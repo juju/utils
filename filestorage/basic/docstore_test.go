@@ -15,7 +15,7 @@ var _ = gc.Suite(&DocStorageSuite{})
 
 type DocStorageSuite struct {
 	testing.IsolationSuite
-	original filestorage.Doc
+	original filestorage.Document
 	stor     filestorage.DocStorage
 }
 

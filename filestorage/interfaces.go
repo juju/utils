@@ -24,18 +24,19 @@ type FileStorage interface {
 	Remove(id string) error
 }
 
-// Doc represents a document that can be identified uniquely by a string.
-type Doc interface {
-	// ID is the unique ID assigned by the storage system.
+// Document represents a document that can be identified uniquely
+// by a string.
+type Document interface {
+	// ID returns the unique ID of the document.
 	ID() string
-	// SetID sets the ID of the Doc.  If the ID is already set,
+	// SetID sets the ID of the document.  If the ID is already set,
 	// SetID() should return true (false otherwise).
 	SetID(id string) (alreadySet bool)
 }
 
 // Metadata is the meta information for a stored file.
 type Metadata interface {
-	Doc
+	Document
 	// Size is the size of the file (in bytes).
 	Size() int64
 	// Checksum is the checksum for the file.
@@ -61,13 +62,13 @@ type DocStorage interface {
 	// Doc returns the doc that matches the ID.  If there is no match,
 	// an error is returned (see errors.IsNotFound).  Any other problem
 	// also results in an error.
-	Doc(id string) (Doc, error)
+	Doc(id string) (Document, error)
 	// ListDocs returns a list of all the docs in the storage.
-	ListDocs() ([]Doc, error)
+	ListDocs() ([]Document, error)
 	// AddDoc adds the doc to the storage.  If successful, the storage-
 	// generated ID for the doc is returned.  Otherwise an error is
 	// returned.
-	AddDoc(doc Doc) (string, error)
+	AddDoc(doc Document) (string, error)
 	// RemoveDoc removes the matching doc from the storage.  If there
 	// is no match an error is returned (see errors.IsNotFound).  Any
 	// other problem also results in an error.

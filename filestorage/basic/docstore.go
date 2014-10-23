@@ -11,19 +11,19 @@ import (
 )
 
 type docStorage struct {
-	docs map[string]filestorage.Doc
+	docs map[string]filestorage.Document
 }
 
 // NewDocStorage returns a simple memory-backed DocStorage.
 func NewDocStorage() filestorage.DocStorage {
 	storage := docStorage{
-		docs: make(map[string]filestorage.Doc),
+		docs: make(map[string]filestorage.Document),
 	}
 	return &storage
 }
 
 // Doc implements DocStorage.Doc.
-func (s *docStorage) Doc(id string) (filestorage.Doc, error) {
+func (s *docStorage) Doc(id string) (filestorage.Document, error) {
 	doc, ok := s.docs[id]
 	if !ok {
 		return nil, errors.NotFoundf(id)
@@ -32,8 +32,8 @@ func (s *docStorage) Doc(id string) (filestorage.Doc, error) {
 }
 
 // ListDocs implements DocStorage.ListDocs.
-func (s *docStorage) ListDocs() ([]filestorage.Doc, error) {
-	var list []filestorage.Doc
+func (s *docStorage) ListDocs() ([]filestorage.Document, error) {
+	var list []filestorage.Document
 	for _, doc := range s.docs {
 		if doc == nil {
 			continue
@@ -44,7 +44,7 @@ func (s *docStorage) ListDocs() ([]filestorage.Doc, error) {
 }
 
 // AddDoc implements DocStorage.AddDoc.
-func (s *docStorage) AddDoc(doc filestorage.Doc) (string, error) {
+func (s *docStorage) AddDoc(doc filestorage.Document) (string, error) {
 	uuid, err := utils.NewUUID()
 	if err != nil {
 		return "", errors.Annotate(err, "error while creating ID")

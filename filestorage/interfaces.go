@@ -8,9 +8,7 @@ import (
 	"time"
 )
 
-// FileStorage is an abstraction of a system that can be used for the
-// storage of files.  The type exposes the essential capabilities of
-// such a system.
+// FileStorage is an abstraction that can be used for the storage of files.
 type FileStorage interface {
 	// Metadata returns a file's metadata.
 	Metadata(id string) (Metadata, error)
@@ -26,7 +24,7 @@ type FileStorage interface {
 	Remove(id string) error
 }
 
-// Doc is an identifiable document.
+// Doc represents a document that can be identified uniquely by a string.
 type Doc interface {
 	// ID is the unique ID assigned by the storage system.
 	ID() string

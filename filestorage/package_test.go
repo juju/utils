@@ -30,6 +30,13 @@ type FakeMetadataStorage struct {
 	metaArg filestorage.Metadata
 }
 
+// Check verfies the state of the fake.
+func (s *FakeMetadataStorage) Check(c *gc.C, id string, meta filestorage.Metadata, calls ...string) {
+	c.Check(s.calls, gc.DeepEquals, calls)
+	c.Check(s.idArg, gc.Equals, id)
+	c.Check(s.metaArg, gc.Equals, meta)
+}
+
 func (s *FakeMetadataStorage) Doc(id string) (filestorage.Document, error) {
 	s.calls = append(s.calls, "Doc")
 	s.idArg = id
@@ -115,6 +122,19 @@ type FakeRawFileStorage struct {
 	idArg   string
 	fileArg io.Reader
 	sizeArg int64
+}
+
+// Check verfies the state of the fake.
+func (s *FakeRawFileStorage) Check(c *gc.C, id string, file io.Reader, size int64, calls ...string) {
+	c.Check(s.calls, gc.DeepEquals, calls)
+	c.Check(s.idArg, gc.Equals, id)
+	c.Check(s.fileArg, gc.Equals, file)
+	c.Check(s.sizeArg, gc.Equals, size)
+}
+
+// CheckNotUsed verifies that the fake was not used.
+func (s *FakeRawFileStorage) CheckNotUsed(c *gc.C) {
+	s.Check(c, "", nil, 0)
 }
 
 func (s *FakeRawFileStorage) File(id string) (io.ReadCloser, error) {

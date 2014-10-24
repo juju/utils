@@ -14,7 +14,7 @@ import (
 )
 
 var (
-	_ filestorage.Document = (*filestorage.DocWrapper)(nil)
+	_ filestorage.Document = (*filestorage.Doc)(nil)
 	_ filestorage.Metadata = (*filestorage.FileMetadata)(nil)
 )
 
@@ -32,14 +32,6 @@ func (s *MetadataSuite) TestFileMetadataNewMetadata(c *gc.C) {
 	c.Check(meta.Checksum(), gc.Equals, "")
 	c.Check(meta.ChecksumFormat(), gc.Equals, "")
 	c.Check(meta.Stored(), gc.IsNil)
-}
-
-func (s *MetadataSuite) TestFileMetadataDoc(c *gc.C) {
-	meta := filestorage.NewMetadata()
-	meta.SetFile(10, "some sum", "SHA-1")
-	doc := meta.Doc()
-
-	c.Check(doc, gc.Equals, meta)
 }
 
 func (s *MetadataSuite) TestFileMetadataSetIDInitial(c *gc.C) {

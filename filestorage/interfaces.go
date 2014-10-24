@@ -64,9 +64,6 @@ type Metadata interface {
 	// (see Time.IsZero).
 	Stored() *time.Time
 
-	// Doc returns a storable copy of the metadata.
-	Doc() interface{}
-
 	// SetFile sets the file info on the metadata.
 	SetFile(size int64, checksum, checksumFormat string) error
 

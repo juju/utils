@@ -34,7 +34,7 @@ func (s *WrapperSuite) SetUpTest(c *gc.C) {
 }
 
 func (s *WrapperSuite) metadata() filestorage.Metadata {
-	meta := filestorage.NewMetadata(nil)
+	meta := filestorage.NewMetadata()
 	meta.SetFile(10, "", "")
 	return meta
 }
@@ -52,7 +52,7 @@ func (s *WrapperSuite) setFile(data string) (string, filestorage.Metadata, io.Re
 	id, meta := s.setMeta()
 	file := ioutil.NopCloser(bytes.NewBufferString(data))
 	s.rawstor.file = file
-	meta.SetStored()
+	meta.SetStored(nil)
 	return id, meta, file
 }
 
@@ -137,7 +137,7 @@ func (s *WrapperSuite) TestFileStorageAddFile(c *gc.C) {
 	c.Assert(err, gc.IsNil)
 
 	c.Check(meta.ID(), gc.Equals, "")
-	c.Check(meta.Stored(), jc.IsFalse)
+	c.Check(meta.Stored(), gc.IsNil)
 
 	c.Check(id, gc.Equals, "<spam>")
 	c.Check(meta.ID(), gc.Equals, "")
@@ -160,7 +160,7 @@ func (s *WrapperSuite) TestFileStorageAddMetaOnly(c *gc.C) {
 	c.Assert(err, gc.IsNil)
 
 	c.Check(meta, gc.Equals, original)
-	c.Check(meta.Stored(), jc.IsFalse)
+	c.Check(meta.Stored(), gc.IsNil)
 }
 
 func (s *WrapperSuite) TestFileStorageAddIDAlreadySet(c *gc.C) {

@@ -58,11 +58,11 @@ type Metadata interface {
 	// ChecksumFormat is the kind (and encoding) of checksum.
 	ChecksumFormat() string
 
-	// Timestamp records when the file was created.
-	Timestamp() time.Time
-
-	// Stored indicates whether or not the file has been stored.
-	Stored() bool
+	// Stored returns when the file was last stored.  If it has not been
+	// stored yet, nil is returned.  If it has been stored but the
+	// timestamp is not available, a zero value is returned
+	// (see Time.IsZero).
+	Stored() *time.Time
 
 	// Doc returns a storable copy of the metadata.
 	Doc() interface{}
@@ -70,8 +70,9 @@ type Metadata interface {
 	// SetFile sets the file info on the metadata.
 	SetFile(size int64, checksum, checksumFormat string) error
 
-	// SetStored sets Stored to true on the metadata.
-	SetStored()
+	// SetStored records when the file was last stored.  If the previous
+	// value matters, be sure to call Stored() first.
+	SetStored(timestamp *time.Time)
 }
 
 // DocStorage is an abstraction for a system that can store docs (structs).

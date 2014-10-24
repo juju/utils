@@ -48,22 +48,16 @@ type FileMetadata struct {
 	size           int64
 	checksum       string
 	checksumFormat string
-	timestamp      time.Time
-	stored         bool
+	stored         *time.Time
 }
 
 // NewMetadata returns a new Metadata for a file.  ID is left unset (use
 // SetID() for that).  Size, Checksum, and ChecksumFormat are left unset
 // (use SetFile() for those).  If no timestamp is provided, the
 // current one is used.
-func NewMetadata(timestamp *time.Time) *FileMetadata {
+func NewMetadata() *FileMetadata {
 	meta := FileMetadata{}
 	meta.DocWrapper.Raw = &RawDoc{}
-	if timestamp == nil {
-		meta.timestamp = time.Now().UTC()
-	} else {
-		meta.timestamp = *timestamp
-	}
 	return &meta
 }
 
@@ -79,11 +73,7 @@ func (m *FileMetadata) ChecksumFormat() string {
 	return m.checksumFormat
 }
 
-func (m *FileMetadata) Timestamp() time.Time {
-	return m.timestamp
-}
-
-func (m *FileMetadata) Stored() bool {
+func (m *FileMetadata) Stored() *time.Time {
 	return m.stored
 }
 
@@ -126,8 +116,13 @@ func (m *FileMetadata) SetFile(size int64, checksum, format string) error {
 	return nil
 }
 
-func (m *FileMetadata) SetStored() {
-	m.stored = true
+func (m *FileMetadata) SetStored(timestamp *time.Time) {
+	if timestamp == nil {
+		now := time.Now().UTC()
+		m.stored = &now
+	} else {
+		m.stored = timestamp
+	}
 }
 
 // Copy returns a copy of the document.

@@ -51,7 +51,7 @@ func (s *fileStorage) Get(id string) (Metadata, io.ReadCloser, error) {
 	if err != nil {
 		return nil, nil, errors.Trace(err)
 	}
-	if !meta.Stored() {
+	if meta.Stored() == nil {
 		return nil, nil, errors.NotFoundf("no file stored for %q", id)
 	}
 	file, err := s.rawStorage.File(id)

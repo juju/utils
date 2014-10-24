@@ -36,9 +36,9 @@ func (d *DocWrapper) SetID(id string) bool {
 }
 
 // Copy returns a copy of the document.
-func (d *DocWrapper) Copy(id string) Document {
+func (d *DocWrapper) Copy() Document {
 	copied := *d.Raw
-	copied.ID = id
+	copied.ID = ""
 	return &DocWrapper{&copied}
 }
 
@@ -126,9 +126,9 @@ func (m *FileMetadata) SetStored(timestamp *time.Time) {
 }
 
 // Copy returns a copy of the document.
-func (m *FileMetadata) Copy(id string) Document {
+func (m *FileMetadata) Copy() Document {
 	copied := *m
-	doc := m.DocWrapper.Copy(id).(*DocWrapper)
+	doc := m.DocWrapper.Copy().(*DocWrapper)
 	copied.DocWrapper = *doc
 	return &copied
 }

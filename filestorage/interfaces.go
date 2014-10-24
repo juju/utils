@@ -41,8 +41,8 @@ type Document interface {
 	// SetID() should return true (false otherwise).
 	SetID(id string) (alreadySet bool)
 
-	// Copy returns a new copy of the metadata updated with the given ID.
-	Copy(id string) Document
+	// Copy returns a new copy of the metadata with an empty ID.
+	Copy() Document
 }
 
 // Metadata is the meta information for a stored file.

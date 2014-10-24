@@ -107,10 +107,14 @@ func (s *MetadataSuite) TestFileMetadataSetStoredDefault(c *gc.C) {
 func (s *MetadataSuite) TestFileMetadataCopy(c *gc.C) {
 	meta := filestorage.NewMetadata()
 	meta.SetFile(10, "some sum", "SHA-1")
-	doc := meta.Copy("")
+	meta.SetID("spam")
+
+	doc := meta.Copy()
 	copied, ok := doc.(filestorage.Metadata)
 	c.Assert(ok, jc.IsTrue)
 
+	c.Check(copied.ID(), gc.Equals, "")
+	copied.SetID(meta.ID())
 	c.Check(copied, gc.Not(gc.Equals), meta)
 	c.Check(copied, gc.DeepEquals, meta)
 }

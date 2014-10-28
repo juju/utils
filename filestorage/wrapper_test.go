@@ -178,7 +178,7 @@ func (s *WrapperSuite) TestFileStorageAddFileFailureDropsMetadata(c *gc.C) {
 	stor := filestorage.NewFileStorage(s.metastor, raw)
 	_, err := stor.Add(original, &bytes.Buffer{})
 
-	c.Check(errors.Cause(err), gc.Equals, failure)
+	c.Assert(errors.Cause(err), gc.Equals, failure)
 
 	metalist, metaErr := s.metastor.ListMetadata()
 	c.Assert(metaErr, gc.IsNil)

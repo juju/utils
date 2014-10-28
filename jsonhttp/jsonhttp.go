@@ -28,13 +28,53 @@ func HandleErrors(errToResp ErrorToResponse) func(handle ErrorHandler) http.Hand
 	writeError := WriteError(errToResp)
 	return func(handle ErrorHandler) http.Handler {
 		f := func(w http.ResponseWriter, req *http.Request) {
-			if err := handle(w, req); err != nil {
-				writeError(w, err)
+			w1 := responseWriter{
+				ResponseWriter: w,
+			}
+			if err := handle(&w1, req); err != nil {
+				// We write the error only if the header hasn't
+				// already been written, because if it has, then
+				// we will not be able to set the appropriate error
+				// response code, and there's a danger that we
+				// may be corrupting output by appending
+				// a JSON error message to it.
+				if !w1.headerWritten {
+					writeError(w, err)
+				}
+				// TODO log the error?
 			}
 		}
 		return http.HandlerFunc(f)
 	}
 }
+
+// responseWriter wraps http.ResponseWriter but allows us
+// to find out whether any body has already been written.
+type responseWriter struct {
+	headerWritten bool
+	http.ResponseWriter
+}
+
+func (w *responseWriter) Write(data []byte) (int, error) {
+	w.headerWritten = true
+	return w.ResponseWriter.Write(data)
+}
+
+func (w *responseWriter) WriteHeader(code int) {
+	w.headerWritten = true
+	w.ResponseWriter.WriteHeader(code)
+}
+
+// Flush implements http.Flusher.Flush.
+func (w *responseWriter) Flush() {
+	w.headerWritten = true
+	if f, ok := w.ResponseWriter.(http.Flusher); ok {
+		f.Flush()
+	}
+}
+
+// Ensure statically that responseWriter does implement http.Flusher.
+var _ http.Flusher = (*responseWriter)(nil)
 
 // WriteError returns a function that can be used to write an error to a ResponseWriter
 // and set the HTTP status code. The errToResp parameter is used to determine
@@ -67,12 +107,9 @@ func WriteJSON(w http.ResponseWriter, code int, val interface{}) error {
 
 // JSONHandler is like http.Handler except that it returns a
 // body (to be converted to JSON) and an error.
-// An ErrorHandler function should not itself write to the
-// ResponseWriter.
-// TODO(rog) remove ResponseWriter argument from function argument.
-// It is redundant (and possibly dangerous) if used in combination with the interface{}
-// return.
-type JSONHandler func(http.ResponseWriter, *http.Request) (interface{}, error)
+// The Header parameter can be used to set
+// custom header on the response.
+type JSONHandler func(http.Header, *http.Request) (interface{}, error)
 
 // HandleJSON returns a function that can be used to convert an JSONHandler
 // into an http.Handler. The given errToResp parameter is used to convert
@@ -82,7 +119,7 @@ func HandleJSON(errToResp ErrorToResponse) func(handle JSONHandler) http.Handler
 	handleErrors := HandleErrors(errToResp)
 	return func(handle JSONHandler) http.Handler {
 		f := func(w http.ResponseWriter, req *http.Request) error {
-			val, err := handle(w, req)
+			val, err := handle(w.Header(), req)
 			if err != nil {
 				return errgo.Mask(err, errgo.Any)
 			}

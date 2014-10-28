@@ -37,7 +37,7 @@ func (s *WrapperSuite) metadata() filestorage.Metadata {
 	return meta
 }
 
-func (s *WrapperSuite) setmeta() (string, filestorage.Metadata) {
+func (s *WrapperSuite) setMeta() (string, filestorage.Metadata) {
 	id := "<id>"
 	meta := s.metadata()
 	meta.SetID(id)
@@ -47,7 +47,7 @@ func (s *WrapperSuite) setmeta() (string, filestorage.Metadata) {
 }
 
 func (s *WrapperSuite) setfile(data string) (string, filestorage.Metadata, io.ReadCloser) {
-	id, meta := s.setmeta()
+	id, meta := s.setMeta()
 	file := ioutil.NopCloser(bytes.NewBufferString(data))
 	s.rawstor.file = file
 	meta.SetStored()
@@ -61,7 +61,7 @@ func (s *WrapperSuite) TestFileStorageNewFileStorage(c *gc.C) {
 }
 
 func (s *WrapperSuite) TestFileStorageMetadata(c *gc.C) {
-	id, original := s.setmeta()
+	id, original := s.setMeta()
 	meta, err := s.stor.Metadata(id)
 	c.Check(err, gc.IsNil)
 
@@ -87,7 +87,7 @@ func (s *WrapperSuite) TestFileStorageListEmpty(c *gc.C) {
 }
 
 func (s *WrapperSuite) TestFileStorageListOne(c *gc.C) {
-	id, _ := s.setmeta()
+	id, _ := s.setMeta()
 	list, err := s.stor.List()
 	c.Check(err, gc.IsNil)
 
@@ -97,8 +97,8 @@ func (s *WrapperSuite) TestFileStorageListOne(c *gc.C) {
 }
 
 func (s *WrapperSuite) TestFileStorageListTwo(c *gc.C) {
-	id1, _ := s.setmeta()
-	id2, _ := s.setmeta()
+	id1, _ := s.setMeta()
+	id2, _ := s.setMeta()
 	list, err := s.stor.List()
 	c.Check(err, gc.IsNil)
 
@@ -140,7 +140,7 @@ func (s *WrapperSuite) TestFileStorageAddFile(c *gc.C) {
 }
 
 func (s *WrapperSuite) TestFileStorageAddMetaOnly(c *gc.C) {
-	id, original := s.setmeta()
+	id, original := s.setMeta()
 	meta, err := s.stor.Metadata(id)
 	c.Assert(err, gc.IsNil)
 
@@ -157,7 +157,7 @@ func (s *WrapperSuite) TestFileStorageAddIDAlreadySet(c *gc.C) {
 }
 
 func (s *WrapperSuite) TestFileStorageSetFile(c *gc.C) {
-	id, meta := s.setmeta()
+	id, meta := s.setMeta()
 	_, _, err := s.stor.Get(id)
 	c.Assert(err, gc.NotNil)
 

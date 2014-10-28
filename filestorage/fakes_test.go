@@ -7,6 +7,7 @@ import (
 	"io"
 
 	"github.com/juju/errors"
+	jc "github.com/juju/testing/checkers"
 	gc "gopkg.in/check.v1"
 
 	"github.com/juju/utils/filestorage"
@@ -28,7 +29,7 @@ type FakeMetadataStorage struct {
 
 // Check verfies the state of the fake.
 func (s *FakeMetadataStorage) Check(c *gc.C, id string, meta filestorage.Metadata, calls ...string) {
-	c.Check(s.calls, gc.DeepEquals, calls)
+	c.Check(s.calls, jc.DeepEquals, calls)
 	c.Check(s.idArg, gc.Equals, id)
 	c.Check(s.metaArg, gc.Equals, meta)
 }
@@ -122,7 +123,7 @@ type FakeRawFileStorage struct {
 
 // Check verfies the state of the fake.
 func (s *FakeRawFileStorage) Check(c *gc.C, id string, file io.Reader, size int64, calls ...string) {
-	c.Check(s.calls, gc.DeepEquals, calls)
+	c.Check(s.calls, jc.DeepEquals, calls)
 	c.Check(s.idArg, gc.Equals, id)
 	c.Check(s.fileArg, gc.Equals, file)
 	c.Check(s.sizeArg, gc.Equals, size)

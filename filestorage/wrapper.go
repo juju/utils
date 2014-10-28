@@ -86,7 +86,7 @@ func (s *fileStorage) addFile(meta Metadata, file io.Reader) error {
 // metadata will still be stored.  A non-empty returned ID indicates
 // that the metadata was stored successfully.
 func (s *fileStorage) Add(meta Metadata, file io.Reader) (string, error) {
-	id, err := s.metadata.AddDoc(meta)
+	id, err := s.metadata.AddMetadata(meta)
 	if err != nil {
 		return "", errors.Trace(err)
 	}
@@ -131,9 +131,23 @@ func (s *fileStorage) Remove(id string) error {
 	if err != nil && !errors.IsNotFound(err) {
 		return errors.Trace(err)
 	}
-	err = s.metadata.RemoveDoc(id)
+	err = s.metadata.RemoveMetadata(id)
 	if err != nil {
 		return errors.Trace(err)
 	}
 	return nil
+}
+
+// Close implements io.Closer.Close.
+func (s *fileStorage) Close() error {
+	ferr := s.files.Close()
+	merr := s.metadata.Close()
+	if ferr == nil {
+		return errors.Trace(merr)
+	} else if merr == nil {
+		return errors.Trace(ferr)
+	} else {
+		msg := "closing both failed: metadata (%v) and files (%v)"
+		return errors.Errorf(msg, merr, ferr)
+	}
 }

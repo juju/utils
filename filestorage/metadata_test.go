@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/juju/testing"
+	jc "github.com/juju/testing/checkers"
 	gc "gopkg.in/check.v1"
 
 	"github.com/juju/utils/filestorage"
@@ -112,4 +113,15 @@ func (s *MetadataSuite) TestFileMetadataSetStoredIdempotent(c *gc.C) {
 	meta.SetStored()
 	meta.SetStored()
 	c.Check(meta.Stored(), gc.Equals, true)
+}
+
+func (s *MetadataSuite) TestFileMetadataCopy(c *gc.C) {
+	meta := filestorage.NewMetadata(nil)
+	meta.SetFile(10, "some sum", "SHA-1")
+	doc := meta.Copy("")
+	copied, ok := doc.(filestorage.Metadata)
+	c.Assert(ok, jc.IsTrue)
+
+	c.Check(copied, gc.Not(gc.Equals), meta)
+	c.Check(copied, gc.DeepEquals, meta)
 }

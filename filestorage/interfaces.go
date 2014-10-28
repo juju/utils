@@ -10,6 +10,8 @@ import (
 
 // FileStorage is an abstraction that can be used for the storage of files.
 type FileStorage interface {
+	io.Closer
+
 	// Metadata returns a file's metadata.
 	Metadata(id string) (Metadata, error)
 
@@ -38,6 +40,9 @@ type Document interface {
 	// SetID sets the ID of the document.  If the ID is already set,
 	// SetID() should return true (false otherwise).
 	SetID(id string) (alreadySet bool)
+
+	// Copy returns a new copy of the metadata updated with the given ID.
+	Copy(id string) Document
 }
 
 // Metadata is the meta information for a stored file.
@@ -72,6 +77,8 @@ type Metadata interface {
 // DocStorage is an abstraction for a system that can store docs (structs).
 // The system is expected to generate its own unique ID for each doc.
 type DocStorage interface {
+	io.Closer
+
 	// Doc returns the doc that matches the ID.  If there is no match,
 	// an error is returned (see errors.IsNotFound).  Any other problem
 	// also results in an error.
@@ -94,6 +101,8 @@ type DocStorage interface {
 // RawFileStorage is an abstraction around a system that can store files.
 // The system is expected to rely on the user for unique IDs.
 type RawFileStorage interface {
+	io.Closer
+
 	// File returns the matching file.  If there is no match an error is
 	// returned (see errors.IsNotFound).  Any other problem also results
 	// in an error.
@@ -121,6 +130,16 @@ type MetadataStorage interface {
 
 	// ListMetadata returns a list of all metadata in the storage.
 	ListMetadata() ([]Metadata, error)
+
+	// AddMetadata adds the metadata to the storage.  If successful, the
+	// storage-generated ID for the metadata is returned.  Otherwise an
+	// error is returned.
+	AddMetadata(meta Metadata) (string, error)
+
+	// RemoveMetadata removes the matching metadata from the storage.
+	// If there is no match an error is returned (see errors.IsNotFound).
+	// Any other problem also results in an error.
+	RemoveMetadata(id string) error
 
 	// SetStored updates the stored metadata to indicate that the
 	// associated file has been successfully stored in a RawFileStorage

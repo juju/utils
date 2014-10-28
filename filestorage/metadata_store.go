@@ -53,3 +53,14 @@ func (s *MetadataDocStorage) ListMetadata() ([]Metadata, error) {
 	}
 	return metaList, nil
 }
+
+// ListMetadata implements MetadataStorage.ListMetadata.
+func (s *MetadataDocStorage) AddMetadata(meta Metadata) (string, error) {
+	id, err := s.AddDoc(meta)
+	return id, errors.Trace(err)
+}
+
+// ListMetadata implements MetadataStorage.ListMetadata.
+func (s *MetadataDocStorage) RemoveMetadata(id string) error {
+	return errors.Trace(s.RemoveDoc(id))
+}

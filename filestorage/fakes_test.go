@@ -71,6 +71,11 @@ func (s *FakeMetadataStorage) RemoveDoc(id string) error {
 	return s.err
 }
 
+func (s *FakeMetadataStorage) Close() error {
+	s.calls = append(s.calls, "Close")
+	return s.err
+}
+
 func (s *FakeMetadataStorage) Metadata(id string) (filestorage.Metadata, error) {
 	s.calls = append(s.calls, "Metadata")
 	s.idArg = id
@@ -154,5 +159,10 @@ func (s *FakeRawFileStorage) AddFile(id string, file io.Reader, size int64) erro
 func (s *FakeRawFileStorage) RemoveFile(id string) error {
 	s.calls = append(s.calls, "RemoveFile")
 	s.idArg = id
+	return s.err
+}
+
+func (s *FakeRawFileStorage) Close() error {
+	s.calls = append(s.calls, "Close")
 	return s.err
 }

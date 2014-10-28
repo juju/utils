@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 
 	"github.com/juju/testing"
+	jc "github.com/juju/testing/checkers"
 	gc "gopkg.in/check.v1"
 
 	"github.com/juju/utils/filestorage"
@@ -65,7 +66,7 @@ func (s *WrapperSuite) TestFileStorageMetadata(c *gc.C) {
 	meta, err := s.stor.Metadata(id)
 	c.Check(err, gc.IsNil)
 
-	c.Check(meta, gc.DeepEquals, original)
+	c.Check(meta, jc.DeepEquals, original)
 	s.metastor.Check(c, id, nil, "Metadata")
 	s.rawstor.CheckNotUsed(c)
 }

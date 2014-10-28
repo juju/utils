@@ -105,7 +105,7 @@ type RawFileStorage interface {
 	AddFile(id string, file io.Reader, size int64) error
 
 	// RemoveFile removes the matching file from the storage.  It fails
-	// if there is no error (see errors.IsNotFound).  Any other problem
+	// if there is no such file (see errors.IsNotFound).  Any other problem
 	// also results in an error.
 	RemoveFile(id string) error
 }

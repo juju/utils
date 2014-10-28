@@ -108,9 +108,9 @@ func (s *FakeMetadataStorage) RemoveMetadata(id string) error {
 	return s.err
 }
 
-func (s *FakeMetadataStorage) SetStored(meta filestorage.Metadata) error {
+func (s *FakeMetadataStorage) SetStored(id string) error {
 	s.calls = append(s.calls, "SetStored")
-	s.metaArg = meta
+	s.idArg = id
 	return s.err
 }
 

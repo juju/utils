@@ -41,8 +41,8 @@ type Document interface {
 	// SetID() should return true (false otherwise).
 	SetID(id string) (alreadySet bool)
 
-	// Copy returns a new copy of the metadata updated with the given ID.
-	Copy(id string) Document
+	// Copy returns a new copy of the metadata with an empty ID.
+	Copy() Document
 }
 
 // Metadata is the meta information for a stored file.
@@ -58,20 +58,18 @@ type Metadata interface {
 	// ChecksumFormat is the kind (and encoding) of checksum.
 	ChecksumFormat() string
 
-	// Timestamp records when the file was created.
-	Timestamp() time.Time
-
-	// Stored indicates whether or not the file has been stored.
-	Stored() bool
-
-	// Doc returns a storable copy of the metadata.
-	Doc() interface{}
+	// Stored returns when the file was last stored.  If it has not been
+	// stored yet, nil is returned.  If it has been stored but the
+	// timestamp is not available, a zero value is returned
+	// (see Time.IsZero).
+	Stored() *time.Time
 
 	// SetFile sets the file info on the metadata.
 	SetFile(size int64, checksum, checksumFormat string) error
 
-	// SetStored sets Stored to true on the metadata.
-	SetStored()
+	// SetStored records when the file was last stored.  If the previous
+	// value matters, be sure to call Stored() first.
+	SetStored(timestamp *time.Time)
 }
 
 // DocStorage is an abstraction for a system that can store docs (structs).
@@ -121,7 +119,7 @@ type RawFileStorage interface {
 
 // MetadataStorage is an extension of DocStorage adapted to file metadata.
 type MetadataStorage interface {
-	DocStorage
+	io.Closer
 
 	// Metadata returns the matching Metadata.  It fails if there is no
 	// match (see errors.IsNotFound).  Any other problems likewise
@@ -143,9 +141,8 @@ type MetadataStorage interface {
 
 	// SetStored updates the stored metadata to indicate that the
 	// associated file has been successfully stored in a RawFileStorage
-	// system.  It will also call SetStored() on the metadata.  If it
-	// does not find a stored metadata with the matching ID, it will
-	// return an error (see errors.IsNotFound).  It also returns an
-	// error if it fails to update the stored metadata.
-	SetStored(meta Metadata) error
+	// system.  If it does not find a stored metadata with the matching
+	// ID, it will return an error (see errors.IsNotFound).  It also
+	// returns an error if it fails to update the stored metadata.
+	SetStored(id string) error
 }

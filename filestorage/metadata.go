@@ -15,19 +15,19 @@ type RawDoc struct {
 	ID string
 }
 
-// DocWrapper wraps a document in the Document interface.
-type DocWrapper struct {
-	Raw *RawDoc
+// Doc wraps a document in the Document interface.
+type Doc struct {
+	Raw RawDoc
 }
 
 // ID returns the document's unique identifier.
-func (d *DocWrapper) ID() string {
+func (d *Doc) ID() string {
 	return d.Raw.ID
 }
 
 // SetID sets the document's unique identifier.  If the ID is already
 // set, SetID() returns true (false otherwise).
-func (d *DocWrapper) SetID(id string) bool {
+func (d *Doc) SetID(id string) bool {
 	if d.Raw.ID != "" {
 		return true
 	}
@@ -36,71 +36,62 @@ func (d *DocWrapper) SetID(id string) bool {
 }
 
 // Copy returns a copy of the document.
-func (d *DocWrapper) Copy(id string) Document {
-	copied := *d.Raw
-	copied.ID = id
-	return &DocWrapper{&copied}
+func (d *Doc) Copy() Document {
+	copied := *d
+	copied.Raw.ID = ""
+	return &copied
+}
+
+// RawFileMetadata holds info specific to stored files.
+type RawFileMetadata struct {
+	// Size is the size (in bytes) of the stored file.
+	Size int64
+	// Checksum is the checksum of the stored file.
+	Checksum string
+	// ChecksumFormat describes the kind of the checksum.
+	ChecksumFormat string
+	// Stored records the timestamp of when the file was last stored.
+	Stored *time.Time
 }
 
 // FileMetadata contains the metadata for a single stored file.
 type FileMetadata struct {
-	DocWrapper
-	size           int64
-	checksum       string
-	checksumFormat string
-	timestamp      time.Time
-	stored         bool
+	Doc
+	Raw RawFileMetadata
 }
 
-// NewMetadata returns a new Metadata for a file.  ID is left unset (use
-// SetID() for that).  Size, Checksum, and ChecksumFormat are left unset
-// (use SetFile() for those).  If no timestamp is provided, the
-// current one is used.
-func NewMetadata(timestamp *time.Time) *FileMetadata {
+// NewMetadata returns a new Metadata for a stored file.
+func NewMetadata() *FileMetadata {
 	meta := FileMetadata{}
-	meta.DocWrapper.Raw = &RawDoc{}
-	if timestamp == nil {
-		meta.timestamp = time.Now().UTC()
-	} else {
-		meta.timestamp = *timestamp
-	}
 	return &meta
 }
 
 func (m *FileMetadata) Size() int64 {
-	return m.size
+	return m.Raw.Size
 }
 
 func (m *FileMetadata) Checksum() string {
-	return m.checksum
+	return m.Raw.Checksum
 }
 
 func (m *FileMetadata) ChecksumFormat() string {
-	return m.checksumFormat
+	return m.Raw.ChecksumFormat
 }
 
-func (m *FileMetadata) Timestamp() time.Time {
-	return m.timestamp
-}
-
-func (m *FileMetadata) Stored() bool {
-	return m.stored
-}
-
-func (m *FileMetadata) Doc() interface{} {
-	return m
+func (m *FileMetadata) Stored() *time.Time {
+	return m.Raw.Stored
 }
 
 func (m *FileMetadata) SetFile(size int64, checksum, format string) error {
 	// Fall back to existing values.
 	if size == 0 {
-		size = m.size
+		size = m.Raw.Size
 	}
 	if checksum == "" {
-		checksum = m.checksum
+		checksum = m.Raw.Checksum
 	}
 	if format == "" {
-		format = m.checksumFormat
+		format = m.Raw.ChecksumFormat
 	}
 	if checksum != "" {
 		if format == "" {
@@ -110,30 +101,35 @@ func (m *FileMetadata) SetFile(size int64, checksum, format string) error {
 		return errors.Errorf("missing checksum")
 	}
 	// Only allow setting once.
-	if m.size != 0 && size != m.size {
+	if m.Raw.Size != 0 && size != m.Raw.Size {
 		return errors.Errorf("file information (size) already set")
 	}
-	if m.checksum != "" && checksum != m.checksum {
+	if m.Raw.Checksum != "" && checksum != m.Raw.Checksum {
 		return errors.Errorf("file information (checksum) already set")
 	}
-	if m.checksumFormat != "" && format != m.checksumFormat {
+	if m.Raw.ChecksumFormat != "" && format != m.Raw.ChecksumFormat {
 		return errors.Errorf("file information (checksum format) already set")
 	}
 	// Set the values.
-	m.size = size
-	m.checksum = checksum
-	m.checksumFormat = format
+	m.Raw.Size = size
+	m.Raw.Checksum = checksum
+	m.Raw.ChecksumFormat = format
 	return nil
 }
 
-func (m *FileMetadata) SetStored() {
-	m.stored = true
+func (m *FileMetadata) SetStored(timestamp *time.Time) {
+	if timestamp == nil {
+		now := time.Now().UTC()
+		m.Raw.Stored = &now
+	} else {
+		m.Raw.Stored = timestamp
+	}
 }
 
 // Copy returns a copy of the document.
-func (m *FileMetadata) Copy(id string) Document {
+func (m *FileMetadata) Copy() Document {
 	copied := *m
-	doc := m.DocWrapper.Copy(id).(*DocWrapper)
-	copied.DocWrapper = *doc
+	doc := m.Doc.Copy().(*Doc)
+	copied.Doc = *doc
 	return &copied
 }

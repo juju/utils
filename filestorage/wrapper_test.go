@@ -8,6 +8,7 @@ import (
 	"io"
 	"io/ioutil"
 
+	"github.com/juju/errors"
 	"github.com/juju/testing"
 	jc "github.com/juju/testing/checkers"
 	gc "gopkg.in/check.v1"
@@ -33,7 +34,7 @@ func (s *WrapperSuite) SetUpTest(c *gc.C) {
 }
 
 func (s *WrapperSuite) metadata() filestorage.Metadata {
-	meta := filestorage.NewMetadata(nil)
+	meta := filestorage.NewMetadata()
 	meta.SetFile(10, "", "")
 	return meta
 }
@@ -51,7 +52,7 @@ func (s *WrapperSuite) setFile(data string) (string, filestorage.Metadata, io.Re
 	id, meta := s.setMeta()
 	file := ioutil.NopCloser(bytes.NewBufferString(data))
 	s.rawstor.file = file
-	meta.SetStored()
+	meta.SetStored(nil)
 	return id, meta, file
 }
 
@@ -117,11 +118,12 @@ func (s *WrapperSuite) TestFileStorageAddMeta(c *gc.C) {
 	s.metastor.id = "<spam>"
 
 	meta := s.metadata()
+	c.Assert(meta.ID(), gc.Equals, "")
 	id, err := s.stor.Add(meta, nil)
 	c.Assert(err, gc.IsNil)
 
 	c.Check(id, gc.Equals, "<spam>")
-	c.Check(meta.ID(), gc.Equals, "<spam>")
+	c.Check(meta.ID(), gc.Equals, "")
 	s.metastor.Check(c, "", meta, "AddMetadata")
 	s.rawstor.CheckNotUsed(c)
 }
@@ -134,10 +136,22 @@ func (s *WrapperSuite) TestFileStorageAddFile(c *gc.C) {
 	id, err := s.stor.Add(meta, file)
 	c.Assert(err, gc.IsNil)
 
+	c.Check(meta.ID(), gc.Equals, "")
+	c.Check(meta.Stored(), gc.IsNil)
+
 	c.Check(id, gc.Equals, "<spam>")
-	c.Check(meta.ID(), gc.Equals, "<spam>")
-	s.metastor.Check(c, "", meta, "AddMetadata", "SetStored")
+	c.Check(meta.ID(), gc.Equals, "")
+	s.metastor.Check(c, id, meta, "AddMetadata", "SetStored")
 	s.rawstor.Check(c, id, file, 10, "AddFile")
+}
+
+func (s *WrapperSuite) TestFileStorageAddIDNotSet(c *gc.C) {
+	original := s.metadata()
+	c.Assert(original.ID(), gc.Equals, "")
+	_, err := s.stor.Add(original, nil)
+	c.Check(err, gc.IsNil)
+
+	c.Check(original.ID(), gc.Equals, "")
 }
 
 func (s *WrapperSuite) TestFileStorageAddMetaOnly(c *gc.C) {
@@ -146,7 +160,7 @@ func (s *WrapperSuite) TestFileStorageAddMetaOnly(c *gc.C) {
 	c.Assert(err, gc.IsNil)
 
 	c.Check(meta, gc.Equals, original)
-	c.Check(meta.Stored(), gc.Equals, false)
+	c.Check(meta.Stored(), gc.IsNil)
 }
 
 func (s *WrapperSuite) TestFileStorageAddIDAlreadySet(c *gc.C) {
@@ -157,8 +171,23 @@ func (s *WrapperSuite) TestFileStorageAddIDAlreadySet(c *gc.C) {
 	c.Check(err, gc.IsNil) // This should be handled at the lower level.
 }
 
+func (s *WrapperSuite) TestFileStorageAddFileFailureDropsMetadata(c *gc.C) {
+	original := s.metadata()
+	failure := errors.New("failed!")
+	raw := &FakeRawFileStorage{err: failure}
+	stor := filestorage.NewFileStorage(s.metastor, raw)
+	_, err := stor.Add(original, &bytes.Buffer{})
+
+	c.Assert(errors.Cause(err), gc.Equals, failure)
+
+	metalist, metaErr := s.metastor.ListMetadata()
+	c.Assert(metaErr, gc.IsNil)
+	c.Check(metalist, gc.HasLen, 0)
+	c.Check(original.ID(), gc.Equals, "")
+}
+
 func (s *WrapperSuite) TestFileStorageSetFile(c *gc.C) {
-	id, meta := s.setMeta()
+	id, _ := s.setMeta()
 	_, _, err := s.stor.Get(id)
 	c.Assert(err, gc.NotNil)
 
@@ -166,7 +195,7 @@ func (s *WrapperSuite) TestFileStorageSetFile(c *gc.C) {
 	err = s.stor.SetFile(id, file)
 	c.Assert(err, gc.IsNil)
 
-	s.metastor.Check(c, id, meta, "Metadata", "Metadata", "SetStored")
+	s.metastor.Check(c, id, nil, "Metadata", "Metadata", "SetStored")
 	s.rawstor.Check(c, id, file, 10, "AddFile")
 }
 

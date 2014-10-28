@@ -13,8 +13,8 @@ import (
 var _ = FileStorage((*fileStorage)(nil))
 
 type fileStorage struct {
-	metadata MetadataStorage
-	files    RawFileStorage
+	metaStorage MetadataStorage
+	rawStorage  RawFileStorage
 }
 
 // NewFileStorage returns a new FileStorage value that wraps a
@@ -26,8 +26,8 @@ type fileStorage struct {
 // is not required to have a raw file stored.
 func NewFileStorage(meta MetadataStorage, files RawFileStorage) FileStorage {
 	stor := fileStorage{
-		metadata: meta,
-		files:    files,
+		metaStorage: meta,
+		rawStorage:  files,
 	}
 	return &stor
 }
@@ -35,7 +35,7 @@ func NewFileStorage(meta MetadataStorage, files RawFileStorage) FileStorage {
 // Metadata returns the matching metadata.  Failure to find it (see
 // errors.IsNotFound) or any other problem results in an error.
 func (s *fileStorage) Metadata(id string) (Metadata, error) {
-	meta, err := s.metadata.Metadata(id)
+	meta, err := s.metaStorage.Metadata(id)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}
@@ -51,10 +51,10 @@ func (s *fileStorage) Get(id string) (Metadata, io.ReadCloser, error) {
 	if err != nil {
 		return nil, nil, errors.Trace(err)
 	}
-	if !meta.Stored() {
+	if meta.Stored() == nil {
 		return nil, nil, errors.NotFoundf("no file stored for %q", id)
 	}
-	file, err := s.files.File(id)
+	file, err := s.rawStorage.File(id)
 	if err != nil {
 		return nil, nil, errors.Trace(err)
 	}
@@ -63,15 +63,15 @@ func (s *fileStorage) Get(id string) (Metadata, io.ReadCloser, error) {
 
 // List returns a list of the metadata for all files in the storage.
 func (s *fileStorage) List() ([]Metadata, error) {
-	return s.metadata.ListMetadata()
+	return s.metaStorage.ListMetadata()
 }
 
-func (s *fileStorage) addFile(meta Metadata, file io.Reader) error {
-	err := s.files.AddFile(meta.ID(), file, meta.Size())
+func (s *fileStorage) addFile(id string, size int64, file io.Reader) error {
+	err := s.rawStorage.AddFile(id, file, size)
 	if err != nil {
 		return errors.Trace(err)
 	}
-	err = s.metadata.SetStored(meta)
+	err = s.metaStorage.SetStored(id)
 	if err != nil {
 		return errors.Trace(err)
 	}
@@ -79,23 +79,31 @@ func (s *fileStorage) addFile(meta Metadata, file io.Reader) error {
 }
 
 // Add adds the file to the storage.  It returns the unique ID generated
-// by the storage for the file.  Any problem (including an existing
-// file, see errors.IsAlreadyExists) results in an error.
+// by the storage for the file.  If no file is provided, only the
+// metadata is stored.  While the passed-in "meta" is not modified, the
+// new ID and "stored" flag will be saved in metadata storage.  Feel
+// free to explicitly call meta.SetID() and meta.SetStored() afterward.
 //
-// The metadata is added first, so if storing the raw file fails the
-// metadata will still be stored.  A non-empty returned ID indicates
-// that the metadata was stored successfully.
+// Any problem (including an existing file, see errors.IsAlreadyExists)
+// results in an error.  If there is an error while storing either the
+// file or metadata, neither will be stored.
 func (s *fileStorage) Add(meta Metadata, file io.Reader) (string, error) {
-	id, err := s.metadata.AddMetadata(meta)
+	id, err := s.metaStorage.AddMetadata(meta)
 	if err != nil {
 		return "", errors.Trace(err)
 	}
-	meta.SetID(id)
 
 	if file != nil {
-		err = s.addFile(meta, file)
+		err = s.addFile(id, meta.Size(), file)
 		if err != nil {
-			return id, errors.Trace(err)
+			// Remove the metadata we just added.
+			context := err
+			err = s.metaStorage.RemoveMetadata(id)
+			if err != nil {
+				err = errors.Annotate(err, "while handling another error")
+				return "", errors.Wrap(context, err)
+			}
+			return "", errors.Trace(context)
 		}
 	}
 
@@ -112,7 +120,7 @@ func (s *fileStorage) SetFile(id string, file io.Reader) error {
 	if err != nil {
 		return errors.Trace(err)
 	}
-	err = s.addFile(meta, file)
+	err = s.addFile(id, meta.Size(), file)
 	if err != nil {
 		return errors.Trace(err)
 	}
@@ -127,11 +135,11 @@ func (s *fileStorage) SetFile(id string, file io.Reader) error {
 // in that case the stored metadata is not guaranteed to accurately
 // represent that there is no corresponding raw file in storage.
 func (s *fileStorage) Remove(id string) error {
-	err := s.files.RemoveFile(id)
+	err := s.rawStorage.RemoveFile(id)
 	if err != nil && !errors.IsNotFound(err) {
 		return errors.Trace(err)
 	}
-	err = s.metadata.RemoveMetadata(id)
+	err = s.metaStorage.RemoveMetadata(id)
 	if err != nil {
 		return errors.Trace(err)
 	}
@@ -140,8 +148,8 @@ func (s *fileStorage) Remove(id string) error {
 
 // Close implements io.Closer.Close.
 func (s *fileStorage) Close() error {
-	ferr := s.files.Close()
-	merr := s.metadata.Close()
+	ferr := s.rawStorage.Close()
+	merr := s.metaStorage.Close()
 	if ferr == nil {
 		return errors.Trace(merr)
 	} else if merr == nil {

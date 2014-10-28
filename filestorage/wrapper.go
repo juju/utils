@@ -96,7 +96,7 @@ func (s *fileStorage) Add(meta Metadata, file io.Reader) (string, error) {
 	if file != nil {
 		err = s.addFile(id, meta.Size(), file)
 		if err != nil {
-			// Un-store the metadata.
+			// Remove the metadata we just added.
 			context := err
 			err = s.metaStorage.RemoveMetadata(id)
 			if err != nil {

@@ -12,18 +12,15 @@ import (
 	"github.com/juju/utils/filestorage"
 )
 
+var (
+	_ filestorage.Document = (*filestorage.DocWrapper)(nil)
+	_ filestorage.Metadata = (*filestorage.FileMetadata)(nil)
+)
+
 var _ = gc.Suite(&MetadataSuite{})
 
 type MetadataSuite struct {
 	testing.IsolationSuite
-}
-
-func (s *MetadataSuite) TestDocSatisfiesInterface(c *gc.C) {
-	var _ filestorage.Document = (*filestorage.DocWrapper)(nil)
-}
-
-func (s *MetadataSuite) TestFileMetadataSatisfiesInterface(c *gc.C) {
-	var _ filestorage.Metadata = (*filestorage.FileMetadata)(nil)
 }
 
 func (s *MetadataSuite) TestFileMetadataNewMetadata(c *gc.C) {

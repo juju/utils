@@ -64,7 +64,7 @@ func (s *WrapperSuite) TestFileStorageNewFileStorage(c *gc.C) {
 func (s *WrapperSuite) TestFileStorageMetadata(c *gc.C) {
 	id, original := s.setMeta()
 	meta, err := s.stor.Metadata(id)
-	c.Check(err, gc.IsNil)
+	c.Assert(err, gc.IsNil)
 
 	c.Check(meta, jc.DeepEquals, original)
 	s.metastor.Check(c, id, nil, "Metadata")
@@ -74,7 +74,7 @@ func (s *WrapperSuite) TestFileStorageMetadata(c *gc.C) {
 func (s *WrapperSuite) TestFileStorageGet(c *gc.C) {
 	id, origmeta, origfile := s.setFile("spam")
 	meta, file, err := s.stor.Get(id)
-	c.Check(err, gc.IsNil)
+	c.Assert(err, gc.IsNil)
 
 	c.Check(meta, gc.Equals, origmeta)
 	c.Check(file, gc.Equals, origfile)
@@ -82,7 +82,7 @@ func (s *WrapperSuite) TestFileStorageGet(c *gc.C) {
 
 func (s *WrapperSuite) TestFileStorageListEmpty(c *gc.C) {
 	list, err := s.stor.List()
-	c.Check(err, gc.IsNil)
+	c.Assert(err, gc.IsNil)
 
 	c.Check(list, gc.HasLen, 0)
 }
@@ -90,7 +90,7 @@ func (s *WrapperSuite) TestFileStorageListEmpty(c *gc.C) {
 func (s *WrapperSuite) TestFileStorageListOne(c *gc.C) {
 	id, _ := s.setMeta()
 	list, err := s.stor.List()
-	c.Check(err, gc.IsNil)
+	c.Assert(err, gc.IsNil)
 
 	c.Check(list, gc.HasLen, 1)
 	c.Assert(list[0], gc.NotNil)
@@ -101,7 +101,7 @@ func (s *WrapperSuite) TestFileStorageListTwo(c *gc.C) {
 	id1, _ := s.setMeta()
 	id2, _ := s.setMeta()
 	list, err := s.stor.List()
-	c.Check(err, gc.IsNil)
+	c.Assert(err, gc.IsNil)
 
 	c.Assert(list, gc.HasLen, 2)
 	c.Assert(list[0], gc.NotNil)
@@ -132,7 +132,7 @@ func (s *WrapperSuite) TestFileStorageAddFile(c *gc.C) {
 	var file *bytes.Buffer
 	meta := s.metadata()
 	id, err := s.stor.Add(meta, file)
-	c.Check(err, gc.IsNil)
+	c.Assert(err, gc.IsNil)
 
 	c.Check(id, gc.Equals, "<spam>")
 	c.Check(meta.ID(), gc.Equals, "<spam>")

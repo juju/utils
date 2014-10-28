@@ -9,37 +9,35 @@ import (
 	"github.com/juju/errors"
 )
 
-type Metadata interface {
-	// ID is the unique ID assigned by the storage system.
-	ID() string
-	// Size is the size of the file (in bytes).
-	Size() int64
-	// Checksum is the checksum for the file.
-	Checksum() string
-	// ChecksumFormat is the kind (and encoding) of checksum.
-	ChecksumFormat() string
-	// Timestamp records when the file was created.
-	Timestamp() time.Time
-	// Stored indicates whether or not the file has been stored.
-	Stored() bool
-
-	// Doc returns a storable copy of the metadata.
-	Doc() interface{}
-	// SetID sets the ID of the metadata.  If the ID is already set,
-	// SetID() should return true (false otherwise).
-	SetID(id string) (alreadySet bool)
-	// SetFile sets the file info on the metadata.
-	SetFile(size int64, checksum, checksumFormat string) error
-	// SetStored sets Stored to true on the metadata.
-	SetStored()
+// RawDoc is a basic, uniquely identifiable document.
+type RawDoc struct {
+	// ID is the unique identifier for the document.
+	ID string
 }
 
-// Ensure FileMetadata implements Metadata.
-var _ = Metadata(&FileMetadata{})
+// DocWrapper wraps a document in the Document interface.
+type DocWrapper struct {
+	Raw *RawDoc
+}
+
+// ID returns the document's unique identifier.
+func (d *DocWrapper) ID() string {
+	return d.Raw.ID
+}
+
+// SetID sets the document's unique identifier.  If the ID is already
+// set, SetID() returns true (false otherwise).
+func (d *DocWrapper) SetID(id string) bool {
+	if d.Raw.ID != "" {
+		return true
+	}
+	d.Raw.ID = id
+	return false
+}
 
 // FileMetadata contains the metadata for a single stored file.
 type FileMetadata struct {
-	id             string
+	DocWrapper
 	size           int64
 	checksum       string
 	checksumFormat string
@@ -53,16 +51,13 @@ type FileMetadata struct {
 // current one is used.
 func NewMetadata(timestamp *time.Time) *FileMetadata {
 	meta := FileMetadata{}
+	meta.DocWrapper.Raw = &RawDoc{}
 	if timestamp == nil {
 		meta.timestamp = time.Now().UTC()
 	} else {
 		meta.timestamp = *timestamp
 	}
 	return &meta
-}
-
-func (m *FileMetadata) ID() string {
-	return m.id
 }
 
 func (m *FileMetadata) Size() int64 {
@@ -87,14 +82,6 @@ func (m *FileMetadata) Stored() bool {
 
 func (m *FileMetadata) Doc() interface{} {
 	return m
-}
-
-func (m *FileMetadata) SetID(id string) bool {
-	if m.id != "" {
-		return true
-	}
-	m.id = id
-	return false
 }
 
 func (m *FileMetadata) SetFile(size int64, checksum, format string) error {

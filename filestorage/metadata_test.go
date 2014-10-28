@@ -12,6 +12,11 @@ import (
 	"github.com/juju/utils/filestorage"
 )
 
+var (
+	_ filestorage.Document = (*filestorage.DocWrapper)(nil)
+	_ filestorage.Metadata = (*filestorage.FileMetadata)(nil)
+)
+
 var _ = gc.Suite(&MetadataSuite{})
 
 type MetadataSuite struct {

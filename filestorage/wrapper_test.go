@@ -46,7 +46,7 @@ func (s *WrapperSuite) setMeta() (string, filestorage.Metadata) {
 	return id, meta
 }
 
-func (s *WrapperSuite) setfile(data string) (string, filestorage.Metadata, io.ReadCloser) {
+func (s *WrapperSuite) setFile(data string) (string, filestorage.Metadata, io.ReadCloser) {
 	id, meta := s.setMeta()
 	file := ioutil.NopCloser(bytes.NewBufferString(data))
 	s.rawstor.file = file
@@ -71,7 +71,7 @@ func (s *WrapperSuite) TestFileStorageMetadata(c *gc.C) {
 }
 
 func (s *WrapperSuite) TestFileStorageGet(c *gc.C) {
-	id, origmeta, origfile := s.setfile("spam")
+	id, origmeta, origfile := s.setFile("spam")
 	meta, file, err := s.stor.Get(id)
 	c.Check(err, gc.IsNil)
 

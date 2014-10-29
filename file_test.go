@@ -12,7 +12,7 @@ import (
 
 	"github.com/juju/testing"
 	jc "github.com/juju/testing/checkers"
-	gc "launchpad.net/gocheck"
+	gc "gopkg.in/check.v1"
 
 	"github.com/juju/utils"
 )
@@ -24,7 +24,7 @@ type fileSuite struct {
 var _ = gc.Suite(&fileSuite{})
 
 func (*fileSuite) TestNormalizePath(c *gc.C) {
-	home := c.MkDir()
+	home := filepath.FromSlash(c.MkDir())
 	err := utils.SetHome(home)
 	c.Assert(err, gc.IsNil)
 	// TODO (frankban) bug 1324841: improve the isolation of this suite.
@@ -35,8 +35,8 @@ func (*fileSuite) TestNormalizePath(c *gc.C) {
 		expected string
 		err      string
 	}{{
-		path:     "/var/lib/juju",
-		expected: "/var/lib/juju",
+		path:     filepath.FromSlash("/var/lib/juju"),
+		expected: filepath.FromSlash("/var/lib/juju"),
 	}, {
 		path:     "~/foo",
 		expected: filepath.Join(home, "foo"),
@@ -56,8 +56,11 @@ func (*fileSuite) TestNormalizePath(c *gc.C) {
 		path:     "~" + currentUser.Username + "/foo//../bar",
 		expected: filepath.Join(currentUser.HomeDir, "bar"),
 	}, {
+		path:     filepath.FromSlash("foo~bar/baz"),
+		expected: filepath.FromSlash("foo~bar/baz"),
+	}, {
 		path: "~foobar/path",
-		err:  "user: unknown user foobar",
+		err:  utils.NoSuchUser,
 	}} {
 		c.Logf("test %d: %s", i, test.path)
 		actual, err := utils.NormalizePath(test.path)
@@ -103,7 +106,8 @@ var atomicWriteFileTests = []struct {
 	summary: "atomic file write and change",
 	change: func(filename string, contents []byte) error {
 		chmodChange := func(f *os.File) error {
-			return f.Chmod(0700)
+			// FileMod.Chmod() is not implemented on Windows, however, os.Chmod() is
+			return os.Chmod(f.Name(), 0700)
 		}
 		return utils.AtomicWriteFileAndChange(filename, contents, chmodChange)
 	},

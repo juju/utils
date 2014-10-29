@@ -1,11 +1,12 @@
 // Copyright 2011, 2012, 2013 Canonical Ltd.
 // Licensed under the LGPLv3, see LICENCE file for details.
+// +build !windows
 
 package utils_test
 
 import (
 	"github.com/juju/testing"
-	gc "launchpad.net/gocheck"
+	gc "gopkg.in/check.v1"
 
 	"github.com/juju/utils"
 )

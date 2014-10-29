@@ -5,10 +5,11 @@ package utils_test
 
 import (
 	"fmt"
+	"runtime"
 
 	"github.com/juju/testing"
 	jc "github.com/juju/testing/checkers"
-	gc "launchpad.net/gocheck"
+	gc "gopkg.in/check.v1"
 
 	"github.com/juju/utils"
 )
@@ -20,16 +21,31 @@ type IsUbuntuSuite struct {
 var _ = gc.Suite(&IsUbuntuSuite{})
 
 func (s *IsUbuntuSuite) patchLsbRelease(c *gc.C, name string) {
-	content := fmt.Sprintf("#!/bin/bash --norc\necho %s", name)
-	patchExecutable(s, c.MkDir(), "lsb_release", content)
+	var content string
+	var execName string
+	if runtime.GOOS != "windows" {
+		content = fmt.Sprintf("#!/bin/bash --norc\n%s", name)
+		execName = "lsb_release"
+	} else {
+		execName = "lsb_release.bat"
+		content = fmt.Sprintf("@echo off\r\n%s", name)
+	}
+	patchExecutable(s, c.MkDir(), execName, content)
 }
 
 func (s *IsUbuntuSuite) TestIsUbuntu(c *gc.C) {
-	s.patchLsbRelease(c, "Ubuntu")
+	s.patchLsbRelease(c, "echo Ubuntu")
 	c.Assert(utils.IsUbuntu(), jc.IsTrue)
 }
 
 func (s *IsUbuntuSuite) TestIsNotUbuntu(c *gc.C) {
-	s.patchLsbRelease(c, "Windows NT")
+	s.patchLsbRelease(c, "echo Windows NT")
+	c.Assert(utils.IsUbuntu(), jc.IsFalse)
+}
+
+func (s *IsUbuntuSuite) TestIsNotUbuntuLsbReleaseNotFound(c *gc.C) {
+	if runtime.GOOS != "windows" {
+		s.patchLsbRelease(c, "exit 127")
+	}
 	c.Assert(utils.IsUbuntu(), jc.IsFalse)
 }

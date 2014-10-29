@@ -62,7 +62,7 @@ func copyFile(src, dst string, mode os.FileMode) error {
 	defer dstf.Close()
 	// Make the actual permissions match the source permissions
 	// even in the presence of umask.
-	if err := dstf.Chmod(mode.Perm()); err != nil {
+	if err := os.Chmod(dstf.Name(), mode.Perm()); err != nil {
 		return err
 	}
 	if _, err := io.Copy(dstf, srcf); err != nil {

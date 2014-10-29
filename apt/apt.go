@@ -10,7 +10,9 @@ import (
 	"os/exec"
 	"regexp"
 	"strings"
+	"time"
 
+	"github.com/juju/errors"
 	"github.com/juju/loggo"
 
 	"github.com/juju/utils"
@@ -24,6 +26,11 @@ var (
 	// ConfFile is the full file path for the proxy settings that are
 	// written by cloud-init and the machine environ worker.
 	ConfFile = "/etc/apt/apt.conf.d/42-juju-proxy-settings"
+
+	installAttemptStrategy = utils.AttemptStrategy{
+		Delay: 10 * time.Second,
+		Min:   30,
+	}
 )
 
 // Some helpful functions for running apt in a sane way
@@ -120,7 +127,15 @@ func GetPreparePackages(packages []string, series string) [][]string {
 	}
 }
 
-// GetInstall runs 'apt-get install packages' for the packages listed here
+type exitStatuser interface {
+	ExitStatus() int
+}
+
+var processStateSys = (*os.ProcessState).Sys
+
+// GetInstall runs 'apt-get install packages' for the packages listed
+// here. apt-get install calls are retried for 30 times with a 10
+// second sleep between attempts.
 func GetInstall(packages ...string) error {
 	cmdArgs := append([]string(nil), getCommand...)
 	cmdArgs = append(cmdArgs, "install")
@@ -128,11 +143,38 @@ func GetInstall(packages ...string) error {
 	logger.Infof("Running: %s", cmdArgs)
 	cmd := exec.Command(cmdArgs[0], cmdArgs[1:]...)
 	cmd.Env = append(os.Environ(), getEnvOptions...)
-	out, err := CommandOutput(cmd)
+
+	var err error
+	var out []byte
+	// Retry APT operations for 30 times, sleeping 10 seconds
+	// between attempts. This avoids failure in the case of
+	// something else having the dpkg lock (e.g. a charm on the
+	// machine we're deploying containers to).
+	for a := installAttemptStrategy.Start(); a.Next(); {
+		out, err = CommandOutput(cmd)
+		if err == nil {
+			return nil
+		}
+		exitError, ok := err.(*exec.ExitError)
+		if !ok {
+			err = errors.Annotatef(err, "unexpected error type %T", err)
+			break
+		}
+		waitStatus, ok := processStateSys(exitError.ProcessState).(exitStatuser)
+		if !ok {
+			err = errors.Annotatef(err, "unexpected process state type %T", exitError.ProcessState.Sys())
+			break
+		}
+		// From apt-get(8) "apt-get returns zero on normal
+		// operation, decimal 100 on error."
+		if waitStatus.ExitStatus() != 100 {
+			break
+		}
+	}
 	if err != nil {
 		logger.Errorf("apt-get command failed: %v\nargs: %#v\n%s",
 			err, cmdArgs, string(out))
-		return fmt.Errorf("apt-get failed: %v", err)
+		return errors.Errorf("apt-get failed: %v", err)
 	}
 	return nil
 }

@@ -74,7 +74,6 @@ func writeContents(fileName, strip string, tarw *tar.Writer) error {
 			return fmt.Errorf("cannnot dereference symlink: %v", err)
 		}
 
-		link = filepath.ToSlash(strings.TrimPrefix(link, strip))
 	}
 	h, err := tar.FileInfoHeader(fInfo, link)
 	if err != nil {

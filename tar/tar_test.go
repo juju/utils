@@ -206,7 +206,7 @@ func (t *TarSuite) TestTarFiles(c *gc.C) {
 }
 
 func (t *TarSuite) TestSymlinksTar(c *gc.C) {
-	tarDirP := filepath.Join(t.cwd, "TarDirectoryPopulated")
+	tarDirP := filepath.Join(t.cwd, "TarDirectory")
 	err := os.Mkdir(tarDirP, os.FileMode(0755))
 	c.Check(err, gc.IsNil)
 
@@ -220,13 +220,9 @@ func (t *TarSuite) TestSymlinksTar(c *gc.C) {
 	_, err = TarFiles(testFiles, &outputTar, trimPath)
 	c.Check(err, gc.IsNil)
 
-	err = os.RemoveAll(tarlink1)
-	c.Assert(err, gc.IsNil)
-	err = os.RemoveAll(tarDirP)
-	c.Assert(err, gc.IsNil)
-
 	outputBytes := outputTar.Bytes()
 	tr := tar.NewReader(bytes.NewBuffer(outputBytes))
+	symlinks := 0
 	for {
 		hdr, err := tr.Next()
 		if err == io.EOF {
@@ -235,9 +231,11 @@ func (t *TarSuite) TestSymlinksTar(c *gc.C) {
 		}
 		c.Assert(err, gc.IsNil)
 		if hdr.Typeflag == tar.TypeSymlink {
+			symlinks += 1
 			c.Assert(hdr.Linkname, gc.Equals, tarDirP)
 		}
 	}
+	c.Assert(symlinks, gc.Equals, 1)
 
 }
 

@@ -192,7 +192,6 @@ func shaSumFile(c *gc.C, fileToSum io.Reader) string {
 }
 
 // Tar
-
 func (t *TarSuite) TestTarFiles(c *gc.C) {
 	t.createTestFiles(c)
 	var outputTar bytes.Buffer
@@ -204,6 +203,40 @@ func (t *TarSuite) TestTarFiles(c *gc.C) {
 	c.Assert(shaSum, gc.Equals, fileShaSum)
 	t.removeTestFiles(c)
 	t.assertTarContents(c, testExpectedTarContents, bytes.NewBuffer(outputBytes))
+}
+
+func (t *TarSuite) TestSymlinksTar(c *gc.C) {
+	tarDirP := filepath.Join(t.cwd, "TarDirectory")
+	err := os.Mkdir(tarDirP, os.FileMode(0755))
+	c.Check(err, gc.IsNil)
+
+	tarlink1 := filepath.Join(t.cwd, "TarLink")
+	err = os.Symlink(tarDirP, tarlink1)
+	c.Check(err, gc.IsNil)
+	testFiles := []string{tarDirP, tarlink1}
+
+	var outputTar bytes.Buffer
+	trimPath := fmt.Sprintf("%s/", t.cwd)
+	_, err = TarFiles(testFiles, &outputTar, trimPath)
+	c.Check(err, gc.IsNil)
+
+	outputBytes := outputTar.Bytes()
+	tr := tar.NewReader(bytes.NewBuffer(outputBytes))
+	symlinks := 0
+	for {
+		hdr, err := tr.Next()
+		if err == io.EOF {
+			// end of tar archive
+			break
+		}
+		c.Assert(err, gc.IsNil)
+		if hdr.Typeflag == tar.TypeSymlink {
+			symlinks += 1
+			c.Assert(hdr.Linkname, gc.Equals, tarDirP)
+		}
+	}
+	c.Assert(symlinks, gc.Equals, 1)
+
 }
 
 // UnTar

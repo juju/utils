@@ -29,7 +29,8 @@ func FindFile(tarFile io.Reader, filename string) (*tar.Header, io.Reader, error
 		header, err := reader.Next()
 		if err == io.EOF {
 			break
-		} else if err != nil {
+		}
+		if err != nil {
 			return nil, nil, errors.Trace(err)
 		}
 

@@ -255,3 +255,33 @@ func (t *TarSuite) TestUnTarFilesUncompressed(c *gc.C) {
 	UntarFiles(&outputTar, outputDir)
 	t.assertFilesWhereUntared(c, testExpectedTarContents, outputDir)
 }
+
+func (t *TarSuite) TestFindFileFound(c *gc.C) {
+	t.createTestFiles(c)
+	var outputTar bytes.Buffer
+	trimPath := fmt.Sprintf("%s/", t.cwd)
+	_, err := TarFiles(t.testFiles, &outputTar, trimPath)
+	c.Assert(err, gc.IsNil)
+	t.removeTestFiles(c)
+
+	_, file, err := FindFile(&outputTar, "TarDirectoryPopulated/TarSubFile1")
+	c.Assert(err, gc.IsNil)
+
+	data, err := ioutil.ReadAll(file)
+	c.Assert(err, gc.IsNil)
+
+	c.Check(string(data), gc.Equals, "TarSubFile1")
+}
+
+func (t *TarSuite) TestFindFileNotFound(c *gc.C) {
+	t.createTestFiles(c)
+	var outputTar bytes.Buffer
+	trimPath := fmt.Sprintf("%s/", t.cwd)
+	_, err := TarFiles(t.testFiles, &outputTar, trimPath)
+	c.Assert(err, gc.IsNil)
+	t.removeTestFiles(c)
+
+	_, _, err = FindFile(&outputTar, "does_not_exist")
+
+	c.Check(err, gc.ErrorMatches, "does_not_exist not found")
+}

@@ -12,7 +12,6 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -24,7 +23,7 @@ import (
 // FindFile returns the header and ReadCloser for the entry in the
 // tarfile that matches the filename.  If nothing matches, an
 // errors.NotFound error is returned.
-func FindFile(tarFile io.Reader, filename string) (*tar.Header, io.ReadCloser, error) {
+func FindFile(tarFile io.Reader, filename string) (*tar.Header, io.Reader, error) {
 	reader := tar.NewReader(tarFile)
 	for {
 		header, err := reader.Next()
@@ -36,7 +35,7 @@ func FindFile(tarFile io.Reader, filename string) (*tar.Header, io.ReadCloser, e
 		}
 
 		if header.Name == filename {
-			return header, ioutil.NopCloser(reader), nil
+			return header, reader, nil
 		}
 	}
 

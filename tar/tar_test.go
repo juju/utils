@@ -266,7 +266,6 @@ func (t *TarSuite) TestFindFileFound(c *gc.C) {
 
 	_, file, err := FindFile(&outputTar, "TarDirectoryPopulated/TarSubFile1")
 	c.Assert(err, gc.IsNil)
-	defer file.Close()
 
 	data, err := ioutil.ReadAll(file)
 	c.Assert(err, gc.IsNil)

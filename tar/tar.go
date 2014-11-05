@@ -12,12 +12,36 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
 
+	"github.com/juju/errors"
 	"github.com/juju/utils/symlink"
 )
+
+// FindFile returns the header and ReadCloser for the entry in the
+// tarfile that matches the filename.  If nothing matches, an
+// errors.NotFound error is returned.
+func FindFile(tarFile io.Reader, filename string) (*tar.Header, io.ReadCloser, error) {
+	reader := tar.NewReader(tarFile)
+	for {
+		header, err := reader.Next()
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			return nil, nil, errors.Trace(err)
+		}
+
+		if header.Name == filename {
+			return header, ioutil.NopCloser(reader), nil
+		}
+	}
+
+	return nil, nil, errors.NotFoundf(filename)
+}
 
 // TarFiles writes a tar stream into target holding the files listed
 // in fileList. strip will be removed from the beginning of all the paths

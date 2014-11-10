@@ -6,6 +6,8 @@ package parallel_test
 import (
 	"sort"
 	"sync"
+	"sync/atomic"
+	stdtesting "testing"
 	"time"
 
 	"github.com/juju/testing"
@@ -59,6 +61,48 @@ func (*parallelSuite) TestParallelMaxPar(c *gc.C) {
 	}
 }
 
+func nothing() error {
+	return nil
+}
+
+func BenchmarkRunSingle(b *stdtesting.B) {
+	for i := 0; i < b.N; i++ {
+		r := parallel.NewRun(1)
+		r.Do(nothing)
+		r.Wait()
+	}
+}
+
+func BenchmarkRun1000p100(b *stdtesting.B) {
+	for i := 0; i < b.N; i++ {
+		r := parallel.NewRun(100)
+		for j := 0; j < 1000; j++ {
+			r.Do(nothing)
+		}
+		r.Wait()
+	}
+}
+
+func (*parallelSuite) TestConcurrentDo(c *gc.C) {
+	r := parallel.NewRun(3)
+	var count int32
+	var wg sync.WaitGroup
+	for i := 0; i < 100; i++ {
+		wg.Add(1)
+		go func() {
+			r.Do(func() error {
+				atomic.AddInt32(&count, 1)
+				return nil
+			})
+			wg.Done()
+		}()
+	}
+	wg.Wait()
+	err := r.Wait()
+	c.Assert(err, gc.IsNil)
+	c.Assert(count, gc.Equals, int32(100))
+}
+
 type intError int
 
 func (intError) Error() string {
@@ -100,7 +144,7 @@ func (*parallelSuite) TestParallelError(c *gc.C) {
 func (*parallelSuite) TestZeroWorkerPanics(c *gc.C) {
 	defer func() {
 		r := recover()
-		c.Check(r, gc.Matches, "parameter maxParallel must be >= 1")
+		c.Check(r, gc.Matches, "parameter max must be >= 1")
 	}()
 	parallel.NewRun(0)
 }

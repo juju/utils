@@ -52,6 +52,9 @@ func (t Tags) IsEmpty() bool {
 
 // Add puts a value into the set.
 func (t Tags) Add(value names.Tag) {
+	if t.values == nil {
+		panic("uninitalised set")
+	}
 	t.values[value] = true
 }
 

@@ -127,43 +127,10 @@ func (stringSetSuite) TestDifference(c *gc.C) {
 	AssertValues(c, diff2, "baz", "bang")
 }
 
-func (stringSetSuite) TestUninitialized(c *gc.C) {
-	var uninitialized set.Strings
-	c.Assert(uninitialized.Size(), gc.Equals, 0)
-	c.Assert(uninitialized.IsEmpty(), gc.Equals, true)
-	// You can get values and sorted values from an unitialized set.
-	AssertValues(c, uninitialized)
-	// All contains checks are false
-	c.Assert(uninitialized.Contains("foo"), gc.Equals, false)
-	// Remove works on an uninitialized Strings
-	uninitialized.Remove("foo")
-
-	var other set.Strings
-	// Union returns a new set that is empty but initialized.
-	c.Assert(uninitialized.Union(other), gc.DeepEquals, set.NewStrings())
-	c.Assert(uninitialized.Intersection(other), gc.DeepEquals, set.NewStrings())
-	c.Assert(uninitialized.Difference(other), gc.DeepEquals, set.NewStrings())
-
-	other = set.NewStrings("foo", "bar")
-	c.Assert(uninitialized.Union(other), gc.DeepEquals, other)
-	c.Assert(uninitialized.Intersection(other), gc.DeepEquals, set.NewStrings())
-	c.Assert(uninitialized.Difference(other), gc.DeepEquals, set.NewStrings())
-	c.Assert(other.Union(uninitialized), gc.DeepEquals, other)
-	c.Assert(other.Intersection(uninitialized), gc.DeepEquals, set.NewStrings())
-	c.Assert(other.Difference(uninitialized), gc.DeepEquals, other)
-
-	// Once something is added, the set becomes initialized.
-	uninitialized.Add("foo")
-	AssertValues(c, uninitialized, "foo")
-}
-
-func (stringSetSuite) TestSetAddByValueFails(c *gc.C) {
-	var s set.Strings
-	add := func(s set.Strings) {
+func (stringSetSuite) TestUninitializedPanics(c *gc.C) {
+	f := func() {
+		var s set.Strings
 		s.Add("foo")
-		s.Add("bar")
 	}
-	add(s)
-	c.Assert(s.Size(), gc.Equals, 0)
+	c.Assert(f, gc.PanicMatches, "uninitalised set")
 }
-

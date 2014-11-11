@@ -156,3 +156,14 @@ func (stringSetSuite) TestUninitialized(c *gc.C) {
 	uninitialized.Add("foo")
 	AssertValues(c, uninitialized, "foo")
 }
+
+func (stringSetSuite) TestSetAddByValueFails(c *gc.C) {
+	var s set.Strings
+	add := func(s set.Strings) {
+		s.Add("foo")
+		s.Add("bar")
+	}
+	add(s)
+	c.Assert(s.Size(), gc.Equals, 0)
+}
+

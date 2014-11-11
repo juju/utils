@@ -16,8 +16,6 @@ type Tags struct {
 	values map[names.Tag]bool
 }
 
-var _ tagSet = (*Tags)(nil)
-
 // NewTags creates and initializes a Tags and populates it with
 // inital values as specified in the parameters.
 func NewTags(initial ...names.Tag) Tags {
@@ -53,10 +51,7 @@ func (t Tags) IsEmpty() bool {
 }
 
 // Add puts a value into the set.
-func (t *Tags) Add(value names.Tag) {
-	if t.values == nil {
-		t.values = make(map[names.Tag]bool)
-	}
+func (t Tags) Add(value names.Tag) {
 	t.values[value] = true
 }
 

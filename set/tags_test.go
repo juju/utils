@@ -20,6 +20,8 @@ type tagSetSuite struct {
 	bang names.Tag
 }
 
+var _ tagSet = (*set.Tags)(nil)
+
 var _ = gc.Suite(&tagSetSuite{})
 
 func (s *tagSetSuite) SetUpTest(c *gc.C) {

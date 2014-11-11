@@ -34,9 +34,9 @@ func (s Strings) IsEmpty() bool {
 }
 
 // Add puts a value into the set.
-func (s *Strings) Add(value string) {
+func (s Strings) Add(value string) {
 	if s.values == nil {
-		s.values = make(map[string]bool)
+		panic("uninitalised set")
 	}
 	s.values[value] = true
 }

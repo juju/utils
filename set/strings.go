@@ -34,16 +34,16 @@ func (s Strings) IsEmpty() bool {
 }
 
 // Add puts a value into the set.
-func (s *Strings) Add(value string) {
+func (s Strings) Add(value string) {
 	if s.values == nil {
-		s.values = make(map[string]bool)
+		panic("uninitalised set")
 	}
 	s.values[value] = true
 }
 
-// Remove takes a value out of the set.  If value wasn't in the set to start
+// Remove takes a value out of the set. If value wasn't in the set to start
 // with, this method silently succeeds.
-func (s *Strings) Remove(value string) {
+func (s Strings) Remove(value string) {
 	delete(s.values, value)
 }
 

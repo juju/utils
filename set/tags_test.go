@@ -20,6 +20,8 @@ type tagSetSuite struct {
 	bang names.Tag
 }
 
+var _ tagSet = (*set.Tags)(nil)
+
 var _ = gc.Suite(&tagSetSuite{})
 
 func (s *tagSetSuite) SetUpTest(c *gc.C) {
@@ -183,33 +185,10 @@ func (s tagSetSuite) TestDifference(c *gc.C) {
 	c.Assert(diff2, gc.DeepEquals, set.NewTags(s.baz, s.bang))
 }
 
-func (s tagSetSuite) TestUninitialized(c *gc.C) {
-	var uninitialized set.Tags
-
-	c.Assert(uninitialized.Size(), gc.Equals, 0)
-	c.Assert(uninitialized.IsEmpty(), gc.Equals, true)
-	// You can get values and sorted values from an unitialized set.
-	c.Assert(uninitialized.Values(), gc.DeepEquals, []names.Tag{})
-	// All contains checks are false
-	c.Assert(uninitialized.Contains(s.foo), gc.Equals, false)
-	// Remove works on an uninitialized Strings
-	uninitialized.Remove(s.foo)
-
-	var other set.Tags
-	// Union returns a new set that is empty but initialized.
-	c.Assert(uninitialized.Union(other), gc.DeepEquals, set.NewTags())
-	c.Assert(uninitialized.Intersection(other), gc.DeepEquals, set.NewTags())
-	c.Assert(uninitialized.Difference(other), gc.DeepEquals, set.NewTags())
-
-	other = set.NewTags(s.foo, s.bar)
-	c.Assert(uninitialized.Union(other), gc.DeepEquals, other)
-	c.Assert(uninitialized.Intersection(other), gc.DeepEquals, set.NewTags())
-	c.Assert(uninitialized.Difference(other), gc.DeepEquals, set.NewTags())
-	c.Assert(other.Union(uninitialized), gc.DeepEquals, other)
-	c.Assert(other.Intersection(uninitialized), gc.DeepEquals, set.NewTags())
-	c.Assert(other.Difference(uninitialized), gc.DeepEquals, other)
-
-	// Once something is added, the set becomes initialized.
-	uninitialized.Add(s.foo)
-	c.Assert(uninitialized.Contains(s.foo), gc.Equals, true)
+func (s tagSetSuite) TestUninitializedPanics(c *gc.C) {
+	f := func() {
+		var t set.Tags
+		t.Add(s.foo)
+	}
+	c.Assert(f, gc.PanicMatches, "uninitalised set")
 }

@@ -35,7 +35,7 @@ func (s *WrapperSuite) SetUpTest(c *gc.C) {
 
 func (s *WrapperSuite) metadata() filestorage.Metadata {
 	meta := filestorage.NewMetadata()
-	meta.SetFile(10, "", "")
+	meta.SetFileInfo(10, "", "")
 	return meta
 }
 

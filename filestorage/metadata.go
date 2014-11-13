@@ -82,7 +82,7 @@ func (m *FileMetadata) Stored() *time.Time {
 	return m.Raw.Stored
 }
 
-func (m *FileMetadata) SetFileInfo(size int64, checksum, format string) error {
+func (m *FileMetadata) SetFile(size int64, checksum, format string) error {
 	// Fall back to existing values.
 	if size == 0 {
 		size = m.Raw.Size

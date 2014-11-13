@@ -64,8 +64,8 @@ type Metadata interface {
 	// (see Time.IsZero).
 	Stored() *time.Time
 
-	// SetFile sets the file info on the metadata.
-	SetFile(size int64, checksum, checksumFormat string) error
+	// SetFileInfo sets the file info on the metadata.
+	SetFileInfo(size int64, checksum, checksumFormat string) error
 
 	// SetStored records when the file was last stored.  If the previous
 	// value matters, be sure to call Stored() first.

@@ -7,16 +7,13 @@ import (
 	"sort"
 )
 
-// Strings represents the classic "set" data structure, and contains
-// strings.
-type Strings struct {
-	values map[string]bool
-}
+// Strings represents the classic "set" data structure, and contains strings.
+type Strings map[string]bool
 
 // NewStrings creates and initializes a Strings and populates it with
 // initial values as specified in the parameters.
 func NewStrings(initial ...string) Strings {
-	result := Strings{values: make(map[string]bool)}
+	result := make(Strings)
 	for _, value := range initial {
 		result.Add(value)
 	}
@@ -25,39 +22,39 @@ func NewStrings(initial ...string) Strings {
 
 // Size returns the number of elements in the set.
 func (s Strings) Size() int {
-	return len(s.values)
+	return len(s)
 }
 
 // IsEmpty is true for empty or uninitialized sets.
 func (s Strings) IsEmpty() bool {
-	return len(s.values) == 0
+	return len(s) == 0
 }
 
 // Add puts a value into the set.
 func (s Strings) Add(value string) {
-	if s.values == nil {
+	if s == nil {
 		panic("uninitalised set")
 	}
-	s.values[value] = true
+	s[value] = true
 }
 
 // Remove takes a value out of the set. If value wasn't in the set to start
 // with, this method silently succeeds.
 func (s Strings) Remove(value string) {
-	delete(s.values, value)
+	delete(s, value)
 }
 
 // Contains returns true if the value is in the set, and false otherwise.
 func (s Strings) Contains(value string) bool {
-	_, exists := s.values[value]
+	_, exists := s[value]
 	return exists
 }
 
 // Values returns an unordered slice containing all the values in the set.
 func (s Strings) Values() []string {
-	result := make([]string, len(s.values))
+	result := make([]string, len(s))
 	i := 0
-	for key := range s.values {
+	for key := range s {
 		result[i] = key
 		i++
 	}
@@ -74,14 +71,14 @@ func (s Strings) SortedValues() []string {
 // Union returns a new Strings representing a union of the elments in the
 // method target and the parameter.
 func (s Strings) Union(other Strings) Strings {
-	result := NewStrings()
+	result := make(Strings)
 	// Use the internal map rather than going through the friendlier functions
 	// to avoid extra allocation of slices.
-	for value := range s.values {
-		result.values[value] = true
+	for value := range s {
+		result[value] = true
 	}
-	for value := range other.values {
-		result.values[value] = true
+	for value := range other {
+		result[value] = true
 	}
 	return result
 }
@@ -89,12 +86,12 @@ func (s Strings) Union(other Strings) Strings {
 // Intersection returns a new Strings representing a intersection of the elments in the
 // method target and the parameter.
 func (s Strings) Intersection(other Strings) Strings {
-	result := NewStrings()
+	result := make(Strings)
 	// Use the internal map rather than going through the friendlier functions
 	// to avoid extra allocation of slices.
-	for value := range s.values {
+	for value := range s {
 		if other.Contains(value) {
-			result.values[value] = true
+			result[value] = true
 		}
 	}
 	return result
@@ -103,12 +100,12 @@ func (s Strings) Intersection(other Strings) Strings {
 // Difference returns a new Strings representing all the values in the
 // target that are not in the parameter.
 func (s Strings) Difference(other Strings) Strings {
-	result := NewStrings()
+	result := make(Strings)
 	// Use the internal map rather than going through the friendlier functions
 	// to avoid extra allocation of slices.
-	for value := range s.values {
+	for value := range s {
 		if !other.Contains(value) {
-			result.values[value] = true
+			result[value] = true
 		}
 	}
 	return result

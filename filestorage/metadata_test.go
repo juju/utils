@@ -36,7 +36,7 @@ func (s *MetadataSuite) TestFileMetadataNewMetadata(c *gc.C) {
 
 func (s *MetadataSuite) TestFileMetadataSetIDInitial(c *gc.C) {
 	meta := filestorage.NewMetadata()
-	meta.SetFile(10, "some sum", "SHA-1")
+	meta.SetFileInfo(10, "some sum", "SHA-1")
 	c.Assert(meta.ID(), gc.Equals, "")
 
 	success := meta.SetID("some id")
@@ -46,7 +46,7 @@ func (s *MetadataSuite) TestFileMetadataSetIDInitial(c *gc.C) {
 
 func (s *MetadataSuite) TestFileMetadataSetIDAlreadySetSame(c *gc.C) {
 	meta := filestorage.NewMetadata()
-	meta.SetFile(10, "some sum", "SHA-1")
+	meta.SetFileInfo(10, "some sum", "SHA-1")
 	success := meta.SetID("some id")
 	c.Assert(success, gc.Equals, false)
 
@@ -57,7 +57,7 @@ func (s *MetadataSuite) TestFileMetadataSetIDAlreadySetSame(c *gc.C) {
 
 func (s *MetadataSuite) TestFileMetadataSetIDAlreadySetDifferent(c *gc.C) {
 	meta := filestorage.NewMetadata()
-	meta.SetFile(10, "some sum", "SHA-1")
+	meta.SetFileInfo(10, "some sum", "SHA-1")
 	success := meta.SetID("some id")
 	c.Assert(success, gc.Equals, false)
 
@@ -66,13 +66,13 @@ func (s *MetadataSuite) TestFileMetadataSetIDAlreadySetDifferent(c *gc.C) {
 	c.Check(meta.ID(), gc.Equals, "some id")
 }
 
-func (s *MetadataSuite) TestFileMetadataSetFile(c *gc.C) {
+func (s *MetadataSuite) TestFileMetadataSetFileInfo(c *gc.C) {
 	meta := filestorage.NewMetadata()
 	c.Assert(meta.Size(), gc.Equals, int64(0))
 	c.Assert(meta.Checksum(), gc.Equals, "")
 	c.Assert(meta.ChecksumFormat(), gc.Equals, "")
 	c.Assert(meta.Stored(), gc.IsNil)
-	meta.SetFile(10, "some sum", "SHA-1")
+	meta.SetFileInfo(10, "some sum", "SHA-1")
 
 	c.Check(meta.Size(), gc.Equals, int64(10))
 	c.Check(meta.Checksum(), gc.Equals, "some sum")
@@ -98,7 +98,7 @@ func (s *MetadataSuite) TestFileMetadataSetStoredDefault(c *gc.C) {
 
 func (s *MetadataSuite) TestFileMetadataCopy(c *gc.C) {
 	meta := filestorage.NewMetadata()
-	meta.SetFile(10, "some sum", "SHA-1")
+	meta.SetFileInfo(10, "some sum", "SHA-1")
 	meta.SetID("spam")
 
 	doc := meta.Copy()

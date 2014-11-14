@@ -35,13 +35,6 @@ func (d *Doc) SetID(id string) bool {
 	return false
 }
 
-// Copy returns a copy of the document.
-func (d *Doc) Copy() Document {
-	copied := *d
-	copied.Raw.ID = ""
-	return &copied
-}
-
 // RawFileMetadata holds info specific to stored files.
 type RawFileMetadata struct {
 	// Size is the size (in bytes) of the stored file.
@@ -124,12 +117,4 @@ func (m *FileMetadata) SetStored(timestamp *time.Time) {
 	} else {
 		m.Raw.Stored = timestamp
 	}
-}
-
-// Copy returns a copy of the document.
-func (m *FileMetadata) Copy() Document {
-	copied := *m
-	doc := m.Doc.Copy().(*Doc)
-	copied.Doc = *doc
-	return &copied
 }

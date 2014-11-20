@@ -90,6 +90,34 @@ func (s *AptSuite) TestAptGetRetry(c *gc.C) {
 	c.Check(calls, gc.Equals, 2) // only 2 because second exit status != 100
 }
 
+func (s *AptSuite) TestAptGetRetryDoesNotCallCombinedOutputTwice(c *gc.C) {
+	const minRetries = 3
+	var calls int
+	state := os.ProcessState{}
+	cmdError := &exec.ExitError{&state}
+	s.PatchValue(apt.InstallAttemptStrategy, utils.AttemptStrategy{Min: minRetries})
+	s.PatchValue(apt.ProcessStateSys, func(*os.ProcessState) interface{} {
+		return mockExitStatuser(100) // retry each time.
+	})
+	s.PatchValue(&apt.CommandOutput, func(cmd *exec.Cmd) ([]byte, error) {
+		calls++
+		// Replace the command path and args so it's a no-op.
+		cmd.Path = ""
+		cmd.Args = []string{"version"}
+		// Call the real cmd.CombinedOutput to simulate better what
+		// happens in production. See also http://pad.lv/1394524.
+		output, err := cmd.CombinedOutput()
+		if _, ok := err.(*exec.Error); err != nil && !ok {
+			c.Check(err, gc.ErrorMatches, "exec: Stdout already set")
+			c.Fatalf("CommandOutput called twice unexpectedly")
+		}
+		return output, cmdError
+	})
+	err := apt.GetInstall("test-package")
+	c.Check(err, gc.ErrorMatches, "apt-get failed: exit status.*")
+	c.Check(calls, gc.Equals, minRetries)
+}
+
 func (s *AptSuite) TestConfigProxyEmpty(c *gc.C) {
 	cmdChan := s.HookCommandOutput(&apt.CommandOutput, []byte{}, nil)
 	out, err := apt.ConfigProxy()

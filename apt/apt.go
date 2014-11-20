@@ -141,8 +141,6 @@ func GetInstall(packages ...string) error {
 	cmdArgs = append(cmdArgs, "install")
 	cmdArgs = append(cmdArgs, packages...)
 	logger.Infof("Running: %s", cmdArgs)
-	cmd := exec.Command(cmdArgs[0], cmdArgs[1:]...)
-	cmd.Env = append(os.Environ(), getEnvOptions...)
 
 	var err error
 	var out []byte
@@ -151,6 +149,12 @@ func GetInstall(packages ...string) error {
 	// something else having the dpkg lock (e.g. a charm on the
 	// machine we're deploying containers to).
 	for a := installAttemptStrategy.Start(); a.Next(); {
+		// Create the command for each attempt, because we need to
+		// call cmd.CombinedOutput only once. See
+		// http://pad.lv/1394524.
+		cmd := exec.Command(cmdArgs[0], cmdArgs[1:]...)
+		cmd.Env = append(os.Environ(), getEnvOptions...)
+
 		out, err = CommandOutput(cmd)
 		if err == nil {
 			return nil
@@ -170,9 +174,10 @@ func GetInstall(packages ...string) error {
 		if waitStatus.ExitStatus() != 100 {
 			break
 		}
+		logger.Infof("Retrying: %s", cmdArgs)
 	}
 	if err != nil {
-		logger.Errorf("apt-get command failed: %v\nargs: %#v\n%s",
+		logger.Errorf("apt-get command failed: %v; args: %#v; output: %s",
 			err, cmdArgs, string(out))
 		return errors.Errorf("apt-get failed: %v", err)
 	}

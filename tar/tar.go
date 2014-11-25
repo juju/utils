@@ -145,7 +145,7 @@ func createAndFill(filePath string, mode int64, content io.Reader) error {
 	if err != nil {
 		return fmt.Errorf("failed while reading tar contents: %v", err)
 	}
-	err = fh.Chmod(os.FileMode(mode))
+	err = os.Chmod(fh.Name(), os.FileMode(mode))
 	if err != nil {
 		return fmt.Errorf("cannot set proper mode on file %q: %v", filePath, err)
 	}

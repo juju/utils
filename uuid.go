@@ -15,7 +15,7 @@ import (
 // UUID represent a universal identifier with 16 octets.
 type UUID [16]byte
 
-var validUUID = regexp.MustCompile("[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[8,9,a,b][0-9a-f]{3}-[0-9a-f]{12}")
+var validUUID = regexp.MustCompile("^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[8,9,a,b][0-9a-f]{3}-[0-9a-f]{12}$")
 
 func UUIDFromString(s string) (UUID, error) {
 	if !IsValidUUIDString(s) {

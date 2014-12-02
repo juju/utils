@@ -1,5 +1,5 @@
 // Copyright 2014 Canonical Ltd.
-// Licensed under the AGPLv3, see LICENCE file for details.
+// Licensed under the LGPLv3, see LICENCE file for details.
 
 // The featureflag package gives other parts of Juju the ability to easily
 // check to see if a feature flag has been defined. Feature flags give the

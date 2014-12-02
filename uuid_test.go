@@ -36,7 +36,10 @@ func (*uuidSuite) TestUUID(c *gc.C) {
 }
 
 func (*uuidSuite) TestIsValidUUIDFailsWhenNotValid(c *gc.C) {
-	c.Assert(utils.IsValidUUIDString("blah"), gc.Equals, false)
+	c.Check(utils.IsValidUUIDString("blah"), gc.Equals, false)
+	c.Check(utils.IsValidUUIDString("blah-9f484882-2f18-4fd2-967d-db9663db7bea"), gc.Equals, false)
+	c.Check(utils.IsValidUUIDString("9f484882-2f18-4fd2-967d-db9663db7bea-blah"), gc.Equals, false)
+	c.Check(utils.IsValidUUIDString("9f484882-2f18-4fd2-967d-db9663db7bea"), gc.Equals, true)
 }
 
 func (*uuidSuite) TestUUIDFromString(c *gc.C) {

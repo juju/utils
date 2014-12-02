@@ -15,7 +15,23 @@ import (
 // UUID represent a universal identifier with 16 octets.
 type UUID [16]byte
 
-var validUUID = regexp.MustCompile("[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[8,9,a,b][0-9a-f]{3}-[0-9a-f]{12}")
+// regex for validating that the UUID matches RFC 4122.
+// This package specifically generates and accepts version 4 UUIDs
+// where the string representation has the digit 4 at the beginning of
+// the third grouping, and one of the hex digits 8 through b at the
+// beginning of the fourth grouping.
+// http://www.ietf.org/rfc/rfc4122.txt
+var (
+	block1  = "[0-9a-f]{8}"
+	block2  = "[0-9a-f]{4}"
+	version = "4"
+	block3  = "[0-9a-f]{3}"
+	variant = "[8,9,a,b]"
+	block4  = "[0-9a-f]{3}"
+	block5  = "[0-9a-f]{12}"
+
+	validUUID = regexp.MustCompile("^" + block1 + "-" + block2 + "-" + version + block3 + "-" + variant + block4 + "-" + block5 + "$")
+)
 
 func UUIDFromString(s string) (UUID, error) {
 	if !IsValidUUIDString(s) {

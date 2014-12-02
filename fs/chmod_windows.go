@@ -8,13 +8,15 @@
 // Use of Chmod form either os or File will provoke your code to
 // panic or misvehave in windows.
 
-
 package fs
 
 import (
+	"fmt"
 	"os"
 
+	"github.com/juju/errors"
 	"github.com/juju/loggo"
+
 	"github.com/juju/utils/exec"
 )
 
@@ -36,34 +38,36 @@ const (
 	// IXOTH 0001  others have execute permission
 
 	// Owner level permissions
-	OwnerR			= 0400
-	OwnerW			= 0200
-	OwnerRW			= 0600
+	OwnerR  = 0400
+	OwnerW  = 0200
+	OwnerRW = 0600
 
 	// mixed permissions
-	OwnerRWXGroupOthersRX	= 0755
+	OwnerRWXGroupOthersRX = 0755
 
 	// all permissions
-	AllRX			= 0555
-	AllRW			= 0666
-	AllRWX			= 0777
+	AllRX  = 0555
+	AllRW  = 0666
+	AllRWX = 0777
 )
 
 type acl []string
 
+var runCommands = exec.RunCommands
+
 // applyACL applies all the ACL rules to the named file
 func applyACL(name string, acls acl) error {
 	for _, cacl := range acls {
-		icaclsCommand := fmt.Sprintf("%s %s %s","icacls", name, cacl)
-		icaclsRun := exec.RunParams{Command: icaclsCommand}
-		result, err := exec.RunCommands(icaclsRun)
-		if err != nil{
+		icaclsCommand := fmt.Sprintf("%s %s %s", "icacls", name, cacl)
+		icaclsRun := exec.RunParams{Commands: icaclsCommand}
+		result, err := runCommands(icaclsRun)
+		if err != nil {
 			logger.Errorf("failed to execute: %q", icaclsCommand)
 			return errors.Trace(err)
 		}
-		logger.Debugf("changed permissions of %q to: %v", name, cacl)
+		logger.Debugf("changed permissions of %q to %v : %v", name, cacl, result)
 	}
-
+	return nil
 }
 
 // Chmod for windows will convert, as best as possible, the mode passed
@@ -86,19 +90,19 @@ func Chmod(name string, mode os.FileMode) error {
 	var acls acl
 	switch mode {
 	case OwnerR:
-		acls = []string{`/grant:r "jujud":R`, }
+		acls = []string{`/grant:r "jujud":R`}
 	case OwnerW:
-		acls = []string{`/grant:r "jujud":W`, }
+		acls = []string{`/grant:r "jujud":W`}
 	case OwnerRW:
-		acls = []string{`/grant:r "jujud":M`, }
+		acls = []string{`/grant:r "jujud":M`}
 	case OwnerRWXGroupOthersRX:
 		acls = []string{`/grant:r "jujud":F`, `/grant "everyone":RX`}
 	case AllRX:
-		acls = []string{`/grant:r "everyone":RX`, }
+		acls = []string{`/grant:r "everyone":RX`}
 	case AllRW:
-		acls = []string{`/grant:r "everyone":(R)`, }
+		acls = []string{`/grant:r "everyone":(R)`}
 	case AllRWX:
-		acls = []string{`/grant:r "everyone":(R)`, }
+		acls = []string{`/grant:r "everyone":(R)`}
 	default:
 		return errors.Errorf("permission %q is not supported in windows", mode)
 	}

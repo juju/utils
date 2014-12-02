@@ -8,7 +8,7 @@
 // Use of Chmod form either os or File will provoke your code to
 // panic or misvehave in windows.
 
-// -build windows
+// +build !windows
 
 package fs
 
@@ -18,4 +18,3 @@ import (
 
 // Chmod is a straight alias to os.Chmod
 var Chmod = os.Chmod
-

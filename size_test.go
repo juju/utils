@@ -24,13 +24,13 @@ func (*sizeSuite) TestParseSize(c *gc.C) {
 	}
 	tests := []test{{
 		in:  "",
-		err: `expected a non-negative number with optional multiplier suffix \(M/G/T/P\), got ""`,
+		err: `expected a non-negative number, got ""`,
 	}, {
 		in:  "-1",
-		err: `expected a non-negative number with optional multiplier suffix \(M/G/T/P\), got "-1"`,
+		err: `expected a non-negative number, got "-1"`,
 	}, {
 		in:  "1MZ",
-		err: `invalid multiplier suffix "MZ"`,
+		err: `invalid multiplier suffix "MZ", expected one of MGTPEZY`,
 	}, {
 		in:  "0",
 		out: 0,
@@ -55,6 +55,15 @@ func (*sizeSuite) TestParseSize(c *gc.C) {
 	}, {
 		in:  "0.5P",
 		out: 536870912,
+	}, {
+		in:  "0.0009765625E",
+		out: 1073741824,
+	}, {
+		in:  "1Z",
+		out: 1125899906842624,
+	}, {
+		in:  "1Y",
+		out: 1152921504606846976,
 	}}
 	for i, test := range tests {
 		c.Logf("test %d: %+v", i, test)

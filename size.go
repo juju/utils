@@ -4,8 +4,10 @@
 package utils
 
 import (
-	"fmt"
 	"math"
+	"strconv"
+	"strings"
+	"unicode"
 
 	"github.com/juju/errors"
 )
@@ -13,39 +15,42 @@ import (
 // ParseSize parses the string as a size, in mebibytes.
 //
 // The string must be a is a non-negative number with
-// an optional multiplier suffix (M, G, T or P). If the
-// suffix is not specified, "M" is implied.
+// an optional multiplier suffix (M, G, T, P, E, Z, or Y).
+// If the suffix is not specified, "M" is implied.
 func ParseSize(str string) (MB uint64, err error) {
-	var val float64
-	var suffix string
-	n, _ := fmt.Sscanf(str, "%f%s", &val, &suffix)
-	if n == 0 || val < 0 {
-		return 0, errors.Errorf("expected a non-negative number with optional multiplier suffix (M/G/T/P), got %q", str)
-	}
-	if suffix != "" {
-		multiplier, ok := mbSuffixes[suffix]
-		if !ok {
-			return 0, errors.Errorf("invalid multiplier suffix %q", suffix)
+	// Find the first non-digit/period:
+	i := strings.IndexFunc(str, func(r rune) bool {
+		return r != '.' && !unicode.IsDigit(r)
+	})
+	var multiplier float64 = 1
+	if i > 0 {
+		suffix := str[i:]
+		multiplier = 0
+		for j := 0; j < len(sizeSuffixes); j++ {
+			base := string(sizeSuffixes[j])
+			// M, MB, or MiB are all valid.
+			switch suffix {
+			case base, base + "B", base + "iB":
+				multiplier = float64(sizeSuffixMultiplier(j))
+				break
+			}
 		}
-		val *= multiplier
+		if multiplier == 0 {
+			return 0, errors.Errorf("invalid multiplier suffix %q, expected one of %s", suffix, []byte(sizeSuffixes))
+		}
+		str = str[:i]
 	}
+
+	val, err := strconv.ParseFloat(str, 64)
+	if err != nil || val < 0 {
+		return 0, errors.Errorf("expected a non-negative number, got %q", str)
+	}
+	val *= multiplier
 	return uint64(math.Ceil(val)), nil
 }
 
-var mbSuffixes = map[string]float64{
-	"M":   1,
-	"MB":  1,
-	"MiB": 1,
+var sizeSuffixes = "MGTPEZY"
 
-	"G":   1024,
-	"GB":  1024,
-	"GiB": 1024,
-
-	"T":   1024 * 1024,
-	"TB":  1024 * 1024,
-	"TiB": 1024 * 1024,
-
-	"P":   1024 * 1024 * 1024,
-	"PB":  1024 * 1024 * 1024,
-	"PiB": 1024 * 1024 * 1024,
+func sizeSuffixMultiplier(i int) int {
+	return 1 << uint(i*10)
 }

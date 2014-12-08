@@ -18,25 +18,25 @@ type windowsFileSuite struct {
 var _ = gc.Suite(&windowsFileSuite{})
 
 func (s *windowsFileSuite) TestMakeFileURL(c *gc.C) {
-   var makeFileURLTests = []struct {
-       in string
-       expected string
-   }{{
-       in:       "file://C:\\foo\\baz",
-       expected: "file://\\\\localhost\\C$/foo/baz",
-   }, {
-       in:       "C:\\foo\\baz",
-       expected: "file://\\\\localhost\\C$/foo/baz",
-   }, {
-       in:       "http://foo/baz",
-       expected: "http://foo/baz",
-   }, {
-       in:       "file://\\\\localhost\\C$/foo/baz",
-       expected: "file://\\\\localhost\\C$/foo/baz",
-   }}
+	var makeFileURLTests = []struct {
+		in       string
+		expected string
+	}{{
+		in:       "file://C:\\foo\\baz",
+		expected: "file://\\\\localhost\\C$/foo/baz",
+	}, {
+		in:       "C:\\foo\\baz",
+		expected: "file://\\\\localhost\\C$/foo/baz",
+	}, {
+		in:       "http://foo/baz",
+		expected: "http://foo/baz",
+	}, {
+		in:       "file://\\\\localhost\\C$/foo/baz",
+		expected: "file://\\\\localhost\\C$/foo/baz",
+	}}
 
-   for i, t := range makeFileURLTests {
-       c.Logf("Test %d", i)
-       c.Assert(utils.MakeFileURL(t.in), gc.Equals,t.expected)
-   }
+	for i, t := range makeFileURLTests {
+		c.Logf("Test %d", i)
+		c.Assert(utils.MakeFileURL(t.in), gc.Equals, t.expected)
+	}
 }

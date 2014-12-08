@@ -9,14 +9,14 @@ import (
 	"os"
 	"os/user"
 	"strings"
-)
 
-var noSuchUser = `user: unknown user [a-zA-Z0-9]+`
+	"github.com/juju/errors"
+)
 
 func homeDir(userName string) (string, error) {
 	u, err := user.Lookup(userName)
 	if err != nil {
-		return "", err
+		return "", errors.NewUserNotFound(err, "no such user")
 	}
 	return u.HomeDir, nil
 }

@@ -11,6 +11,8 @@ import (
 	"strings"
 )
 
+
+var LineEnding = "\n"
 var noSuchUser = `user: unknown user [a-zA-Z0-9]+`
 
 func homeDir(userName string) (string, error) {

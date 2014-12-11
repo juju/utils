@@ -12,14 +12,14 @@ import (
 	"strings"
 	"syscall"
 	"unsafe"
+
+	"github.com/juju/errors"
 )
 
 const (
 	movefile_replace_existing = 0x1
 	movefile_write_through    = 0x8
 )
-
-var noSuchUser = "No mapping between account names and security IDs was done."
 
 //sys moveFileEx(lpExistingFileName *uint16, lpNewFileName *uint16, dwFlags uint32) (err error) = MoveFileExW
 
@@ -46,30 +46,28 @@ func ReplaceFile(source, destination string) error {
 func MakeFileURL(in string) string {
 	var volumeName string
 	if strings.HasPrefix(in, "file://") {
-		volumeName = filepath.VolumeName(in[len("file://"):])
+		volumeName = filepath.VolumeName(strings.TrimPrefix(in, "file://"))
 	} else {
 		volumeName = filepath.VolumeName(in)
 	}
 
 	if volumeName != "" {
+		// Strip colon
+		volumeName = strings.TrimSuffix(volumeName, ":")
 
-        // Strip colon
-        volumeName := string(volumeName[:len(volumeName) - 1])
+		// Do not apply function twice
+		if strings.HasPrefix(in, "file://\\\\localhost\\") {
+			return in
+		}
 
-        // Do not apply function twice
-	if strings.HasPrefix(in, "file://\\\\localhost\\") {
-		return in
-	}
-
-	in = filepath.ToSlash(in)
-	prefix := "file://\\\\localhost\\" + volumeName + "$"
-        if strings.HasPrefix(in, volumeName) {
-		return prefix + in[len(volumeName) + 1:]
-	}
-	if strings.HasPrefix(in, "file://" + volumeName) {
-		return prefix + in[len("file://" + volumeName) + 1:]
-	}
-
+		in = filepath.ToSlash(in)
+		prefix := "file://\\\\localhost\\" + volumeName + "$"
+		if strings.HasPrefix(in, volumeName) {
+			return prefix + strings.TrimPrefix(in, volumeName+":")
+		}
+		if strings.HasPrefix(in, "file://"+volumeName) {
+			return prefix + strings.TrimPrefix(in, "file://"+volumeName+":")
+		}
 	}
 
 	return in
@@ -126,7 +124,7 @@ func homeFromRegistry(sid string) (string, error) {
 func homeDir(user string) (string, error) {
 	u, err := getUserSID(user)
 	if err != nil {
-		return "", err
+		return "", errors.NewUserNotFound(err, "no such user")
 	}
 	return homeFromRegistry(u)
 }

@@ -19,6 +19,7 @@ const (
 	movefile_write_through    = 0x8
 )
 
+var LineEnding = "\r\n"
 var noSuchUser = "No mapping between account names and security IDs was done."
 
 //sys moveFileEx(lpExistingFileName *uint16, lpNewFileName *uint16, dwFlags uint32) (err error) = MoveFileExW

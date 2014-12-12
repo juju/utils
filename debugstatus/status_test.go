@@ -21,7 +21,7 @@ type statusSuite struct {
 var _ = gc.Suite(&statusSuite{})
 
 func (s *statusSuite) TestCheck(c *gc.C) {
-	checkers := map[string]debugstatus.StatusCheckerFunc{
+	checkers := map[string]debugstatus.CheckerFunc{
 		"check1": func() (name, value string, passed bool) {
 			return "check1 results", "value1", true
 		},
@@ -33,7 +33,7 @@ func (s *statusSuite) TestCheck(c *gc.C) {
 		},
 	}
 	results := debugstatus.Check(checkers)
-	c.Assert(results, jc.DeepEquals, map[string]debugstatus.StatusCheckResult{
+	c.Assert(results, jc.DeepEquals, map[string]debugstatus.CheckResult{
 		"check1": {
 			Name:   "check1 results",
 			Value:  "value1",
@@ -52,16 +52,16 @@ func (s *statusSuite) TestCheck(c *gc.C) {
 	})
 }
 
-func (s *statusSuite) TestCheckConnection(c *gc.C) {
+func (s *statusSuite) TestConnection(c *gc.C) {
 	// Ensure a connection established is properly reported.
-	check := debugstatus.CheckConnection(pinger{nil}, "valid connection")
+	check := debugstatus.Connection(pinger{nil}, "valid connection")
 	name, value, passed := check()
 	c.Assert(name, gc.Equals, "valid connection")
 	c.Assert(value, gc.Equals, "Connected")
 	c.Assert(passed, jc.IsTrue)
 
 	// An error is reported if ping fails.
-	check = debugstatus.CheckConnection(pinger{errors.New("bad wolf")}, "connection error")
+	check = debugstatus.Connection(pinger{errors.New("bad wolf")}, "connection error")
 	name, value, passed = check()
 	c.Assert(name, gc.Equals, "connection error")
 	c.Assert(value, gc.Equals, "Ping error: bad wolf")
@@ -77,7 +77,7 @@ func (p pinger) Ping() error {
 	return p.err
 }
 
-var checkMongoCollectionsTests = []struct {
+var mongoCollectionsTests = []struct {
 	about        string
 	collector    collector
 	expectValue  string
@@ -111,12 +111,12 @@ var checkMongoCollectionsTests = []struct {
 	expectPassed: false,
 }}
 
-func (s *statusSuite) TestCheckMongoCollections(c *gc.C) {
-	for i, test := range checkMongoCollectionsTests {
+func (s *statusSuite) TestMongoCollections(c *gc.C) {
+	for i, test := range mongoCollectionsTests {
 		c.Logf("test %d: %s", i, test.about)
 
 		// Ensure a connection established is properly reported.
-		check := debugstatus.CheckMongoCollections(test.collector)
+		check := debugstatus.MongoCollections(test.collector)
 		name, value, passed := check()
 		c.Assert(name, gc.Equals, "MongoDB collections")
 		c.Assert(value, gc.Equals, test.expectValue)

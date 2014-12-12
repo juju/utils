@@ -11,46 +11,55 @@ import (
 )
 
 // Check collects the status check results from the given checkers.
-func Check(checkers map[string]CheckerFunc) map[string]CheckResult {
+func Check(checkers ...CheckerFunc) map[string]CheckResult {
 	results := make(map[string]CheckResult, len(checkers))
-	for key, c := range checkers {
-		name, value, passed := c()
-		results[key] = CheckResult{
-			Name:   name,
-			Value:  value,
-			Passed: passed,
-		}
+	for _, c := range checkers {
+		key, result := c()
+		results[key] = result
 	}
 	return results
 }
 
 // CheckResult holds the result of a single status check.
 type CheckResult struct {
-	Name   string
-	Value  string
+	// Name is the human readable name for the check.
+	Name string
+
+	// Value is the check result.
+	Value string
+
+	// Passed reports whether the check passed.
 	Passed bool
 }
 
-// CheckerFunc represents a function returning the name of the check, its value
-// and reporting whether the check passed.
-type CheckerFunc func() (name, value string, passed bool)
+// CheckerFunc represents a function returning the check machine friendly key
+// and the result.
+type CheckerFunc func() (key string, result CheckResult)
 
 // startTime holds the time that the code started running.
 var startTime = time.Now()
 
 // StartTime reports the time when the application was started.
-func StartTime() (name, value string, passed bool) {
-	return "Server started", startTime.UTC().String(), true
+func StartTime() (key string, result CheckResult) {
+	return "server_started", CheckResult{
+		Name:   "Server started",
+		Value:  startTime.UTC().String(),
+		Passed: true,
+	}
 }
 
 // Connection returns a status checker reporting whether the given Pinger is
 // connected.
-func Connection(p Pinger, n string) CheckerFunc {
-	return func() (name, value string, passed bool) {
+func Connection(p Pinger) CheckerFunc {
+	return func() (key string, result CheckResult) {
+		result.Name = "MongoDB is connected"
 		if err := p.Ping(); err != nil {
-			return n, "Ping error: " + err.Error(), false
+			result.Value = "Ping error: " + err.Error()
+			return "mongo_connected", result
 		}
-		return n, "Connected", true
+		result.Value = "Connected"
+		result.Passed = true
+		return "mongo_connected", result
 	}
 }
 
@@ -62,11 +71,13 @@ type Pinger interface {
 // MongoCollections returns a status checker checking that all the
 // expected Mongo collections are present in the database.
 func MongoCollections(c Collector) CheckerFunc {
-	return func() (name, value string, passed bool) {
-		name = "MongoDB collections"
+	return func() (key string, result CheckResult) {
+		key = "mongo_collections"
+		result.Name = "MongoDB collections"
 		names, err := c.CollectionNames()
 		if err != nil {
-			return name, "Cannot get collections: " + err.Error(), false
+			result.Value = "Cannot get collections: " + err.Error()
+			return key, result
 		}
 		var missing []string
 		for _, coll := range c.Collections() {
@@ -82,9 +93,12 @@ func MongoCollections(c Collector) CheckerFunc {
 			}
 		}
 		if len(missing) == 0 {
-			return name, "All required collections exist", true
+			result.Value = "All required collections exist"
+			result.Passed = true
+			return key, result
 		}
-		return name, fmt.Sprintf("Missing collections: %s", missing), false
+		result.Value = fmt.Sprintf("Missing collections: %s", missing)
+		return key, result
 	}
 }
 
@@ -98,4 +112,20 @@ type Collector interface {
 	// CollectionNames returns the names of the collections actually present in
 	// the Mongo database.
 	CollectionNames() ([]string, error)
+}
+
+// Rename changes the key and/or result name returned by the given check.
+// It is possible to pass an empty string to avoid changing one of the values.
+// This means that if both key are name are empty, this closure is a no-op.
+func Rename(newKey, newName string, check CheckerFunc) CheckerFunc {
+	return func() (key string, result CheckResult) {
+		key, result = check()
+		if newKey == "" {
+			newKey = key
+		}
+		if newName != "" {
+			result.Name = newName
+		}
+		return newKey, result
+	}
 }

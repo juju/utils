@@ -20,32 +20,36 @@ type statusSuite struct {
 
 var _ = gc.Suite(&statusSuite{})
 
-func (s *statusSuite) TestCheck(c *gc.C) {
-	checkers := map[string]debugstatus.CheckerFunc{
-		"check1": func() (name, value string, passed bool) {
-			return "check1 results", "value1", true
-		},
-		"check2": func() (name, value string, passed bool) {
-			return "check2 results", "value2", false
-		},
-		"check3": func() (name, value string, passed bool) {
-			return "check3 results", "value3", true
-		},
+func makeCheckerFunc(key, name, value string, passed bool) debugstatus.CheckerFunc {
+	return func() (string, debugstatus.CheckResult) {
+		return key, debugstatus.CheckResult{
+			Name:   name,
+			Value:  value,
+			Passed: passed,
+		}
 	}
-	results := debugstatus.Check(checkers)
+}
+
+func (s *statusSuite) TestCheck(c *gc.C) {
+	results := debugstatus.Check(
+		makeCheckerFunc("check1", "check1 name", "value1", true),
+		makeCheckerFunc("check2", "check2 name", "value2", false),
+		makeCheckerFunc("check3", "check3 name", "value3", true),
+	)
+
 	c.Assert(results, jc.DeepEquals, map[string]debugstatus.CheckResult{
 		"check1": {
-			Name:   "check1 results",
+			Name:   "check1 name",
 			Value:  "value1",
 			Passed: true,
 		},
 		"check2": {
-			Name:   "check2 results",
+			Name:   "check2 name",
 			Value:  "value2",
 			Passed: false,
 		},
 		"check3": {
-			Name:   "check3 results",
+			Name:   "check3 name",
 			Value:  "value3",
 			Passed: true,
 		},
@@ -54,18 +58,24 @@ func (s *statusSuite) TestCheck(c *gc.C) {
 
 func (s *statusSuite) TestConnection(c *gc.C) {
 	// Ensure a connection established is properly reported.
-	check := debugstatus.Connection(pinger{nil}, "valid connection")
-	name, value, passed := check()
-	c.Assert(name, gc.Equals, "valid connection")
-	c.Assert(value, gc.Equals, "Connected")
-	c.Assert(passed, jc.IsTrue)
+	check := debugstatus.Connection(pinger{nil})
+	key, result := check()
+	c.Assert(key, gc.Equals, "mongo_connected")
+	c.Assert(result, jc.DeepEquals, debugstatus.CheckResult{
+		Name:   "MongoDB is connected",
+		Value:  "Connected",
+		Passed: true,
+	})
 
 	// An error is reported if ping fails.
-	check = debugstatus.Connection(pinger{errors.New("bad wolf")}, "connection error")
-	name, value, passed = check()
-	c.Assert(name, gc.Equals, "connection error")
-	c.Assert(value, gc.Equals, "Ping error: bad wolf")
-	c.Assert(passed, jc.IsFalse)
+	check = debugstatus.Connection(pinger{errors.New("bad wolf")})
+	key, result = check()
+	c.Assert(key, gc.Equals, "mongo_connected")
+	c.Assert(result, jc.DeepEquals, debugstatus.CheckResult{
+		Name:   "MongoDB is connected",
+		Value:  "Ping error: bad wolf",
+		Passed: false,
+	})
 }
 
 // pinger implements a debugstatus.Pinger used for tests.
@@ -100,15 +110,13 @@ var mongoCollectionsTests = []struct {
 		expected: []string{"coll1", "coll2", "coll3"},
 		obtained: []string{"coll2"},
 	},
-	expectValue:  "Missing collections: [coll1 coll3]",
-	expectPassed: false,
+	expectValue: "Missing collections: [coll1 coll3]",
 }, {
 	about: "error retrieving collections",
 	collector: collector{
 		err: errors.New("bad wolf"),
 	},
-	expectValue:  "Cannot get collections: bad wolf",
-	expectPassed: false,
+	expectValue: "Cannot get collections: bad wolf",
 }}
 
 func (s *statusSuite) TestMongoCollections(c *gc.C) {
@@ -117,10 +125,13 @@ func (s *statusSuite) TestMongoCollections(c *gc.C) {
 
 		// Ensure a connection established is properly reported.
 		check := debugstatus.MongoCollections(test.collector)
-		name, value, passed := check()
-		c.Assert(name, gc.Equals, "MongoDB collections")
-		c.Assert(value, gc.Equals, test.expectValue)
-		c.Assert(passed, gc.Equals, test.expectPassed)
+		key, result := check()
+		c.Assert(key, gc.Equals, "mongo_collections")
+		c.Assert(result, jc.DeepEquals, debugstatus.CheckResult{
+			Name:   "MongoDB collections",
+			Value:  test.expectValue,
+			Passed: test.expectPassed,
+		})
 	}
 }
 
@@ -141,4 +152,48 @@ func (c collector) Collections() []*mgo.Collection {
 		collections[i] = &mgo.Collection{Name: name}
 	}
 	return collections
+}
+
+var renameTests = []struct {
+	about string
+	key   string
+	name  string
+}{{
+	about: "rename key",
+	key:   "new-key",
+}, {
+	about: "rename name",
+	name:  "new name",
+}, {
+	about: "rename both",
+	key:   "another-key",
+	name:  "another name",
+}, {
+	about: "do not rename",
+}}
+
+func (s *statusSuite) TestRename(c *gc.C) {
+	check := makeCheckerFunc("old-key", "old name", "value", true)
+	for i, test := range renameTests {
+		c.Logf("test %d: %s", i, test.about)
+
+		// Rename and run the check.
+		key, result := debugstatus.Rename(test.key, test.name, check)()
+
+		// Ensure the results are successfully renamed.
+		expectKey := test.key
+		if expectKey == "" {
+			expectKey = "old-key"
+		}
+		expectName := test.name
+		if expectName == "" {
+			expectName = "old name"
+		}
+		c.Assert(key, gc.Equals, expectKey)
+		c.Assert(result, jc.DeepEquals, debugstatus.CheckResult{
+			Name:   expectName,
+			Value:  "value",
+			Passed: true,
+		})
+	}
 }

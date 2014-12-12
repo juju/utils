@@ -64,9 +64,12 @@ func Connection(p Pinger) CheckerFunc {
 }
 
 // Pinger is an interface that wraps the Ping method.
+// It is implemented by mgo.Session.
 type Pinger interface {
 	Ping() error
 }
+
+var _ Pinger = (*mgo.Session)(nil)
 
 // MongoCollections returns a status checker checking that all the
 // expected Mongo collections are present in the database.
@@ -104,6 +107,8 @@ func MongoCollections(c Collector) CheckerFunc {
 
 // Collector is an interface that groups the methods used to check that
 // a Mongo database has the expected collections.
+// It is usually implemented by types extending mgo.Database to add the
+// Collections() method.
 type Collector interface {
 	// Collections returns the Mongo collections that we expect to exist in
 	// the Mongo database.

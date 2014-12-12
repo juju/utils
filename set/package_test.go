@@ -7,8 +7,9 @@ import (
 	"testing"
 
 	"github.com/juju/names"
-	"github.com/juju/utils/set"
 	gc "gopkg.in/check.v1"
+
+	"github.com/juju/utils/set"
 )
 
 func TestPackage(t *testing.T) {

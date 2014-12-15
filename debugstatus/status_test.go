@@ -59,11 +59,7 @@ func (s *statusSuite) TestCheck(c *gc.C) {
 
 func (s *statusSuite) TestServerStartTime(c *gc.C) {
 	startTime := time.Now()
-	original := debugstatus.StartTime
-	debugstatus.StartTime = startTime
-	s.AddCleanup(func(*gc.C) {
-		debugstatus.StartTime = original
-	})
+	s.PatchValue(&debugstatus.StartTime, startTime)
 	key, result := debugstatus.ServerStartTime()
 	c.Assert(key, gc.Equals, "server_started")
 	c.Assert(result, jc.DeepEquals, debugstatus.CheckResult{

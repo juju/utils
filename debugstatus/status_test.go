@@ -5,6 +5,7 @@ package debugstatus_test
 
 import (
 	"errors"
+	"time"
 
 	jujutesting "github.com/juju/testing"
 	jc "github.com/juju/testing/checkers"
@@ -53,6 +54,22 @@ func (s *statusSuite) TestCheck(c *gc.C) {
 			Value:  "value3",
 			Passed: true,
 		},
+	})
+}
+
+func (s *statusSuite) TestServerStartTime(c *gc.C) {
+	startTime := time.Now()
+	original := debugstatus.StartTime
+	debugstatus.StartTime = startTime
+	s.AddCleanup(func(*gc.C) {
+		debugstatus.StartTime = original
+	})
+	key, result := debugstatus.ServerStartTime()
+	c.Assert(key, gc.Equals, "server_started")
+	c.Assert(result, jc.DeepEquals, debugstatus.CheckResult{
+		Name:   "Server started",
+		Value:  startTime.String(),
+		Passed: true,
 	})
 }
 

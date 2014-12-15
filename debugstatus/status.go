@@ -36,14 +36,14 @@ type CheckResult struct {
 // and the result.
 type CheckerFunc func() (key string, result CheckResult)
 
-// startTime holds the time that the code started running.
-var startTime = time.Now()
+// StartTime holds the time that the code started running.
+var StartTime = time.Now().UTC()
 
-// StartTime reports the time when the application was started.
-func StartTime() (key string, result CheckResult) {
+// ServerStartTime reports the time when the application was started.
+func ServerStartTime() (key string, result CheckResult) {
 	return "server_started", CheckResult{
 		Name:   "Server started",
-		Value:  startTime.UTC().String(),
+		Value:  StartTime.String(),
 		Passed: true,
 	}
 }

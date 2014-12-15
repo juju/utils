@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"io"
 
-	"code.google.com/p/go.crypto/pbkdf2"
+	"golang.org/x/crypto/pbkdf2"
 )
 
 // CompatSalt is because Juju 1.16 and older used a hard-coded salt to compute

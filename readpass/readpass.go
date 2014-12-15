@@ -6,7 +6,7 @@ package readpass
 import (
 	"os"
 
-	"code.google.com/p/go.crypto/ssh/terminal"
+	"golang.org/x/crypto/ssh/terminal"
 )
 
 func ReadPassword() (string, error) {

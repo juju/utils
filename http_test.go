@@ -105,6 +105,62 @@ func (s *httpSuite) TestBasicAuthHeader(c *gc.C) {
 	c.Assert(string(decoded), gc.Equals, "eric:sekrit")
 }
 
+func (s *httpSuite) TestParseBasicAuthHeader(c *gc.C) {
+	tests := []struct {
+		about          string
+		h              http.Header
+		expectUserid   string
+		expectPassword string
+		expectError    string
+	}{{
+		about:       "no Authorization header",
+		h:           http.Header{},
+		expectError: "invalid or missing HTTP auth header",
+	}, {
+		about: "empty Authorization header",
+		h: http.Header{
+			"Authorization": {""},
+		},
+		expectError: "invalid or missing HTTP auth header",
+	}, {
+		about: "Not basic encoding",
+		h: http.Header{
+			"Authorization": {"NotBasic stuff"},
+		},
+		expectError: "invalid or missing HTTP auth header",
+	}, {
+		about: "invalid base64",
+		h: http.Header{
+			"Authorization": {"Basic not-base64"},
+		},
+		expectError: "invalid HTTP auth encoding",
+	}, {
+		about: "no ':'",
+		h: http.Header{
+			"Authorization": {"Basic " + base64.StdEncoding.EncodeToString([]byte("aladdin"))},
+		},
+		expectError: "invalid HTTP auth contents",
+	}, {
+		about: "valid credentials",
+		h: http.Header{
+			"Authorization": {"Basic " + base64.StdEncoding.EncodeToString([]byte("aladdin:open sesame"))},
+		},
+		expectUserid:   "aladdin",
+		expectPassword: "open sesame",
+	}}
+	for i, test := range tests {
+		c.Logf("test %d: %s", i, test.about)
+		u, p, err := utils.ParseBasicAuthHeader(test.h)
+		c.Assert(u, gc.Equals, test.expectUserid)
+		c.Assert(p, gc.Equals, test.expectPassword)
+		if test.expectError != "" {
+			c.Assert(err.Error(), gc.Equals, test.expectError)
+		} else {
+			c.Assert(err, gc.IsNil)
+		}
+	}
+}
+
 type dialSuite struct {
 	testing.IsolationSuite
 }

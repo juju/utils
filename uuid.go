@@ -52,6 +52,15 @@ func IsValidUUIDString(s string) bool {
 	return validUUID.MatchString(s)
 }
 
+// MustNewUUID returns a new uuid, if an error occurs it panics.
+func MustNewUUID() UUID {
+	uuid, err := NewUUID()
+	if err != nil {
+		panic(err)
+	}
+	return uuid
+}
+
 // NewUUID generates a new version 4 UUID relying only on random numbers.
 func NewUUID() (UUID, error) {
 	uuid := UUID{}

@@ -12,9 +12,12 @@ import (
 // AttemptStrategy represents a strategy for waiting for an action
 // to complete successfully.
 type AttemptStrategy struct {
-	Total time.Duration // total duration of attempt.
-	Delay time.Duration // interval between each try in the burst.
-	Min   int           // minimum number of retries; overrides Total
+	// Total is the total duration of the attempt.
+	Total time.Duration
+	// Delay is the interval between each try in the burst.
+	Delay time.Duration
+	// Min is the minimum number of retries. It overrides Total.
+	Min int
 }
 
 type Attempt struct {

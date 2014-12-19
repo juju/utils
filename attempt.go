@@ -16,6 +16,12 @@ type AttemptStrategy struct {
 	Total time.Duration
 	// Delay is the interval between each try in the burst.
 	Delay time.Duration
+	// DelayIncrease is how much the delay increases between each try.
+	// By default there will be no increase.
+	DelayIncrease time.Duration
+	// DelayMax is the maximum delay allowed. This helps keep increasing
+	// delays under control.
+	DelayMax time.Duration
 	// Min is the minimum number of retries. It overrides Total.
 	Min int
 }
@@ -24,20 +30,40 @@ type Attempt struct {
 	strategy AttemptStrategy
 	last     time.Time
 	end      time.Time
+	delay    time.Duration
 	force    bool
 	count    int
+	// updateDelay is the function used to set the next delay
+	// value. If it is nil then the delay value stays the same.
+	updateDelay func()
 }
 
 // Start begins a new sequence of attempts for the given strategy.
 func (s AttemptStrategy) Start() *Attempt {
 	now := time.Now()
-	return &Attempt{
+	attempt := Attempt{
 		strategy: s,
 		last:     now,
 		end:      now.Add(s.Total),
+		delay:    s.Delay,
 		force:    true,
 	}
+
+	if s.DelayIncrease > 0 {
+		attempt.updateDelay = func() {
+			// Follow an arithmetic progression.
+			attempt.delay += s.DelayIncrease
+			if s.DelayMax != 0 && attempt.delay > s.DelayMax {
+				attempt.delay = s.DelayMax
+				attempt.updateDelay = nil
+			}
+		}
+	}
+
+	return &attempt
 }
+
+var sleepFunc = time.Sleep
 
 // Next waits until it is time to perform the next attempt or returns
 // false if it is time to stop trying.
@@ -51,16 +77,19 @@ func (a *Attempt) Next() bool {
 	}
 	a.force = false
 	if sleep > 0 && a.count > 0 {
-		time.Sleep(sleep)
+		sleepFunc(sleep)
 		now = time.Now()
 	}
 	a.count++
 	a.last = now
+	if a.updateDelay != nil {
+		a.updateDelay()
+	}
 	return true
 }
 
 func (a *Attempt) nextSleep(now time.Time) time.Duration {
-	sleep := a.strategy.Delay - now.Sub(a.last)
+	sleep := a.delay - now.Sub(a.last)
 	if sleep < 0 {
 		return 0
 	}

@@ -6,6 +6,7 @@ package utils_test
 import (
 	"time"
 
+	jc "github.com/juju/testing/checkers"
 	gc "gopkg.in/check.v1"
 
 	"github.com/juju/utils"
@@ -62,6 +63,33 @@ func (*utilsSuite) TestAttemptTiming(c *gc.C) {
 			c.Errorf("attempt %d want %g got %g", i, want[i].Seconds(), got.Seconds())
 		}
 	}
+}
+
+func (s *utilsSuite) TestAttemptIncreasing(c *gc.C) {
+	s.PatchValue(utils.SleepFunc, func(time.Duration) {})
+
+	testAttempt := utils.AttemptStrategy{
+		Delay:         1 * time.Second,
+		DelayIncrease: 1 * time.Second,
+		DelayMax:      4 * time.Second,
+		Min:           4,
+	}
+	a := testAttempt.Start()
+	before := utils.GetAttemptDelay(a)
+	var delays []time.Duration
+	for a.Next() {
+		delays = append(delays, utils.GetAttemptDelay(a))
+	}
+	after := utils.GetAttemptDelay(a)
+
+	c.Check(before, gc.Equals, time.Second)
+	c.Check(after, gc.Equals, 4*time.Second)
+	c.Check(delays, jc.DeepEquals, []time.Duration{
+		2 * time.Second,
+		3 * time.Second,
+		4 * time.Second,
+		4 * time.Second,
+	})
 }
 
 func (*utilsSuite) TestAttemptNextHasNext(c *gc.C) {

@@ -3,9 +3,18 @@
 
 package utils
 
+import (
+	"time"
+)
+
 var (
 	GOMAXPROCS = &gomaxprocs
 	NumCPU     = &numCPU
 	Dial       = dial
 	NetDial    = &netDial
+	SleepFunc  = &sleepFunc
 )
+
+func GetAttemptDelay(attempt *Attempt) time.Duration {
+	return attempt.delay
+}

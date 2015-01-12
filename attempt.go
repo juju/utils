@@ -9,34 +9,6 @@ import (
 
 // The Attempt and AttemptStrategy types are copied from those in launchpad.net/goamz/aws.
 
-// DelayArithmetic returns a "next delay" function that increases a
-// delay by a fixed amount. To limit how big the delay might get, use
-// DelayArithmeticMax.
-func DelayArithmetic(increase time.Duration) func(time.Duration) time.Duration {
-	return func(delay time.Duration) time.Duration {
-		// Follow an arithmetic progression.
-		return delay + increase
-	}
-}
-
-// DelayArithmeticMax returns a "next delay" function that increases a
-// delay by a fixed amount. However, it will not increase beyond the
-// provided maximum. This helps keep increasing delays under control.
-func DelayArithmeticMax(increase, max time.Duration) func(time.Duration) time.Duration {
-	nextDelay := DelayArithmetic(increase)
-	return func(delay time.Duration) time.Duration {
-		if delay == max {
-			return delay
-		}
-		// Follow an arithmetic progression.
-		delay = nextDelay(delay)
-		if max != 0 && delay > max {
-			return max
-		}
-		return delay
-	}
-}
-
 // AttemptStrategy represents a strategy for waiting for an action
 // to complete successfully.
 type AttemptStrategy struct {
@@ -123,4 +95,42 @@ func (a *Attempt) HasNext() bool {
 		return true
 	}
 	return false
+}
+
+// MaxDelay returns a delay func that sets a hard limit on the delay
+// provided by the wrapped func.
+func MaxDelay(max time.Duration, nextDelay func(time.Duration) time.Duration) func(time.Duration) time.Duration {
+	return func(delay time.Duration) time.Duration {
+		if delay == max {
+			return delay
+		}
+		delay = nextDelay(delay)
+		if delay > max {
+			return max
+		}
+		return delay
+	}
+}
+
+// DelayArithmetic returns a "next delay" function that increases a
+// delay by a fixed amount. To limit how big the delay might get, use
+// MaxDelay.
+func DelayArithmetic(increase time.Duration) func(time.Duration) time.Duration {
+	return func(delay time.Duration) time.Duration {
+		// Follow an arithmetic progression.
+		return delay + increase
+	}
+}
+
+// DelayGeometric returns a "next delay" function that multiplies a
+// delay by fixed amount. To limit how big the delay might get, use
+// MaxDelay.
+func DelayGeometric(scale int) func(time.Duration) time.Duration {
+	next := time.Duration(1)
+	return func(delay time.Duration) time.Duration {
+		// Follow a geometric progression.
+		delay *= next
+		next *= time.Duration(scale)
+		return delay
+	}
 }

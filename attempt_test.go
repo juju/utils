@@ -73,7 +73,7 @@ func (s *utilsSuite) TestAttemptIncreasing(c *gc.C) {
 	testAttempt := utils.AttemptStrategy{
 		Delay:     1 * time.Second,
 		Min:       4,
-		NextDelay: utils.DelayArithmeticMax(increase, max),
+		NextDelay: utils.MaxDelay(max, utils.DelayArithmetic(increase)),
 	}
 	a := testAttempt.Start()
 	before := utils.GetAttemptDelay(a)

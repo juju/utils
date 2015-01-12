@@ -9,21 +9,51 @@ import (
 
 // The Attempt and AttemptStrategy types are copied from those in launchpad.net/goamz/aws.
 
+// DelayArithmetic returns a "next delay" function that increases a
+// delay by a fixed amount. To limit how big the delay might get, use
+// DelayArithmeticMax.
+func DelayArithmetic(increase time.Duration) func(time.Duration) time.Duration {
+	return func(delay time.Duration) time.Duration {
+		// Follow an arithmetic progression.
+		return delay + increase
+	}
+}
+
+// DelayArithmeticMax returns a "next delay" function that increases a
+// delay by a fixed amount. However, it will not increase beyond the
+// provided maximum. This helps keep increasing delays under control.
+func DelayArithmeticMax(increase, max time.Duration) func(time.Duration) time.Duration {
+	nextDelay := DelayArithmetic(increase)
+	return func(delay time.Duration) time.Duration {
+		if delay == max {
+			return delay
+		}
+		// Follow an arithmetic progression.
+		delay = nextDelay(delay)
+		if max != 0 && delay > max {
+			return max
+		}
+		return delay
+	}
+}
+
 // AttemptStrategy represents a strategy for waiting for an action
 // to complete successfully.
 type AttemptStrategy struct {
 	// Total is the total duration of the attempt.
 	Total time.Duration
-	// Delay is the interval between each try in the burst.
+
+	// Delay is the interval between each try in the burst. When the
+	// delay is dynamic (as defined by NextDelay), Delay is the initial
+	// delay value.
 	Delay time.Duration
-	// DelayIncrease is how much the delay increases between each try.
-	// By default there will be no increase.
-	DelayIncrease time.Duration
-	// DelayMax is the maximum delay allowed. This helps keep increasing
-	// delays under control.
-	DelayMax time.Duration
+
 	// Min is the minimum number of retries. It overrides Total.
 	Min int
+
+	// NextDelay is used to determine a new delay value given the old
+	// one. If it is not set then the delay will not change.
+	NextDelay func(delay time.Duration) time.Duration
 }
 
 type Attempt struct {
@@ -33,34 +63,18 @@ type Attempt struct {
 	delay    time.Duration
 	force    bool
 	count    int
-	// updateDelay is the function used to set the next delay
-	// value. If it is nil then the delay value stays the same.
-	updateDelay func()
 }
 
 // Start begins a new sequence of attempts for the given strategy.
 func (s AttemptStrategy) Start() *Attempt {
 	now := time.Now()
-	attempt := Attempt{
+	return &Attempt{
 		strategy: s,
 		last:     now,
 		end:      now.Add(s.Total),
 		delay:    s.Delay,
 		force:    true,
 	}
-
-	if s.DelayIncrease > 0 {
-		attempt.updateDelay = func() {
-			// Follow an arithmetic progression.
-			attempt.delay += s.DelayIncrease
-			if s.DelayMax != 0 && attempt.delay > s.DelayMax {
-				attempt.delay = s.DelayMax
-				attempt.updateDelay = nil
-			}
-		}
-	}
-
-	return &attempt
 }
 
 var sleepFunc = time.Sleep
@@ -82,8 +96,8 @@ func (a *Attempt) Next() bool {
 	}
 	a.count++
 	a.last = now
-	if a.updateDelay != nil {
-		a.updateDelay()
+	if a.strategy.NextDelay != nil {
+		a.delay = a.strategy.NextDelay(a.delay)
 	}
 	return true
 }

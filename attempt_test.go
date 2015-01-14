@@ -68,10 +68,10 @@ func (*utilsSuite) TestAttemptTiming(c *gc.C) {
 func (s *utilsSuite) TestAttemptIncreasing(c *gc.C) {
 	s.PatchValue(utils.SleepFunc, func(time.Duration) {})
 
-	increase := 1 * time.Second
-	max := 4 * time.Second
+	increase := 1 * time.Millisecond
+	max := 4 * time.Millisecond
 	testAttempt := utils.AttemptStrategy{
-		Delay:     1 * time.Second,
+		Delay:     1 * time.Millisecond,
 		Min:       4,
 		NextDelay: utils.MaxDelay(max, utils.DelayArithmetic(increase)),
 	}
@@ -83,13 +83,13 @@ func (s *utilsSuite) TestAttemptIncreasing(c *gc.C) {
 	}
 	after := utils.GetAttemptDelay(a)
 
-	c.Check(before, gc.Equals, time.Second)
-	c.Check(after, gc.Equals, 4*time.Second)
+	c.Check(before, gc.Equals, time.Millisecond)
+	c.Check(after, gc.Equals, 4*time.Millisecond)
 	c.Check(delays, jc.DeepEquals, []time.Duration{
-		2 * time.Second,
-		3 * time.Second,
-		4 * time.Second,
-		4 * time.Second,
+		2 * time.Millisecond,
+		3 * time.Millisecond,
+		4 * time.Millisecond,
+		4 * time.Millisecond,
 	})
 }
 

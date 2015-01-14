@@ -28,13 +28,25 @@ type AttemptStrategy struct {
 	NextDelay func(delay time.Duration) time.Duration
 }
 
+// Attempt is the realization of an attempt strategy. It provides an
+// iteration mechanism for use in for loops that satisfies the strategy.
+// As such it holds the state that will be used to decide the outcome of
+// the next iteration (i.e. call to Next).
 type Attempt struct {
+	// strategy is the attempt strategy that this attempt satisfies.
 	strategy AttemptStrategy
-	last     time.Time
-	end      time.Time
-	delay    time.Duration
-	force    bool
-	count    int
+	// last identifies when the last iteration happened.
+	last time.Time
+	// end indicates the timeout time for the attempt.
+	end time.Time
+	// delay is (roughly) how long the attempt will sleep at the next
+	// iteration. This is initialized to the strategy's Delay, and may
+	// change if the NextDelay func is set on the strategy.
+	delay time.Duration
+	// force is used to ensure at least one iteration takes place.
+	force bool
+	// count keeps track of the number of completed iterations.
+	count int
 }
 
 // Start begins a new sequence of attempts for the given strategy.

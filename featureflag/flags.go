@@ -51,6 +51,10 @@ func SetFlagsFromEnvironment(envVarName string) {
 // the process.
 func Enabled(flag string) bool {
 	flag = strings.TrimSpace(strings.ToLower(flag))
+	if flag == "" {
+		// The empty feature is always enabled.
+		return true
+	}
 	return flags.Contains(flag)
 }
 

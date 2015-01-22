@@ -34,6 +34,8 @@ func (s *flagSuite) TestParsing(c *gc.C) {
 }
 
 func (s *flagSuite) TestEnabled(c *gc.C) {
+	c.Assert(featureflag.Enabled(""), jc.IsTrue)
+	c.Assert(featureflag.Enabled(" "), jc.IsTrue)
 	c.Assert(featureflag.Enabled("magic"), jc.IsFalse)
 
 	s.PatchEnvironment("JUJU_TESTING_FEATURE", "MAGIC")

@@ -66,9 +66,15 @@ func (f File) Sys() interface{} {
 	return nil
 }
 
-// TODO(ericsnow) Support other file modes in Open (or beside it)?
+// TODO(ericsnow) Support other file modes in Open (or beside it)? Or
+// follow the lead of the os package with separate Create and OpenFile
+// methods?
 
-func (f File) Open() (*FileData, error) {
+func (f *File) Open() (*FileData, error) {
+	file := &FileData{
+		file: f,
+	}
+	return file, nil
 }
 
 // TODO(ericsnow) Use a channel (stored on File) to syncronize writes

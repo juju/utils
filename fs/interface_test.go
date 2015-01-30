@@ -12,6 +12,7 @@ var (
 	_ Operations         = (*Ops)(nil)
 	_ Operations         = (*CachedOps)(nil)
 	_ Operations         = (*SimpleOps)(nil)
+	_ Operations         = (*FakeOps)(nil)
 	_ os.FileInfo        = (*File)(nil)
 	_ io.ReadWriteCloser = (*FileData)(nil)
 )

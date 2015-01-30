@@ -60,8 +60,6 @@ func NewSymlink(oldName, newName string) *File {
 	return newFile(newName, perm|os.ModeSymlink, []byte(oldName))
 }
 
-var _ os.FileInfo = (*File)(nil)
-
 // Name implements os.FileInfo.
 func (f File) Name() string {
 	return f.Info.Name

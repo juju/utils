@@ -87,3 +87,9 @@ func (co *CachedOps) Symlink(oldName, newName string) error {
 	event.Source = oldName
 	return co.ops.Symlink(oldName, newName)
 }
+
+// Readlink implements Operations.
+func (co *CachedOps) Readlink(name string) (string, error) {
+	co.Events.Record(OpReadlink, name)
+	return co.ops.Readlink(name)
+}

@@ -23,6 +23,7 @@ const (
 	OpRemoveAll  = "RemoveAll"
 	OpChmod      = "Chmod"
 	OpSymlink    = "Symlink"
+	OpReadlink   = "Readlink"
 )
 
 // OpEvent describes a filesystem operation that took place.

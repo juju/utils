@@ -202,3 +202,29 @@ func (so *SimpleOps) symlink(oldName, newName string) error {
 	so.Files[newName] = NewSymlink(oldName, newName)
 	return nil
 }
+
+// Readlink implements Operations.
+func (so *SimpleOps) Readlink(name string) (string, error) {
+	oldName, err := so.readlink(name)
+	if err != nil {
+		err = &os.PathError{
+			Op:   "readlink",
+			Path: name,
+			Err:  err,
+		}
+	}
+	return oldName, err
+}
+
+func (so *SimpleOps) readlink(name string) (string, error) {
+	file, ok := so.Files[name]
+	if !ok {
+		return "", os.ErrNotExist
+	}
+
+	if file.Info.Mode&os.ModeSymlink == 0 {
+		return "", errors.New("not a symbolic link")
+	}
+
+	return string(file.Data), nil
+}

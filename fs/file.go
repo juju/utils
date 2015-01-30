@@ -62,9 +62,6 @@ func NewSymlink(oldName, newName string) *File {
 
 var _ os.FileInfo = (*File)(nil)
 
-// TODO(ericsnow) special-case directory operations vs. file ops? Split
-// directories into own type?
-
 // Name implements os.FileInfo.
 func (f File) Name() string {
 	return f.Info.Name

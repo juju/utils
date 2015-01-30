@@ -57,14 +57,14 @@ func GetHTTPClient(verify SSLHostnameVerification) *http.Client {
 // GetValidatingHTTPClient returns a new http.Client that
 // verifies the server's certificate chain and hostname.
 func GetValidatingHTTPClient() *http.Client {
-	logger.Infof("hostname SSL verification enabled")
+	logger.Tracef("hostname SSL verification enabled")
 	return http.DefaultClient
 }
 
 // GetNonValidatingHTTPClient returns a new http.Client that
 // does not verify the server's certificate chain and hostname.
 func GetNonValidatingHTTPClient() *http.Client {
-	logger.Infof("hostname SSL verification disabled")
+	logger.Tracef("hostname SSL verification disabled")
 	insecureClientMutex.Lock()
 	defer insecureClientMutex.Unlock()
 	if insecureClient == nil {

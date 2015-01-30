@@ -17,7 +17,6 @@ type FileInfo struct {
 	Size    int64
 	Mode    os.FileMode
 	ModTime time.Time
-	IsDir   bool
 }
 
 // File holds information about a filesystem node. It implements
@@ -28,6 +27,37 @@ type FileInfo struct {
 type File struct {
 	Info FileInfo
 	Data []byte
+}
+
+// NewFile builds a new (regular) File from the provided information.
+func NewFile(filename string, perm os.FileMode, data []byte) *File {
+	// TODO(ericsnow) Fail if perm.IsRegular() returns false?
+	return newFile(filename, perm, data)
+}
+
+func newFile(name string, mode os.FileMode, data []byte) *File {
+	info := FileInfo{
+		Name:    name,
+		Size:    int64(len(data)),
+		Mode:    mode,
+		ModTime: time.Now(),
+	}
+	return &File{
+		Info: info,
+		Data: data,
+	}
+}
+
+// NewDir builds a new directory File from the provided information.
+func NewDir(dirname string, perm os.FileMode) *File {
+	// TODO(ericsnow) Fail if perm.IsRegular() returns false?
+	return newFile(dirname, perm|os.ModeDir, nil)
+}
+
+// NewSymlink builds a new symlink File from the provided information.
+func NewSymlink(oldName, newName string) *File {
+	perm := os.ModePerm
+	return newFile(newName, perm|os.ModeSymlink, []byte(oldName))
 }
 
 var _ os.FileInfo = (*File)(nil)
@@ -57,13 +87,21 @@ func (f File) ModTime() time.Time {
 
 // IsDir implements os.FileInfo.
 func (f File) IsDir() bool {
-	return f.Info.IsDir
+	return f.Info.Mode.IsDir()
 }
 
 // Sys implements os.FileInfo.
 func (f File) Sys() interface{} {
 	// This is not implemented.
 	return nil
+}
+
+// SetData updates the file's data and associated file info.
+func (f *File) SetData(data []byte) {
+	// TODO(ericsnow) Restrict to regular files only?
+	f.Data = data
+	f.Info.Size = int64(len(data))
+	f.Info.ModTime = time.Now()
 }
 
 // TODO(ericsnow) Support other file modes in Open (or beside it)? Or

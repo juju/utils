@@ -11,24 +11,40 @@ import (
 	"github.com/juju/utils/symlink"
 )
 
-// Operations exposes various key file system operations as methods
-// on a consolidated type.
-type Operations interface {
+// TODO(ericsnow) Either support CWD or require that all paths be
+// absolute. If the former then the following methods should be added
+// to genericOperations:
+//  os.Chdir
+//  os.Getwd
+
+type genericOperations interface {
 	// Exists returns true if the named file or directory exists and
 	// false otherwise. This is a replacement for calling os.Stat and
 	// checking the error with os.IsNotExist.
 	Exists(name string) (bool, error)
 
-	// Info is a replacement for os.Stat. However, use Exists if you
+	// Info is a replacement for os.Lstat. However, use Exists if you
 	// are only checking the error return (e.g. os.IsNotExist).
 	Info(name string) (os.FileInfo, error)
 
-	// MkdirAll is a replacement for os.MkdirAll.
-	MkdirAll(dirname string, perm os.FileMode) error
+	// RemoveAll is a replacement for os.RemoveAll.
+	RemoveAll(name string) error
 
-	// ListDir is a replacement for ioutil.ReadDir.
-	ListDir(dirname string) ([]os.FileInfo, error)
+	// Chmod is a replacement for os.Chmod.
+	Chmod(name string, mode os.FileMode) error
 
+	// TODO(ericsnow) Candidates:
+	// filepath.Abs
+	// filepath.Clean
+	// filepath.IsAbs
+	// os.Lchown (don't need os.Chown)
+	// os.Chtimes
+	// os.Link
+	// Remove
+	// Rename
+}
+
+type fileOperations interface {
 	// ReadFile is a replacement for ioutil.ReadFile.
 	ReadFile(filename string) ([]byte, error)
 
@@ -38,15 +54,52 @@ type Operations interface {
 	// WriteFile is a replacement for ioutil.WriteFile.
 	WriteFile(filename string, data []byte, perm os.FileMode) error
 
-	// RemoveAll is a replacement for os.RemoveAll.
-	RemoveAll(name string) error
-
-	// Chmod is a replacement for os.Chmod.
-	Chmod(name string, mode os.FileMode) error
-
-	// Symlink is a replacement for utils/symlink.New.
-	Symlink(oldName, newName string) error
+	// TODO(ericsnow) Candidates:
+	// os.Open
+	// os.OpenFile
+	// os.Truncate
+	// ioutil.TempFile
 }
+
+type dirOperations interface {
+	// MkdirAll is a replacement for os.MkdirAll.
+	MkdirAll(dirname string, perm os.FileMode) error
+
+	// ListDir is a replacement for ioutil.ReadDir.
+	ListDir(dirname string) ([]os.FileInfo, error)
+
+	// TODO(ericsnow) Candidates:
+	// filepath.Glob
+	// filepath.Walk
+	// os.MkDir
+	// ioutil.TempDir
+}
+
+type symlinkOperations interface {
+	// Symlink is a replacement for os.Symlink and utils/symlink.New.
+	Symlink(oldName, newName string) error
+
+	// Readlink is a replacement for os.Readlink and utils/symlink.Read.
+	Readlink(name string) (string, error)
+
+	// TODO(ericsnow) Candidates:
+	// filepath.EvalSymlinks
+}
+
+// Operations exposes various key file system operations as methods
+// on a consolidated type.
+type Operations interface {
+	genericOperations
+	fileOperations
+	dirOperations
+	symlinkOperations
+
+	// TODO(ericsnow) Candidates:
+	// os.Pipe
+}
+
+// TODO(ericsnow) Add a helper to resolve a symbolic link so that
+// the equivalent of os.Stat can be achieved more easily.
 
 // Ops satisfies the Operations interface, wrapping the
 // equivalent functionality out of the Go stdlib (e.g os.MkdirAll
@@ -108,4 +161,9 @@ func (Ops) Chmod(name string, mode os.FileMode) error {
 // Symlink implements Operations.
 func (Ops) Symlink(oldName, newName string) error {
 	return symlink.New(oldName, newName)
+}
+
+// Readlink implements Operations.
+func (Ops) Readlink(name string) (string, error) {
+	return symlink.Read(name)
 }

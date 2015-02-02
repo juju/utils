@@ -15,10 +15,19 @@ import (
 // in tests. The calls are tracked in testing.Fake. The error return
 // values are also managed there.
 type FakeFile struct {
-	testing.Fake
+	// This is a pointer so it may be shared between different fakes.
+	*testing.Fake
 
 	// NWritten is the value that will be returned by Read() and Write().
 	NWritten int
+}
+
+// NewFakeFile builds a new FakeFile and returns it.
+func NewFakeFile() *FakeFile {
+	fake := &FakeFile{
+		Fake: &testing.Fake{},
+	}
+	return fake
 }
 
 // Read Implements io.Reader.
@@ -69,13 +78,18 @@ type FakeOpsReturns struct {
 // calls are tracked in testing.Fake. The error return values are also
 // managed there.
 type FakeOps struct {
-	testing.Fake
+	// This is a pointer so it may be shared between different fakes.
+	*testing.Fake
+
+	// Returns holds the fake's (non-error) return values.
 	Returns FakeOpsReturns
 }
 
 // NewFakeOps builds a new FakeOps and returns it.
 func NewFakeOps() *FakeOps {
-	fake := &FakeOps{}
+	fake := &FakeOps{
+		Fake: &testing.Fake{},
+	}
 	return fake
 }
 

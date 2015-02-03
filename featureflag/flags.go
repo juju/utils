@@ -8,8 +8,8 @@
 //
 // Feature flags are defined through environment variables, and the value
 // is comma separated.
-//    # this defines two flags: "special" and "mess"
-//    export JUJU_SOME_ENV_VAR=special,mess
+//    # this defines two flags: "special" and "magic"
+//    export JUJU_SOME_ENV_VAR=special,magic
 //
 // The feature flags should be read and identified at program initialisation
 // time using an init function.  This function should call the

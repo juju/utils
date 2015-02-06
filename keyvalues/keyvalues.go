@@ -1,5 +1,5 @@
 // Copyright 2014 Canonical Ltd.
-// Licensed under the AGPLv3, see LICENCE file for details.
+// Licensed under the LGPLv3, see LICENCE file for details.
 
 // The keyvalues package implements a set of functions for parsing key=value data,
 // usually passed in as command-line parameters to juju subcommands, e.g.

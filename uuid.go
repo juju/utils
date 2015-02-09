@@ -30,7 +30,8 @@ var (
 	block4  = "[0-9a-f]{3}"
 	block5  = "[0-9a-f]{12}"
 
-	validUUID = regexp.MustCompile("^" + block1 + "-" + block2 + "-" + version + block3 + "-" + variant + block4 + "-" + block5 + "$")
+	UUIDSnippet = block1 + "-" + block2 + "-" + version + block3 + "-" + variant + block4 + "-" + block5
+	validUUID   = regexp.MustCompile("^" + UUIDSnippet + "$")
 )
 
 func UUIDFromString(s string) (UUID, error) {

@@ -13,14 +13,13 @@ import (
 // Both features make CachedOps useful in testing.
 type CachedOps struct {
 	ops    Operations
-	Events *OpEvents
+	Events OpEvents
 }
 
 // NewCachedOps initializes a new CachedOps and returns it.
 func NewCachedOps(ops Operations) *CachedOps {
 	return &CachedOps{
-		ops:    ops,
-		Events: &OpEvents{},
+		ops: ops,
 	}
 }
 

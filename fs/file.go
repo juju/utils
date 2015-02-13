@@ -6,108 +6,50 @@ package fs
 import (
 	"io"
 	"os"
-	"time"
 
 	"github.com/juju/errors"
 )
 
-// FileInfo holds the information exposed by the os.FileInfo interface.
-type FileInfo struct {
-	Name    string
-	Size    int64
-	Mode    os.FileMode
-	ModTime time.Time
-}
+// FileNode is a filesystem node for regular files.
+type FileNode struct {
+	NodeInfo
 
-// File holds information about a filesystem node. It implements
-// os.FileInfo. It may also hold the file's data. That data is exposed
-// through the Open method as a separate io.ReadWriteCloser.
-//
-// File is useful for testing and for ad hoc in-memory filesystems.
-type File struct {
-	Info FileInfo
+	// Data is the file's content.
 	Data []byte
 }
 
+// NewFileNode initializes a new FileNode with the provided data and
+// returns it.
+func NewFileNode(data []byte) *FileNode {
+	node := &FileNode{
+		NodeInfo: newNode(NodeKindFile),
+	}
+	node.SetData(data)
+	return node
+}
+
 // NewFile builds a new (regular) File from the provided information.
-func NewFile(filename string, perm os.FileMode, data []byte) *File {
+func NewFile(filename string, perm os.FileMode, data []byte) os.FileInfo {
 	// TODO(ericsnow) Fail if perm.IsRegular() returns false?
-	return newFile(filename, perm, data)
-}
-
-func newFile(name string, mode os.FileMode, data []byte) *File {
-	info := FileInfo{
-		Name:    name,
-		Size:    int64(len(data)),
-		Mode:    mode,
-		ModTime: time.Now(),
-	}
-	return &File{
-		Info: info,
-		Data: data,
-	}
-}
-
-// NewDir builds a new directory File from the provided information.
-func NewDir(dirname string, perm os.FileMode) *File {
-	// TODO(ericsnow) Fail if perm.IsRegular() returns false?
-	return newFile(dirname, perm|os.ModeDir, nil)
-}
-
-// NewSymlink builds a new symlink File from the provided information.
-func NewSymlink(oldName, newName string) *File {
-	perm := os.ModePerm
-	return newFile(newName, perm|os.ModeSymlink, []byte(oldName))
-}
-
-// Name implements os.FileInfo.
-func (f File) Name() string {
-	return f.Info.Name
-}
-
-// Size implements os.FileInfo.
-func (f File) Size() int64 {
-	return f.Info.Size
-}
-
-// Mode implements os.FileInfo.
-func (f File) Mode() os.FileMode {
-	return f.Info.Mode
-}
-
-// ModTime implements os.FileInfo.
-func (f File) ModTime() time.Time {
-	return f.Info.ModTime
-}
-
-// IsDir implements os.FileInfo.
-func (f File) IsDir() bool {
-	return f.Info.Mode.IsDir()
-}
-
-// Sys implements os.FileInfo.
-func (f File) Sys() interface{} {
-	// This is not implemented.
-	return nil
+	node := NewFileNode(data)
+	node.SetPermissions(perm)
+	return node.FileInfo(filename)
 }
 
 // SetData updates the file's data and associated file info.
-func (f *File) SetData(data []byte) {
-	// TODO(ericsnow) Restrict to regular files only?
-	f.Data = data
-	f.Info.Size = int64(len(data))
-	f.Info.ModTime = time.Now()
+func (fn *FileNode) SetData(data []byte) {
+	fn.Data = data
+	fn.Size = int64(len(data))
+	fn.Touch()
 }
 
 // TODO(ericsnow) Support other file modes in Open (or beside it)? Or
 // follow the lead of the os package with separate Create and OpenFile
 // methods?
 
-func (f *File) Open() (*FileData, error) {
-	file := &FileData{
-		file: f,
-	}
-	return file, nil
+// Open creates a new io.ReadWriteCloser that wraps the file's data.
+func (fn *FileNode) Open(filename string) (*FileData, error) {
+	return newFileData(fn, filename), nil
 }
 
 // TODO(ericsnow) Use a channel (stored on File) to syncronize writes
@@ -125,7 +67,8 @@ func (f *File) Open() (*FileData, error) {
 // underlying File.Data. One consequence is that multiple FileData that
 // wrap the same File may behave in unexpected ways.
 type FileData struct {
-	file *File
+	filename string
+	node     *FileNode
 
 	pos uint64
 	// TODO(ericsnow) current will suffer from synchronization issues
@@ -137,23 +80,24 @@ type FileData struct {
 
 var _ io.ReadWriteCloser = (*FileData)(nil)
 
-func newFileData(file *File) *FileData {
+func newFileData(node *FileNode, filename string) *FileData {
 	return &FileData{
-		file:    file,
-		current: file.Data,
+		filename: filename,
+		node:     node,
+		current:  node.Data,
 	}
 }
 
 var errFileClosed = errors.New("already closed")
 
-func newFileClosed(filename string) error {
+func newErrFileClosed(filename string) error {
 	return errors.Annotatef(errFileClosed, "file %s", filename)
 }
 
 // Read implements io.Reader.
 func (fd *FileData) Read(buf []byte) (int, error) {
 	if fd.closed {
-		return 0, newFileClosed(fd.file.Name())
+		return 0, newErrFileClosed(fd.filename)
 	}
 
 	size := len(buf)
@@ -161,7 +105,7 @@ func (fd *FileData) Read(buf []byte) (int, error) {
 		return 0, nil
 	}
 
-	//numBytes := copy(buf, fd.file.Data[fd.pos:])
+	//numBytes := copy(buf, fd.node.Data[fd.pos:])
 	numBytes := copy(buf, fd.current)
 	fd.pos += uint64(numBytes)
 	// TODO(ericsnow) This won't work if File.Data got resized somehow.
@@ -176,25 +120,27 @@ func (fd *FileData) Read(buf []byte) (int, error) {
 // Write implements io.Writer.
 func (fd *FileData) Write(data []byte) (int, error) {
 	if fd.closed {
-		return 0, newFileClosed(fd.file.Name())
+		return 0, newErrFileClosed(fd.filename)
 	}
 
-	// TODO(ericsnow) This won't work if File.Data got resized somehow.
+	// TODO(ericsnow) This won't work if FileNode.Data got resized somehow.
 
 	numBytes := len(data)
 	size := len(fd.current)
 
 	if size == 0 {
-		fd.file.Data = append(fd.file.Data, data...)
+		fd.node.Data = append(fd.node.Data, data...)
 	} else if size < numBytes {
-		fd.file.Data = append(fd.file.Data[:fd.pos], data...)
+		fd.node.Data = append(fd.node.Data[:fd.pos], data...)
 		fd.current = nil
 	} else {
 		copy(fd.current, data)
 		fd.current = fd.current[numBytes:]
 	}
 	fd.pos += uint64(numBytes)
-	fd.file.Info.Size = int64(len(fd.file.Data))
+
+	// Update the size and timestamps.
+	fd.node.SetData(fd.node.Data)
 
 	return numBytes, nil
 }
@@ -202,7 +148,7 @@ func (fd *FileData) Write(data []byte) (int, error) {
 // Close implements io.Closer.
 func (fd *FileData) Close() error {
 	if fd.closed {
-		return newFileClosed(fd.file.Name())
+		return newErrFileClosed(fd.filename)
 	}
 
 	fd.closed = true

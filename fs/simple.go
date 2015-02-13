@@ -4,11 +4,12 @@
 package fs
 
 import (
-	"errors"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/juju/errors"
 )
 
 // TODO(ericsnow) Ensure paths are absolute?
@@ -18,14 +19,17 @@ import (
 // SimpleOps is an implementation of Operations that has its own
 // rudimentary in-memory filesystem.
 type SimpleOps struct {
-	Files       map[string]*File
+	// Files holds the binding of filenames to nodes.
+	Files map[string]Node
+
+	// Permissions is the default permissions to use for files.
 	Permissions os.FileMode
 }
 
 // NewCachedFileOperations initializes a new CachedOps and returns it
 func NewSimpleOps() *SimpleOps {
 	return &SimpleOps{
-		Files:       make(map[string]*File),
+		Files:       make(map[string]Node),
 		Permissions: 0644,
 	}
 }
@@ -37,16 +41,16 @@ func (so *SimpleOps) Exists(name string) (bool, error) {
 }
 
 // Info implements Operations.
-func (so *SimpleOps) Info(name string) (os.FileInfo, error) {
-	info, exists := so.Files[name]
+func (so *SimpleOps) Info(path string) (os.FileInfo, error) {
+	node, exists := so.Files[path]
 	if !exists {
 		return nil, &os.PathError{
 			Op:   "stat",
-			Path: name,
+			Path: path,
 			Err:  os.ErrNotExist,
 		}
 	}
-	return info, nil
+	return node.FileInfo(path), nil
 }
 
 // MkdirAll implements Operations.
@@ -69,9 +73,10 @@ func (so *SimpleOps) MkdirAll(dirname string, perm os.FileMode) error {
 	// Traverse the list of missing directories (most root to least).
 	for i := len(dirs); i > 0; {
 		i -= 1
-		// TODO(ericsnow) Pull this out into a helper (newDir?).
-		name := dirs[i]
-		so.Files[name] = NewDir(name, perm)
+		path := dirs[i]
+		node := NewDirNode()
+		node.SetPermissions(perm)
+		so.Files[path] = node
 	}
 
 	return nil
@@ -80,9 +85,9 @@ func (so *SimpleOps) MkdirAll(dirname string, perm os.FileMode) error {
 // ListDir implements Operations.
 func (so *SimpleOps) ListDir(dirname string) ([]os.FileInfo, error) {
 	var result []os.FileInfo
-	for name, info := range so.Files {
-		if filepath.Dir(name) == dirname {
-			result = append(result, info)
+	for path, node := range so.Files {
+		if filepath.Dir(path) == dirname {
+			result = append(result, node.FileInfo(path))
 		}
 	}
 	return result, nil
@@ -90,7 +95,7 @@ func (so *SimpleOps) ListDir(dirname string) ([]os.FileInfo, error) {
 
 // ReadFile implements Operations.
 func (so *SimpleOps) ReadFile(filename string) ([]byte, error) {
-	file, ok := so.Files[filename]
+	node, ok := so.Files[filename]
 	if !ok {
 		return nil, &os.PathError{
 			Op:   "open",
@@ -98,9 +103,24 @@ func (so *SimpleOps) ReadFile(filename string) ([]byte, error) {
 			Err:  os.ErrNotExist,
 		}
 	}
-	data := make([]byte, len(file.Data))
-	copy(data, file.Data)
-	return data, nil
+	switch node := node.(type) {
+	case *FileNode:
+		data := make([]byte, len(node.Data))
+		copy(data, node.Data)
+		return data, nil
+	case *DirNode:
+		return nil, &os.PathError{
+			Op:   "open",
+			Path: filename,
+			Err:  errors.New("is a directory"),
+		}
+	default:
+		return nil, &os.PathError{
+			Op:   "open",
+			Path: filename,
+			Err:  errors.New("is not a regular file"),
+		}
+	}
 }
 
 // CreateFile implements Operations.
@@ -109,55 +129,62 @@ func (so *SimpleOps) CreateFile(filename string) (io.WriteCloser, error) {
 		return nil, &os.PathError{
 			Op:   "open", // TODO(ericsnow) or is it "create"?
 			Path: filename,
-			Err:  os.ErrNotExist,
+			Err:  os.ErrExist,
 		}
 	}
 
-	file := NewFile(filename, so.Permissions, nil)
-	so.Files[filename] = file
-	return file.Open()
+	node := NewFileNode(nil)
+	node.SetPermissions(so.Permissions)
+	so.Files[filename] = node
+	return node.Open(filename)
 }
 
 // CreateFile implements Operations.
 func (so *SimpleOps) WriteFile(filename string, data []byte, perm os.FileMode) error {
-	file, ok := so.Files[filename]
+	node, ok := so.Files[filename]
 
 	// Handle the new file case.
 	if !ok {
-		so.Files[filename] = NewFile(filename, perm, data)
+		node := NewFileNode(data)
+		node.SetPermissions(perm)
+		so.Files[filename] = node
 		return nil
 	}
 
-	// Handle the directory case.
-	if file.IsDir() {
+	switch node := node.(type) {
+	case *FileNode:
+		node.SetData(data)
+		return nil
+	case *DirNode:
 		return &os.PathError{
 			Op:   "open",
 			Path: filename,
 			Err:  errors.New("is a directory"),
 		}
+	default:
+		return &os.PathError{
+			Op:   "open",
+			Path: filename,
+			Err:  errors.New("is not a regular file"),
+		}
 	}
-
-	// Handle the existing file case.
-	file.SetData(data)
-
-	return nil
 }
 
 // RemoveAll implements Operations.
-func (so *SimpleOps) RemoveAll(name string) error {
-	file, exists := so.Files[name]
+func (so *SimpleOps) RemoveAll(path string) error {
+	node, exists := so.Files[path]
 	if !exists {
 		return nil
 	}
 
 	// TODO(ericsnow) delete in order (least root to most)?
 
-	delete(so.Files, name)
-	if !file.IsDir() {
+	delete(so.Files, path)
+	if _, ok := node.(*DirNode); !ok {
 		return nil
 	}
 
-	dirname := name + string(os.PathSeparator)
+	dirname := path + string(os.PathSeparator)
 	for child, _ := range so.Files {
 		if strings.HasPrefix(child, dirname) {
 			delete(so.Files, child)
@@ -168,17 +195,18 @@ func (so *SimpleOps) RemoveAll(name string) error {
 }
 
 // Chmod implements Operations.
-func (so *SimpleOps) Chmod(name string, mode os.FileMode) error {
-	file, exists := so.Files[name]
+func (so *SimpleOps) Chmod(path string, mode os.FileMode) error {
+	node, exists := so.Files[path]
 	if !exists {
 		return &os.PathError{
 			Op:   "chmod",
-			Path: name,
+			Path: path,
 			Err:  os.ErrNotExist,
 		}
 	}
 
-	file.Info.Mode = mode
+	// TODO(ericsnow) allow setting more than permissions?
+	node.SetPermissions(mode)
 	return nil
 }
 
@@ -199,32 +227,33 @@ func (so *SimpleOps) symlink(oldName, newName string) error {
 		return os.ErrNotExist
 	}
 
-	so.Files[newName] = NewSymlink(oldName, newName)
+	so.Files[newName] = NewSymlinkNode(oldName)
 	return nil
 }
 
 // Readlink implements Operations.
-func (so *SimpleOps) Readlink(name string) (string, error) {
-	oldName, err := so.readlink(name)
+func (so *SimpleOps) Readlink(path string) (string, error) {
+	oldName, err := so.readlink(path)
 	if err != nil {
 		err = &os.PathError{
 			Op:   "readlink",
-			Path: name,
+			Path: path,
 			Err:  err,
 		}
 	}
 	return oldName, err
 }
 
-func (so *SimpleOps) readlink(name string) (string, error) {
-	file, ok := so.Files[name]
+func (so *SimpleOps) readlink(path string) (string, error) {
+	node, ok := so.Files[path]
 	if !ok {
 		return "", os.ErrNotExist
 	}
 
-	if file.Info.Mode&os.ModeSymlink == 0 {
+	symlinkNode, ok := node.(*SymlinkNode)
+	if !ok {
 		return "", errors.New("not a symbolic link")
 	}
 
-	return string(file.Data), nil
+	return symlinkNode.Target, nil
 }

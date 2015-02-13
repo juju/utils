@@ -9,10 +9,12 @@ import (
 	"github.com/juju/errors"
 )
 
+var defaultListDirOps Ops
+
 // ListSubdirectories extracts the names of all subdirectories of the
 // specified directory and returns that list.
 func ListSubdirectories(dirname string) ([]string, error) {
-	return ListSubdirectoriesOp(dirname, &Ops{})
+	return ListSubdirectoriesOp(dirname, &defaultListDirOps)
 }
 
 // ListSubdirectoriesOp extracts the names of all subdirectories of the

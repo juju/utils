@@ -32,24 +32,20 @@ func NewFakeFile() *FakeFile {
 
 // Read Implements io.Reader.
 func (ff *FakeFile) Read(buf []byte) (int, error) {
-	ff.AddCall("Read", testing.FakeCallArgs{
-		"buf": buf,
-	})
-	return ff.NWritten, ff.Err()
+	ff.AddCall("Read", buf)
+	return ff.NWritten, ff.NextErr()
 }
 
 // Write Implements io.Writer.
 func (ff *FakeFile) Write(data []byte) (int, error) {
-	ff.AddCall("Write", testing.FakeCallArgs{
-		"data": data,
-	})
-	return ff.NWritten, ff.Err()
+	ff.AddCall("Write", data)
+	return ff.NWritten, ff.NextErr()
 }
 
 // Close Implements io.Closer.
 func (ff *FakeFile) Close() error {
-	ff.AddCall("Close", nil)
-	return ff.Err()
+	ff.AddCall("Close")
+	return ff.NextErr()
 }
 
 // FakeOpsReturns holds all the return values for the FakeOps methods.
@@ -95,93 +91,66 @@ func NewFakeOps() *FakeOps {
 
 // Exists implements Operations.
 func (fo *FakeOps) Exists(name string) (bool, error) {
-	fo.AddCall("Exists", testing.FakeCallArgs{
-		"name": name,
-	})
-	return fo.Returns.Exists, fo.Err()
+	fo.AddCall("Exists", name)
+	return fo.Returns.Exists, fo.NextErr()
 }
 
 // Info implements Operations.
 func (fo *FakeOps) Info(name string) (os.FileInfo, error) {
-	fo.AddCall("Info", testing.FakeCallArgs{
-		"name": name,
-	})
-	return fo.Returns.Info, fo.Err()
+	fo.AddCall("Info", name)
+	return fo.Returns.Info, fo.NextErr()
 }
 
 // MkdirAll implements Operations.
 func (fo *FakeOps) MkdirAll(dirname string, perm os.FileMode) error {
-	fo.AddCall("MkdirAll", testing.FakeCallArgs{
-		"dirname": dirname,
-		"perm":    perm,
-	})
-	return fo.Err()
+	fo.AddCall("MkdirAll", dirname, perm)
+	return fo.NextErr()
 }
 
 // ListDir implements Operations.
 func (fo *FakeOps) ListDir(dirname string) ([]os.FileInfo, error) {
-	fo.AddCall("ReadDir", testing.FakeCallArgs{
-		"dirname": dirname,
-	})
-	return fo.Returns.DirEntries, fo.Err()
+	fo.AddCall("ReadDir", dirname)
+	return fo.Returns.DirEntries, fo.NextErr()
 }
 
 // ReadFile implements Operations.
 func (fo *FakeOps) ReadFile(filename string) ([]byte, error) {
-	fo.AddCall("ReadFile", testing.FakeCallArgs{
-		"filename": filename,
-	})
-	return fo.Returns.Data, fo.Err()
+	fo.AddCall("ReadFile", filename)
+	return fo.Returns.Data, fo.NextErr()
 }
 
 // CreateFile implements Operations.
 func (fo *FakeOps) CreateFile(filename string) (io.WriteCloser, error) {
-	fo.AddCall("CreateFile", testing.FakeCallArgs{
-		"filename": filename,
-	})
-	return fo.Returns.File, fo.Err()
+	fo.AddCall("CreateFile", filename)
+	return fo.Returns.File, fo.NextErr()
 }
 
 // WriteFile implements Operations.
 func (fo *FakeOps) WriteFile(filename string, data []byte, perm os.FileMode) error {
-	fo.AddCall("WriteFile", testing.FakeCallArgs{
-		"filename": filename,
-		"data":     data,
-		"perm":     perm,
-	})
-	return fo.Err()
+	fo.AddCall("WriteFile", filename, data, perm)
+	return fo.NextErr()
 }
 
 // RemoveAll implements Operations.
 func (fo *FakeOps) RemoveAll(name string) error {
-	fo.AddCall("RemoveAll", testing.FakeCallArgs{
-		"name": name,
-	})
-	return fo.Err()
+	fo.AddCall("RemoveAll", name)
+	return fo.NextErr()
 }
 
 // Chmod implements Operations.
 func (fo *FakeOps) Chmod(name string, perm os.FileMode) error {
-	fo.AddCall("Chmod", testing.FakeCallArgs{
-		"name": name,
-		"perm": perm,
-	})
-	return fo.Err()
+	fo.AddCall("Chmod", name, perm)
+	return fo.NextErr()
 }
 
 // Symlink implements Operations.
 func (fo *FakeOps) Symlink(oldName, newName string) error {
-	fo.AddCall("Symlink", testing.FakeCallArgs{
-		"oldName": oldName,
-		"newName": newName,
-	})
-	return fo.Err()
+	fo.AddCall("Symlink", oldName, newName)
+	return fo.NextErr()
 }
 
 // ReadLink implements Operations.
 func (fo *FakeOps) Readlink(name string) (string, error) {
-	fo.AddCall("Readlink", testing.FakeCallArgs{
-		"name": name,
-	})
-	return fo.Returns.Filename, fo.Err()
+	fo.AddCall("Readlink", name)
+	return fo.Returns.Filename, fo.NextErr()
 }

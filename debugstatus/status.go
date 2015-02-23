@@ -14,7 +14,9 @@ import (
 func Check(checkers ...CheckerFunc) map[string]CheckResult {
 	results := make(map[string]CheckResult, len(checkers))
 	for _, c := range checkers {
+		t0 := time.Now()
 		key, result := c()
+		result.Duration = time.Since(t0)
 		results[key] = result
 	}
 	return results
@@ -30,6 +32,10 @@ type CheckResult struct {
 
 	// Passed reports whether the check passed.
 	Passed bool
+
+	// Duration holds the duration that the
+	// status check took to run.
+	Duration time.Duration
 }
 
 // CheckerFunc represents a function returning the check machine friendly key

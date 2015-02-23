@@ -23,6 +23,7 @@ var _ = gc.Suite(&statusSuite{})
 
 func makeCheckerFunc(key, name, value string, passed bool) debugstatus.CheckerFunc {
 	return func() (string, debugstatus.CheckResult) {
+		time.Sleep(time.Microsecond)
 		return key, debugstatus.CheckResult{
 			Name:   name,
 			Value:  value,
@@ -37,6 +38,13 @@ func (s *statusSuite) TestCheck(c *gc.C) {
 		makeCheckerFunc("check2", "check2 name", "value2", false),
 		makeCheckerFunc("check3", "check3 name", "value3", true),
 	)
+	for key, r := range results {
+		if r.Duration < time.Microsecond {
+			c.Errorf("got %v want >1µs", r.Duration)
+		}
+		r.Duration = 0
+		results[key] = r
+	}
 
 	c.Assert(results, jc.DeepEquals, map[string]debugstatus.CheckResult{
 		"check1": {

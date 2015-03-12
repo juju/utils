@@ -14,35 +14,36 @@ const (
 	WindowsListSeparator = ';'  // OS-specific path list separator
 )
 
-type windowsRenderer struct{}
+// WindowsRenderer is a Renderer implementation for Windows.
+type WindowsRenderer struct{}
 
 // Base implements Renderer.
-func (ur windowsRenderer) Base(path string) string {
+func (ur WindowsRenderer) Base(path string) string {
 	return Base(WindowsSeparator, ur.VolumeName, path)
 }
 
 // Clean implements Renderer.
-func (ur windowsRenderer) Clean(path string) string {
+func (ur WindowsRenderer) Clean(path string) string {
 	return Clean(WindowsSeparator, ur.VolumeName, path)
 }
 
 // Dir implements Renderer.
-func (ur windowsRenderer) Dir(path string) string {
+func (ur WindowsRenderer) Dir(path string) string {
 	return Dir(WindowsSeparator, ur.VolumeName, path)
 }
 
 // Ext implements Renderer.
-func (windowsRenderer) Ext(path string) string {
+func (WindowsRenderer) Ext(path string) string {
 	return Ext(WindowsSeparator, path)
 }
 
 // FromSlash implements Renderer.
-func (windowsRenderer) FromSlash(path string) string {
+func (WindowsRenderer) FromSlash(path string) string {
 	return FromSlash(WindowsSeparator, path)
 }
 
 // IsAbs implements Renderer.
-func (windowsRenderer) IsAbs(path string) bool {
+func (WindowsRenderer) IsAbs(path string) bool {
 	l := volumeNameLen(path)
 	if l == 0 {
 		return false
@@ -55,22 +56,22 @@ func (windowsRenderer) IsAbs(path string) bool {
 }
 
 // Join implements Renderer.
-func (ur windowsRenderer) Join(path ...string) string {
+func (ur WindowsRenderer) Join(path ...string) string {
 	return Join(WindowsSeparator, ur.VolumeName, path...)
 }
 
 // Match implements Renderer.
-func (windowsRenderer) Match(pattern, name string) (matched bool, err error) {
+func (WindowsRenderer) Match(pattern, name string) (matched bool, err error) {
 	return Match(WindowsSeparator, pattern, name)
 }
 
 // Split implements Renderer.
-func (ur windowsRenderer) Split(path string) (dir, file string) {
+func (ur WindowsRenderer) Split(path string) (dir, file string) {
 	return Split(WindowsSeparator, ur.VolumeName, path)
 }
 
 // SplitList implements Renderer.
-func (windowsRenderer) SplitList(path string) []string {
+func (WindowsRenderer) SplitList(path string) []string {
 	if path == "" {
 		return []string{}
 	}
@@ -101,12 +102,12 @@ func (windowsRenderer) SplitList(path string) []string {
 }
 
 // ToSlash implements Renderer.
-func (windowsRenderer) ToSlash(path string) string {
+func (WindowsRenderer) ToSlash(path string) string {
 	return ToSlash(WindowsSeparator, path)
 }
 
 // VolumeName implements Renderer.
-func (windowsRenderer) VolumeName(path string) string {
+func (WindowsRenderer) VolumeName(path string) string {
 	return path[:volumeNameLen(path)]
 }
 

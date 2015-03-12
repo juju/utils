@@ -3,5 +3,5 @@
 
 package filepath
 
-var _ Renderer = (*unixRenderer)(nil)
-var _ Renderer = (*windowsRenderer)(nil)
+var _ Renderer = (*UnixRenderer)(nil)
+var _ Renderer = (*WindowsRenderer)(nil)

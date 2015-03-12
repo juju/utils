@@ -14,55 +14,56 @@ const (
 	UnixListSeparator = ':' // OS-specific path list separator
 )
 
-type unixRenderer struct{}
+// UnixRenderer is a Renderer implementation for most flavors of Unix.
+type UnixRenderer struct{}
 
 // Base implements Renderer.
-func (ur unixRenderer) Base(path string) string {
+func (ur UnixRenderer) Base(path string) string {
 	return Base(UnixSeparator, ur.VolumeName, path)
 }
 
 // Clean implements Renderer.
-func (ur unixRenderer) Clean(path string) string {
+func (ur UnixRenderer) Clean(path string) string {
 	return Clean(UnixSeparator, ur.VolumeName, path)
 }
 
 // Dir implements Renderer.
-func (ur unixRenderer) Dir(path string) string {
+func (ur UnixRenderer) Dir(path string) string {
 	return Dir(UnixSeparator, ur.VolumeName, path)
 }
 
 // Ext implements Renderer.
-func (unixRenderer) Ext(path string) string {
+func (UnixRenderer) Ext(path string) string {
 	return Ext(UnixSeparator, path)
 }
 
 // FromSlash implements Renderer.
-func (unixRenderer) FromSlash(path string) string {
+func (UnixRenderer) FromSlash(path string) string {
 	return FromSlash(UnixSeparator, path)
 }
 
 // IsAbs implements Renderer.
-func (unixRenderer) IsAbs(path string) bool {
+func (UnixRenderer) IsAbs(path string) bool {
 	return strings.HasPrefix(path, string(UnixSeparator))
 }
 
 // Join implements Renderer.
-func (ur unixRenderer) Join(path ...string) string {
+func (ur UnixRenderer) Join(path ...string) string {
 	return Join(UnixSeparator, ur.VolumeName, path...)
 }
 
 // Match implements Renderer.
-func (unixRenderer) Match(pattern, name string) (matched bool, err error) {
+func (UnixRenderer) Match(pattern, name string) (matched bool, err error) {
 	return Match(UnixSeparator, pattern, name)
 }
 
 // Split implements Renderer.
-func (ur unixRenderer) Split(path string) (dir, file string) {
+func (ur UnixRenderer) Split(path string) (dir, file string) {
 	return Split(UnixSeparator, ur.VolumeName, path)
 }
 
 // SplitList implements Renderer.
-func (unixRenderer) SplitList(path string) []string {
+func (UnixRenderer) SplitList(path string) []string {
 	if path == "" {
 		return []string{}
 	}
@@ -70,11 +71,11 @@ func (unixRenderer) SplitList(path string) []string {
 }
 
 // ToSlash implements Renderer.
-func (unixRenderer) ToSlash(path string) string {
+func (UnixRenderer) ToSlash(path string) string {
 	return ToSlash(UnixSeparator, path)
 }
 
 // VolumeName implements Renderer.
-func (unixRenderer) VolumeName(path string) string {
+func (UnixRenderer) VolumeName(path string) string {
 	return ""
 }

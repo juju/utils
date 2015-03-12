@@ -63,13 +63,13 @@ func NewRenderer(os string) (Renderer, error) {
 
 	switch strings.ToLower(os) {
 	case "windows":
-		return &windowsRenderer{}, nil
+		return &WindowsRenderer{}, nil
 	case "ubuntu":
-		return &unixRenderer{}, nil
+		return &UnixRenderer{}, nil
 	case "darwin", "dragonfly", "freebsd", "linux", "nacl", "netbsd", "openbsd", "solaris":
 		// These match the the OS names from
 		// http://golang.org/src/path/filepath/path_unix.go.
-		return &unixRenderer{}, nil
+		return &UnixRenderer{}, nil
 	default:
 		return nil, errors.NotFoundf("renderer for %q", os)
 	}

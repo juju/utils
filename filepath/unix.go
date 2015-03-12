@@ -1,0 +1,80 @@
+// Copyright 2015 Canonical Ltd.
+// Licensed under the AGPLv3, see LICENCE file for details.
+
+package filepath
+
+import (
+	"strings"
+)
+
+// A substantial portion of this code comes from the Go stdlib code.
+
+const (
+	UnixSeparator     = '/' // OS-specific path separator
+	UnixListSeparator = ':' // OS-specific path list separator
+)
+
+type unixRenderer struct{}
+
+// Base implements Renderer.
+func (ur unixRenderer) Base(path string) string {
+	return Base(UnixSeparator, ur.VolumeName, path)
+}
+
+// Clean implements Renderer.
+func (ur unixRenderer) Clean(path string) string {
+	return Clean(UnixSeparator, ur.VolumeName, path)
+}
+
+// Dir implements Renderer.
+func (ur unixRenderer) Dir(path string) string {
+	return Dir(UnixSeparator, ur.VolumeName, path)
+}
+
+// Ext implements Renderer.
+func (unixRenderer) Ext(path string) string {
+	return Ext(UnixSeparator, path)
+}
+
+// FromSlash implements Renderer.
+func (unixRenderer) FromSlash(path string) string {
+	return FromSlash(UnixSeparator, path)
+}
+
+// IsAbs implements Renderer.
+func (unixRenderer) IsAbs(path string) bool {
+	return strings.HasPrefix(path, string(UnixSeparator))
+}
+
+// Join implements Renderer.
+func (ur unixRenderer) Join(path ...string) string {
+	return Join(UnixSeparator, ur.VolumeName, path...)
+}
+
+// Match implements Renderer.
+func (unixRenderer) Match(pattern, name string) (matched bool, err error) {
+	return Match(UnixSeparator, pattern, name)
+}
+
+// Split implements Renderer.
+func (ur unixRenderer) Split(path string) (dir, file string) {
+	return Split(UnixSeparator, ur.VolumeName, path)
+}
+
+// SplitList implements Renderer.
+func (unixRenderer) SplitList(path string) []string {
+	if path == "" {
+		return []string{}
+	}
+	return strings.Split(path, string(UnixListSeparator))
+}
+
+// ToSlash implements Renderer.
+func (unixRenderer) ToSlash(path string) string {
+	return ToSlash(UnixSeparator, path)
+}
+
+// VolumeName implements Renderer.
+func (unixRenderer) VolumeName(path string) string {
+	return ""
+}

@@ -50,6 +50,8 @@ func ReadYaml(path string, obj interface{}) error {
 	return goyaml.Unmarshal(data, obj)
 }
 
+// TODO(ericsnow) Move the quoting helpers into the shell package?
+
 // ShQuote quotes s so that when read by bash, no metacharacters
 // within s will be interpreted as such.
 func ShQuote(s string) string {

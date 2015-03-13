@@ -18,7 +18,7 @@ import (
 type rendererSuite struct {
 	testing.IsolationSuite
 
-	unix    *shell.UnixRenderer
+	unix    *shell.BashRenderer
 	windows *shell.PowershellRenderer
 }
 
@@ -27,7 +27,7 @@ var _ = gc.Suite(&rendererSuite{})
 func (s *rendererSuite) SetUpTest(c *gc.C) {
 	s.IsolationSuite.SetUpTest(c)
 
-	s.unix = &shell.UnixRenderer{}
+	s.unix = &shell.BashRenderer{}
 	s.windows = &shell.PowershellRenderer{}
 }
 

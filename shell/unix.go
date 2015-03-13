@@ -11,25 +11,24 @@ import (
 	"github.com/juju/utils/filepath"
 )
 
-// UnixRenderer represents an Ubuntu specific script render
-// type that is responsible for this particular OS. It implements
-// the Renderer interface
-type UnixRenderer struct {
+// unixRenderer is the base shell renderer for "unix" shells.
+type unixRenderer struct {
 	filepath.UnixRenderer
 }
 
 // Quote implements Renderer.
-func (UnixRenderer) Quote(str string) string {
+func (unixRenderer) Quote(str string) string {
+	// This *may* not be correct for *all* unix shells...
 	return utils.ShQuote(str)
 }
 
 // ExeSuffix implements Renderer.
-func (UnixRenderer) ExeSuffix() string {
+func (unixRenderer) ExeSuffix() string {
 	return ""
 }
 
 // Mkdir implements Renderer.
-func (lr UnixRenderer) Mkdir(dirname string) []string {
+func (lr unixRenderer) Mkdir(dirname string) []string {
 	dirname = lr.Quote(dirname)
 	return []string{
 		fmt.Sprintf("mkdir %s", dirname),
@@ -37,7 +36,7 @@ func (lr UnixRenderer) Mkdir(dirname string) []string {
 }
 
 // MkdirAll implements Renderer.
-func (lr UnixRenderer) MkdirAll(dirname string) []string {
+func (lr unixRenderer) MkdirAll(dirname string) []string {
 	dirname = lr.Quote(dirname)
 	return []string{
 		fmt.Sprintf("mkdir -p %s", dirname),
@@ -45,7 +44,7 @@ func (lr UnixRenderer) MkdirAll(dirname string) []string {
 }
 
 // Chmod implements Renderer.
-func (lr UnixRenderer) Chmod(path string, perm os.FileMode) []string {
+func (lr unixRenderer) Chmod(path string, perm os.FileMode) []string {
 	path = lr.Quote(path)
 	return []string{
 		fmt.Sprintf("chmod %04o %s", perm, path),
@@ -53,7 +52,7 @@ func (lr UnixRenderer) Chmod(path string, perm os.FileMode) []string {
 }
 
 // WriteFile implements Renderer.
-func (lr UnixRenderer) WriteFile(filename string, data []byte) []string {
+func (lr unixRenderer) WriteFile(filename string, data []byte) []string {
 	filename = lr.Quote(filename)
 	return []string{
 		// An alternate approach would be to use printf.

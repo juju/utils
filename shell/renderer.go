@@ -77,9 +77,9 @@ func NewRenderer(shell string) (Renderer, error) {
 	case shell == "windows":
 		return &PowershellRenderer{}, nil
 	case utils.OSIsUnix(shell):
-		return &UnixRenderer{}, nil
+		return &BashRenderer{}, nil
 	case shell == "ubuntu":
-		return &UnixRenderer{}, nil
+		return &BashRenderer{}, nil
 	default:
 		return nil, errors.NotFoundf("renderer for %q", shell)
 	}

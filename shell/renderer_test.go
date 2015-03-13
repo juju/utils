@@ -33,9 +33,9 @@ func (s *rendererSuite) SetUpTest(c *gc.C) {
 
 func (s rendererSuite) checkRenderer(c *gc.C, renderer shell.Renderer, expected string) {
 	switch expected {
-	case "windows":
+	case "powershell":
 		c.Check(renderer, gc.FitsTypeOf, s.windows)
-	case "unix":
+	case "bash":
 		c.Check(renderer, gc.FitsTypeOf, s.unix)
 	default:
 		c.Errorf("unknown kind %q", expected)
@@ -49,9 +49,9 @@ func (s rendererSuite) TestNewRendererDefault(c *gc.C) {
 
 	switch runtime.GOOS {
 	case "windows":
-		s.checkRenderer(c, renderer, "windows")
+		s.checkRenderer(c, renderer, "powershell")
 	default:
-		s.checkRenderer(c, renderer, "unix")
+		s.checkRenderer(c, renderer, "bash")
 	}
 }
 
@@ -62,9 +62,9 @@ func (s rendererSuite) TestNewRendererGOOS(c *gc.C) {
 
 	switch runtime.GOOS {
 	case "windows":
-		s.checkRenderer(c, renderer, "windows")
+		s.checkRenderer(c, renderer, "powershell")
 	default:
-		s.checkRenderer(c, renderer, "unix")
+		s.checkRenderer(c, renderer, "bash")
 	}
 }
 
@@ -72,7 +72,7 @@ func (s rendererSuite) TestNewRendererWindows(c *gc.C) {
 	renderer, err := shell.NewRenderer("windows")
 	c.Assert(err, jc.ErrorIsNil)
 
-	s.checkRenderer(c, renderer, "windows")
+	s.checkRenderer(c, renderer, "powershell")
 }
 
 func (s rendererSuite) TestNewRendererUnix(c *gc.C) {
@@ -81,7 +81,7 @@ func (s rendererSuite) TestNewRendererUnix(c *gc.C) {
 		renderer, err := shell.NewRenderer(os)
 		c.Assert(err, jc.ErrorIsNil)
 
-		s.checkRenderer(c, renderer, "unix")
+		s.checkRenderer(c, renderer, "bash")
 	}
 }
 
@@ -92,7 +92,7 @@ func (s rendererSuite) TestNewRendererDistros(c *gc.C) {
 		renderer, err := shell.NewRenderer(distro)
 		c.Assert(err, jc.ErrorIsNil)
 
-		s.checkRenderer(c, renderer, "unix")
+		s.checkRenderer(c, renderer, "bash")
 	}
 }
 

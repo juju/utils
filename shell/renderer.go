@@ -66,21 +66,37 @@ type Renderer interface {
 	Commands
 }
 
-// NewRenderer returns a Renderer for the given shell.
-func NewRenderer(shell string) (Renderer, error) {
-	if shell == "" {
-		shell = runtime.GOOS
+// NewRenderer returns a Renderer for the given shell, OS, or distro name.
+func NewRenderer(name string) (Renderer, error) {
+	if name == "" {
+		name = runtime.GOOS
+	} else {
+		name = strings.ToLower(name)
 	}
 
-	shell = strings.ToLower(shell)
-	switch {
-	case shell == "windows":
+	// Try known shell names first.
+	switch name {
+	case "bash":
+		return &BashRenderer{}, nil
+	case "ps", "powershell":
 		return &PowershellRenderer{}, nil
-	case utils.OSIsUnix(shell):
-		return &BashRenderer{}, nil
-	case shell == "ubuntu":
-		return &BashRenderer{}, nil
-	default:
-		return nil, errors.NotFoundf("renderer for %q", shell)
+	case "cmd", "batch", "bat":
+		return &WinCmdRenderer{}, nil
 	}
+
+	// Fall back to operating systems.
+	switch {
+	case name == "windows":
+		return &PowershellRenderer{}, nil
+	case utils.OSIsUnix(name):
+		return &BashRenderer{}, nil
+	}
+
+	// Finally try distros.
+	switch name {
+	case "ubuntu":
+		return &BashRenderer{}, nil
+	}
+
+	return nil, errors.NotFoundf("renderer for %q", name)
 }

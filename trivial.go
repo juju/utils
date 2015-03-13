@@ -57,6 +57,45 @@ func ShQuote(s string) string {
 	return `'` + strings.Replace(s, `'`, `'"'"'`, -1) + `'`
 }
 
+// WinPSQuote quotes s so that when read by powershell, no metacharacters
+// within s will be interpreted as such.
+func WinPSQuote(s string) string {
+	// See http://ss64.com/ps/syntax-esc.html#quotes.
+	return `'` + strings.Replace(s, `'`, `''`, -1) + `'`
+}
+
+// WinCmdQuote quotes s so that when read by cmd.exe, no metacharacters
+// within s will be interpreted as such.
+func WinCmdQuote(s string) string {
+	// See http://blogs.msdn.com/b/twistylittlepassagesallalike/archive/2011/04/23/everyone-quotes-arguments-the-wrong-way.aspx.
+	quoted := winCmdQuote(s)
+	return winCmdEscapeMeta(quoted)
+}
+
+func winCmdQuote(s string) string {
+	var escaped string
+	for _, c := range s {
+		switch c {
+		case '\\', '"':
+			escaped += `\`
+		}
+		escaped += string(c)
+	}
+	return `"` + escaped + `"`
+}
+
+func winCmdEscapeMeta(str string) string {
+	const meta = `()%!^"<>&|`
+	var newStr string
+	for _, c := range str {
+		if strings.Contains(meta, string(c)) {
+			newStr += "^"
+		}
+		newStr += string(c)
+	}
+	return newStr
+}
+
 // CommandString flattens a sequence of command arguments into a
 // string suitable for executing in a shell, escaping slashes,
 // variables and quotes as necessary; each argument is double-quoted

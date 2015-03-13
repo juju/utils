@@ -43,11 +43,15 @@ func (w *WindowsRenderer) WriteFile(filename string, data []byte) []string {
 
 // MkDir implements Renderer.
 func (w *WindowsRenderer) Mkdir(dirname string) []string {
-	return []string{fmt.Sprintf(`mkdir %s`, w.FromSlash(dirname))}
+	return []string{
+		fmt.Sprintf(`mkdir %s`, w.FromSlash(dirname)),
+	}
 }
 
 // MkDirAll implements Renderer.
 func (w *WindowsRenderer) MkdirAll(dirname string) []string {
 	// TODO(ericsnow) Wrap in "setlocal enableextensions...endlocal"?
-	return []string{fmt.Sprintf(`mkdir %s`, w.FromSlash(dirname))}
+	return []string{
+		fmt.Sprintf(`mkdir %s`, w.FromSlash(dirname)),
+	}
 }

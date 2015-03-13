@@ -48,7 +48,7 @@ func (lr UnixRenderer) MkdirAll(dirname string) []string {
 func (lr UnixRenderer) Chmod(path string, perm os.FileMode) []string {
 	path = lr.Quote(path)
 	return []string{
-		fmt.Sprintf("chmod %04s %s", path, perm),
+		fmt.Sprintf("chmod %04o %s", perm, path),
 	}
 }
 

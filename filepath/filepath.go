@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/juju/errors"
+	"github.com/juju/utils"
 )
 
 // Renderer provides methods for the different functions in
@@ -61,14 +62,13 @@ func NewRenderer(os string) (Renderer, error) {
 		os = runtime.GOOS
 	}
 
-	switch strings.ToLower(os) {
-	case "windows":
+	os = strings.ToLower(os)
+	switch {
+	case os == utils.OSWindows:
 		return &WindowsRenderer{}, nil
-	case "ubuntu":
+	case utils.OSIsUnix(os):
 		return &UnixRenderer{}, nil
-	case "darwin", "dragonfly", "freebsd", "linux", "nacl", "netbsd", "openbsd", "solaris":
-		// These match the the OS names from
-		// http://golang.org/src/path/filepath/path_unix.go.
+	case os == "ubuntu":
 		return &UnixRenderer{}, nil
 	default:
 		return nil, errors.NotFoundf("renderer for %q", os)

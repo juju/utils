@@ -18,11 +18,11 @@ import (
 type PathRenderer interface {
 	filepath.Renderer
 
-	// ShQuote generates a new string with quotation marks and relevant
+	// Quote generates a new string with quotation marks and relevant
 	// escape/control characters properly escaped. The resulting string
 	// is wrapped in quotation marks such that it will be treated as a
 	// single string by the shell.
-	ShQuote(str string) string
+	Quote(str string) string
 
 	// ExeSuffix returns the filename suffix for executable files.
 	ExeSuffix() string

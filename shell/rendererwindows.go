@@ -22,8 +22,8 @@ func (w *WindowsRenderer) ExeSuffix() string {
 	return ".exe"
 }
 
-// ShQuote implements Renderer.
-func (w *WindowsRenderer) ShQuote(str string) string {
+// Quote implements Renderer.
+func (w *WindowsRenderer) Quote(str string) string {
 	return `"` + str + `"`
 }
 

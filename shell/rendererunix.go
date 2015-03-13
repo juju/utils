@@ -18,8 +18,8 @@ type UnixRenderer struct {
 	filepath.UnixRenderer
 }
 
-// ShQuote implements Renderer.
-func (UnixRenderer) ShQuote(str string) string {
+// Quote implements Renderer.
+func (UnixRenderer) Quote(str string) string {
 	return utils.ShQuote(str)
 }
 
@@ -30,7 +30,7 @@ func (UnixRenderer) ExeSuffix() string {
 
 // Mkdir implements Renderer.
 func (lr UnixRenderer) Mkdir(dirname string) []string {
-	dirname = lr.ShQuote(dirname)
+	dirname = lr.Quote(dirname)
 	return []string{
 		fmt.Sprintf("mkdir %s", dirname),
 	}
@@ -38,7 +38,7 @@ func (lr UnixRenderer) Mkdir(dirname string) []string {
 
 // MkdirAll implements Renderer.
 func (lr UnixRenderer) MkdirAll(dirname string) []string {
-	dirname = lr.ShQuote(dirname)
+	dirname = lr.Quote(dirname)
 	return []string{
 		fmt.Sprintf("mkdir -p %s", dirname),
 	}
@@ -46,7 +46,7 @@ func (lr UnixRenderer) MkdirAll(dirname string) []string {
 
 // Chmod implements Renderer.
 func (lr UnixRenderer) Chmod(path string, perm os.FileMode) []string {
-	path = lr.ShQuote(path)
+	path = lr.Quote(path)
 	return []string{
 		fmt.Sprintf("chmod %04s %s", path, perm),
 	}
@@ -54,7 +54,7 @@ func (lr UnixRenderer) Chmod(path string, perm os.FileMode) []string {
 
 // WriteFile implements Renderer.
 func (lr UnixRenderer) WriteFile(filename string, data []byte) []string {
-	filename = lr.ShQuote(filename)
+	filename = lr.Quote(filename)
 	return []string{
 		// An alternate approach would be to use printf.
 		fmt.Sprintf("cat > %s << 'EOF'\n%s\nEOF", filename, data),

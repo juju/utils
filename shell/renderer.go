@@ -66,21 +66,21 @@ type Renderer interface {
 	Commands
 }
 
-// NewRenderer returns a Renderer for the given os.
-func NewRenderer(os string) (Renderer, error) {
-	if os == "" {
-		os = runtime.GOOS
+// NewRenderer returns a Renderer for the given shell.
+func NewRenderer(shell string) (Renderer, error) {
+	if shell == "" {
+		shell = runtime.GOOS
 	}
 
-	os = strings.ToLower(os)
+	shell = strings.ToLower(shell)
 	switch {
-	case os == "windows":
-		return &WindowsRenderer{}, nil
-	case utils.OSIsUnix(os):
+	case shell == "windows":
+		return &PowershellRenderer{}, nil
+	case utils.OSIsUnix(shell):
 		return &UnixRenderer{}, nil
-	case os == "ubuntu":
+	case shell == "ubuntu":
 		return &UnixRenderer{}, nil
 	default:
-		return nil, errors.NotFoundf("renderer for %q", os)
+		return nil, errors.NotFoundf("renderer for %q", shell)
 	}
 }

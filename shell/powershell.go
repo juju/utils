@@ -1,0 +1,50 @@
+// Copyright 2015 Canonical Ltd.
+// Licensed under the AGPLv3, see LICENCE file for details.
+
+package shell
+
+import (
+	"fmt"
+	"os"
+
+	"github.com/juju/utils"
+)
+
+// PowershellRenderer is a shell renderer for Windows Powershell.
+type PowershellRenderer struct {
+	windowsRenderer
+}
+
+// Quote implements Renderer.
+func (pr *PowershellRenderer) Quote(str string) string {
+	return utils.WinPSQuote(str)
+}
+
+// Chmod implements Renderer.
+func (pr *PowershellRenderer) Chmod(path string, perm os.FileMode) []string {
+	path = pr.Quote(path)
+	// TODO(ericsnow) Use Set-Acl?
+	panic("not supported")
+	return nil
+}
+
+// WriteFile implements Renderer.
+func (pr *PowershellRenderer) WriteFile(filename string, data []byte) []string {
+	filename = pr.Quote(filename)
+	return []string{
+		fmt.Sprintf("Set-Content %s @\"\n%s\n\"@", filename, data),
+	}
+}
+
+// MkDir implements Renderer.
+func (pr *PowershellRenderer) Mkdir(dirname string) []string {
+	dirname = pr.FromSlash(dirname)
+	return []string{
+		fmt.Sprintf(`mkdir %s`, pr.Quote(dirname)),
+	}
+}
+
+// MkDirAll implements Renderer.
+func (pr *PowershellRenderer) MkdirAll(dirname string) []string {
+	return pr.Mkdir(dirname)
+}

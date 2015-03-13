@@ -19,7 +19,7 @@ type rendererSuite struct {
 	testing.IsolationSuite
 
 	unix    *shell.UnixRenderer
-	windows *shell.WindowsRenderer
+	windows *shell.PowershellRenderer
 }
 
 var _ = gc.Suite(&rendererSuite{})
@@ -28,7 +28,7 @@ func (s *rendererSuite) SetUpTest(c *gc.C) {
 	s.IsolationSuite.SetUpTest(c)
 
 	s.unix = &shell.UnixRenderer{}
-	s.windows = &shell.WindowsRenderer{}
+	s.windows = &shell.PowershellRenderer{}
 }
 
 func (s rendererSuite) checkRenderer(c *gc.C, renderer shell.Renderer, expected string) {

@@ -3,5 +3,6 @@
 
 package shell
 
-var _ Renderer = (*WindowsRenderer)(nil)
+var _ Renderer = (*PowershellRenderer)(nil)
 var _ Renderer = (*UnixRenderer)(nil)
+var _ Renderer = (*WinCmdRenderer)(nil)

@@ -6,6 +6,7 @@ package shell
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/juju/utils"
 	"github.com/juju/utils/filepath"
@@ -51,12 +52,69 @@ func (ur unixRenderer) Chmod(path string, perm os.FileMode) []string {
 	}
 }
 
+// Chown implements Renderer.
+func (ur unixRenderer) Chown(path, owner, group string) []string {
+	path = ur.Quote(path)
+	return []string{
+		fmt.Sprintf("chown %:% %s", owner, group, path),
+	}
+}
+
+// Touch implements Renderer.
+func (ur unixRenderer) Touch(path string, timestamp *time.Time) []string {
+	path = ur.Quote(path)
+	return ur.touch(path, timestamp)
+}
+
+func (ur unixRenderer) touch(path string, timestamp *time.Time) []string {
+	var opt string
+	if timestamp != nil {
+		opt = timestamp.Format("-t 200601021504.05 ")
+	}
+	return []string{
+		fmt.Sprintf("touch %s%s", opt, path),
+	}
+}
+
 // WriteFile implements Renderer.
 func (ur unixRenderer) WriteFile(filename string, data []byte) []string {
 	filename = ur.Quote(filename)
 	return []string{
 		// An alternate approach would be to use printf.
 		fmt.Sprintf("cat > %s << 'EOF'\n%s\nEOF", filename, data),
+	}
+}
+
+func (unixRenderer) outFD(name string) (int, bool) {
+	fd, ok := ResolveFD(name)
+	if !ok || fd <= 0 {
+		return -1, false
+	}
+	return fd, true
+}
+
+// RedirectFD implements Renderer.
+func (ur unixRenderer) RedirectFD(dst, src string) []string {
+	dstFD, ok := ur.outFD(dst)
+	if !ok {
+		return nil
+	}
+	srcFD, ok := ur.outFD(src)
+	if !ok {
+		return nil
+	}
+	return []string{
+		fmt.Sprintf("exec %d>&%d", srcFD, dstFD),
+	}
+}
+
+// RedirectOutput implements Renderer.
+func (ur unixRenderer) RedirectOutput(filename string) []string {
+	filename = ur.Quote(filename)
+
+	return []string{
+		"exec > " + filename,
+		"exec 2>&1",
 	}
 }
 

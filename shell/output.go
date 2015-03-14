@@ -26,8 +26,8 @@ type OutputRenderer interface {
 	// TODO(ericsnow) Support passing the src FD as an arg?
 
 	// RedirectOutput will cause all subsequent output from the shell
-	// (or script) to go to the given file. Both stdout and stderr are
-	// redirected.
+	// (or script) to go to the given file. Only stdout is redirected
+	// (use RedirectFD to redirect stderr or other FDs).
 	//
 	// The file should already exist (so a call to Touch may be
 	// necessary before calling RedirectOutput). If the file should have

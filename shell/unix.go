@@ -56,17 +56,13 @@ func (ur unixRenderer) Chmod(path string, perm os.FileMode) []string {
 func (ur unixRenderer) Chown(path, owner, group string) []string {
 	path = ur.Quote(path)
 	return []string{
-		fmt.Sprintf("chown %:% %s", owner, group, path),
+		fmt.Sprintf("chown %s:%s %s", owner, group, path),
 	}
 }
 
 // Touch implements Renderer.
 func (ur unixRenderer) Touch(path string, timestamp *time.Time) []string {
 	path = ur.Quote(path)
-	return ur.touch(path, timestamp)
-}
-
-func (ur unixRenderer) touch(path string, timestamp *time.Time) []string {
 	var opt string
 	if timestamp != nil {
 		opt = timestamp.Format("-t 200601021504.05 ")
@@ -114,7 +110,6 @@ func (ur unixRenderer) RedirectOutput(filename string) []string {
 
 	return []string{
 		"exec > " + filename,
-		"exec 2>&1",
 	}
 }
 

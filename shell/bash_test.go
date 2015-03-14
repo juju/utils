@@ -4,6 +4,9 @@
 package shell_test
 
 import (
+	"os"
+	"time"
+
 	"github.com/juju/testing"
 	jc "github.com/juju/testing/checkers"
 	gc "gopkg.in/check.v1"
@@ -77,4 +80,57 @@ func (s bashSuite) TestMkdirAll(c *gc.C) {
 	c.Check(commands, jc.DeepEquals, []string{
 		`mkdir -p '/some/dir'`,
 	})
+}
+
+func (s bashSuite) TestChown(c *gc.C) {
+	commands := s.renderer.Chown("/a/b/c", "x", "y")
+
+	c.Check(commands, jc.DeepEquals, []string{
+		"chown x:y '/a/b/c'",
+	})
+}
+
+func (s bashSuite) TestTouchDefault(c *gc.C) {
+	commands := s.renderer.Touch("/a/b/c", nil)
+
+	c.Check(commands, jc.DeepEquals, []string{
+		"touch '/a/b/c'",
+	})
+}
+
+func (s bashSuite) TestTouchTimestamp(c *gc.C) {
+	now := time.Date(2015, time.Month(3), 14, 12, 26, 38, 0, time.UTC)
+	commands := s.renderer.Touch("/a/b/c", &now)
+
+	c.Check(commands, jc.DeepEquals, []string{
+		"touch -t 201503141226.38 '/a/b/c'",
+	})
+}
+
+func (s bashSuite) TestRedirectFD(c *gc.C) {
+	commands := s.renderer.RedirectFD("stdout", "stderr")
+
+	c.Check(commands, jc.DeepEquals, []string{
+		"exec 2>&1",
+	})
+}
+
+func (s bashSuite) TestRedirectOutput(c *gc.C) {
+	commands := s.renderer.RedirectOutput("/a/b/c")
+
+	c.Check(commands, jc.DeepEquals, []string{
+		"exec > '/a/b/c'",
+	})
+}
+
+func (s bashSuite) TestScriptFilename(c *gc.C) {
+	filename := s.renderer.ScriptFilename("spam", "/ham/eggs")
+
+	c.Check(filename, gc.Equals, "/ham/eggs/spam.sh")
+}
+
+func (s bashSuite) TestScriptPermissions(c *gc.C) {
+	perm := s.renderer.ScriptPermissions()
+
+	c.Check(perm, gc.Equals, os.FileMode(0755))
 }

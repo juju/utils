@@ -4,7 +4,6 @@
 package shell
 
 import (
-	"os"
 	"runtime"
 	"strings"
 
@@ -28,42 +27,12 @@ type PathRenderer interface {
 	ExeSuffix() string
 }
 
-type chmodder interface {
-	// Chmod returns a shell command that sets the given file's
-	// permissions. The result is equivalent to os.Chmod.
-	Chmod(path string, perm os.FileMode) []string
-}
-
-type fileWriter interface {
-	// WriteFile returns a shell command that writes the provided
-	// content to a file. The command is functionally equivalent to
-	// ioutil.WriteFile with permissions from the current umask.
-	WriteFile(filename string, data []byte) []string
-}
-
-// Commands provides methods that may be used to generate shell
-// commands for a variety of shell and filesystem operations.
-type Commands interface {
-	chmodder
-	fileWriter
-
-	// Mkdir returns a shell command for creating a directory. The
-	// command is functionally equivalent to os.MkDir using permissions
-	// appropriate for a directory.
-	Mkdir(dirname string) []string
-
-	// MkdirAll returns a shell command for creating a directory and
-	// all missing parent directories. The command is functionally
-	// equivalent to os.MkDirAll using permissions appropriate for
-	// a directory.
-	MkdirAll(dirname string) []string
-}
-
 // Renderer provides all the functionality needed to generate shell-
 // compatible paths and commands.
 type Renderer interface {
 	PathRenderer
-	Commands
+	CommandRenderer
+	OutputRenderer
 }
 
 // NewRenderer returns a Renderer for the given shell, OS, or distro name.

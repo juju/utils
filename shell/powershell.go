@@ -48,3 +48,8 @@ func (pr *PowershellRenderer) Mkdir(dirname string) []string {
 func (pr *PowershellRenderer) MkdirAll(dirname string) []string {
 	return pr.Mkdir(dirname)
 }
+
+// ScriptFilename implements ScriptWriter.
+func (pr *PowershellRenderer) ScriptFilename(name, dirname string) string {
+	return pr.Join(dirname, name+".ps1")
+}

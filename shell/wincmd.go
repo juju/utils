@@ -52,3 +52,8 @@ func (wcr *WinCmdRenderer) MkdirAll(dirname string) []string {
 		fmt.Sprintf(`mkdir %s`, wcr.FromSlash(dirname)),
 	}
 }
+
+// ScriptFilename implements ScriptWriter.
+func (wcr *WinCmdRenderer) ScriptFilename(name, dirname string) string {
+	return wcr.Join(dirname, name+".bat")
+}

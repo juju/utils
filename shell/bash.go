@@ -3,7 +3,17 @@
 
 package shell
 
+import (
+	"strings"
+)
+
 // BashRenderer is the shell renderer for bash.
 type BashRenderer struct {
 	unixRenderer
+}
+
+// Render implements ScriptWriter.
+func (*BashRenderer) RenderScript(commands []string) []byte {
+	commands = append([]string{"#!/usr/bin/env bash", ""}, commands...)
+	return []byte(strings.Join(commands, "\n"))
 }

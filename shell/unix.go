@@ -28,34 +28,44 @@ func (unixRenderer) ExeSuffix() string {
 }
 
 // Mkdir implements Renderer.
-func (lr unixRenderer) Mkdir(dirname string) []string {
-	dirname = lr.Quote(dirname)
+func (ur unixRenderer) Mkdir(dirname string) []string {
+	dirname = ur.Quote(dirname)
 	return []string{
 		fmt.Sprintf("mkdir %s", dirname),
 	}
 }
 
 // MkdirAll implements Renderer.
-func (lr unixRenderer) MkdirAll(dirname string) []string {
-	dirname = lr.Quote(dirname)
+func (ur unixRenderer) MkdirAll(dirname string) []string {
+	dirname = ur.Quote(dirname)
 	return []string{
 		fmt.Sprintf("mkdir -p %s", dirname),
 	}
 }
 
 // Chmod implements Renderer.
-func (lr unixRenderer) Chmod(path string, perm os.FileMode) []string {
-	path = lr.Quote(path)
+func (ur unixRenderer) Chmod(path string, perm os.FileMode) []string {
+	path = ur.Quote(path)
 	return []string{
 		fmt.Sprintf("chmod %04o %s", perm, path),
 	}
 }
 
 // WriteFile implements Renderer.
-func (lr unixRenderer) WriteFile(filename string, data []byte) []string {
-	filename = lr.Quote(filename)
+func (ur unixRenderer) WriteFile(filename string, data []byte) []string {
+	filename = ur.Quote(filename)
 	return []string{
 		// An alternate approach would be to use printf.
 		fmt.Sprintf("cat > %s << 'EOF'\n%s\nEOF", filename, data),
 	}
+}
+
+// ScriptFilename implements ScriptWriter.
+func (ur *unixRenderer) ScriptFilename(name, dirname string) string {
+	return ur.Join(dirname, name+".sh")
+}
+
+// ScriptPermissions implements ScriptWriter.
+func (ur *unixRenderer) ScriptPermissions() os.FileMode {
+	return 0755
 }

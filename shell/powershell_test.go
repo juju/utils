@@ -44,9 +44,7 @@ func (s powershellSuite) TestShQuote(c *gc.C) {
 func (s powershellSuite) TestChmod(c *gc.C) {
 	commands := s.renderer.Chmod(s.filename, 0644)
 
-	c.Check(commands, jc.DeepEquals, []string{
-		"",
-	})
+	c.Check(commands, gc.HasLen, 0)
 }
 
 func (s powershellSuite) TestWriteFile(c *gc.C) {

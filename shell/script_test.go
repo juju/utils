@@ -102,7 +102,12 @@ exec another-command
 `
 	commands := shell.WriteScript(renderer, "spam", `C:\ham\eggs`, strings.Split(script, "\n"))
 
-	c.Check(commands, gc.Equals, []string{
-		"",
+	c.Check(commands, jc.DeepEquals, []string{
+		`Set-Content 'C:\ham\eggs\spam.ps1' @"
+
+exec a-command
+exec another-command
+
+"@`,
 	})
 }

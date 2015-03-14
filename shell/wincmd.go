@@ -4,6 +4,7 @@
 package shell
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 
@@ -22,18 +23,19 @@ func (wcr *WinCmdRenderer) Quote(str string) string {
 
 // Chmod implements Renderer.
 func (wcr *WinCmdRenderer) Chmod(path string, perm os.FileMode) []string {
-	path = wcr.Quote(path)
-	// TODO(ericsnow) Use cacls?
-	panic("not supported")
+	// TODO(ericsnow) Is this necessary? Should we use icacls?
 	return nil
 }
 
 // WriteFile implements Renderer.
 func (wcr *WinCmdRenderer) WriteFile(filename string, data []byte) []string {
 	filename = wcr.Quote(filename)
-	// TODO(ericsnow) Use echo?
-	panic("not supported")
-	return nil
+	var commands []string
+	for _, line := range bytes.Split(data, []byte{'\n'}) {
+		cmd := fmt.Sprintf(">>%s @echo %s", filename, line)
+		commands = append(commands, cmd)
+	}
+	return commands
 }
 
 // MkDir implements Renderer.

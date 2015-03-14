@@ -22,9 +22,7 @@ func (pr *PowershellRenderer) Quote(str string) string {
 
 // Chmod implements Renderer.
 func (pr *PowershellRenderer) Chmod(path string, perm os.FileMode) []string {
-	path = pr.Quote(path)
-	// TODO(ericsnow) Use Set-Acl?
-	panic("not supported")
+	// TODO(ericsnow) Is this necessary? Should we use Set-Acl?
 	return nil
 }
 

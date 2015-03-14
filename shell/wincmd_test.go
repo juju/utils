@@ -44,19 +44,17 @@ func (s winCmdSuite) TestShQuote(c *gc.C) {
 func (s winCmdSuite) TestChmod(c *gc.C) {
 	commands := s.renderer.Chmod(s.filename, 0644)
 
-	c.Check(commands, jc.DeepEquals, []string{
-		"",
-	})
+	c.Check(commands, gc.HasLen, 0)
 }
 
 func (s winCmdSuite) TestWriteFile(c *gc.C) {
 	data := []byte("something\nhere\n")
 	commands := s.renderer.WriteFile(s.filename, data)
 
-	expected := `
-`[1:]
 	c.Check(commands, jc.DeepEquals, []string{
-		expected,
+		`>>^"C:\\some\\dir\\file^" @echo something`,
+		`>>^"C:\\some\\dir\\file^" @echo here`,
+		`>>^"C:\\some\\dir\\file^" @echo `,
 	})
 }
 

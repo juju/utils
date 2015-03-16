@@ -8,29 +8,22 @@ import (
 	"time"
 )
 
-type chmodder interface {
-	// Chmod returns a shell command that sets the given file's
-	// permissions. The result is equivalent to os.Chmod.
-	Chmod(path string, perm os.FileMode) []string
-}
-
-type fileWriter interface {
-	// WriteFile returns a shell command that writes the provided
-	// content to a file. The command is functionally equivalent to
-	// ioutil.WriteFile with permissions from the current umask.
-	WriteFile(filename string, data []byte) []string
-}
-
 // CommandRenderer provides methods that may be used to generate shell
 // commands for a variety of shell and filesystem operations.
 type CommandRenderer interface {
-	chmodder
-	fileWriter
-
 	// Chown returns a shell command for changing the ownership of
 	// a file or directory. The copies the behavior of os.Chown,
 	// though it also supports names in addition to ints.
 	Chown(name, user, group string) []string
+
+	// Chmod returns a shell command that sets the given file's
+	// permissions. The result is equivalent to os.Chmod.
+	Chmod(path string, perm os.FileMode) []string
+
+	// WriteFile returns a shell command that writes the provided
+	// content to a file. The command is functionally equivalent to
+	// ioutil.WriteFile with permissions from the current umask.
+	WriteFile(filename string, data []byte) []string
 
 	// Mkdir returns a shell command for creating a directory. The
 	// command is functionally equivalent to os.MkDir using permissions

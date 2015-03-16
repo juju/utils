@@ -41,9 +41,15 @@ type ScriptRenderer interface {
 // to be run.
 type ScriptWriter interface {
 	ScriptRenderer
-	// These interfaces come from renderer.go.
-	chmodder
-	fileWriter
+
+	// Chmod returns a shell command that sets the given file's
+	// permissions. The result is equivalent to os.Chmod.
+	Chmod(path string, perm os.FileMode) []string
+
+	// WriteFile returns a shell command that writes the provided
+	// content to a file. The command is functionally equivalent to
+	// ioutil.WriteFile with permissions from the current umask.
+	WriteFile(filename string, data []byte) []string
 
 	// ScriptFilename generates a filename appropriate for a script
 	// from the provided file and directory names.

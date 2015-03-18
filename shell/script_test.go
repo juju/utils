@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/juju/testing"
+	jc "github.com/juju/testing/checkers"
 	gc "gopkg.in/check.v1"
 
 	"github.com/juju/utils/shell"
@@ -68,4 +69,45 @@ func (*scriptSuite) TestDumpFileOnErrorScript(c *gc.C) {
 	stdout, stderr = run("exit 1")
 	c.Assert(stdout, gc.Equals, "")
 	c.Assert(stderr, gc.Equals, "")
+}
+
+func (*scriptSuite) TestWriteScriptUnix(c *gc.C) {
+	renderer := &shell.BashRenderer{}
+	script := `
+exec a-command
+exec another-command
+`
+	commands := shell.WriteScript(renderer, "spam", "/ham/eggs", strings.Split(script, "\n"))
+
+	cmd := `
+cat > '/ham/eggs/spam.sh' << 'EOF'
+#!/usr/bin/env bash
+
+
+exec a-command
+exec another-command
+
+EOF`[1:]
+	c.Check(commands, jc.DeepEquals, []string{
+		cmd,
+		"chmod 0755 '/ham/eggs/spam.sh'",
+	})
+}
+
+func (*scriptSuite) TestWriteScriptWindows(c *gc.C) {
+	renderer := &shell.PowershellRenderer{}
+	script := `
+exec a-command
+exec another-command
+`
+	commands := shell.WriteScript(renderer, "spam", `C:\ham\eggs`, strings.Split(script, "\n"))
+
+	c.Check(commands, jc.DeepEquals, []string{
+		`Set-Content 'C:\ham\eggs\spam.ps1' @"
+
+exec a-command
+exec another-command
+
+"@`,
+	})
 }

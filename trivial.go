@@ -50,11 +50,52 @@ func ReadYaml(path string, obj interface{}) error {
 	return goyaml.Unmarshal(data, obj)
 }
 
+// TODO(ericsnow) Move the quoting helpers into the shell package?
+
 // ShQuote quotes s so that when read by bash, no metacharacters
 // within s will be interpreted as such.
 func ShQuote(s string) string {
 	// single-quote becomes single-quote, double-quote, single-quote, double-quote, single-quote
 	return `'` + strings.Replace(s, `'`, `'"'"'`, -1) + `'`
+}
+
+// WinPSQuote quotes s so that when read by powershell, no metacharacters
+// within s will be interpreted as such.
+func WinPSQuote(s string) string {
+	// See http://ss64.com/ps/syntax-esc.html#quotes.
+	return `'` + strings.Replace(s, `'`, `''`, -1) + `'`
+}
+
+// WinCmdQuote quotes s so that when read by cmd.exe, no metacharacters
+// within s will be interpreted as such.
+func WinCmdQuote(s string) string {
+	// See http://blogs.msdn.com/b/twistylittlepassagesallalike/archive/2011/04/23/everyone-quotes-arguments-the-wrong-way.aspx.
+	quoted := winCmdQuote(s)
+	return winCmdEscapeMeta(quoted)
+}
+
+func winCmdQuote(s string) string {
+	var escaped string
+	for _, c := range s {
+		switch c {
+		case '\\', '"':
+			escaped += `\`
+		}
+		escaped += string(c)
+	}
+	return `"` + escaped + `"`
+}
+
+func winCmdEscapeMeta(str string) string {
+	const meta = `()%!^"<>&|`
+	var newStr string
+	for _, c := range str {
+		if strings.Contains(meta, string(c)) {
+			newStr += "^"
+		}
+		newStr += string(c)
+	}
+	return newStr
 }
 
 // CommandString flattens a sequence of command arguments into a

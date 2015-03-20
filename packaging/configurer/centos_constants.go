@@ -1,0 +1,46 @@
+// Copyright 2015 Canonical Ltd.
+// Copyright 2015 Cloudbase Solutions SRL
+// Licensed under the AGPLv3, see LICENCE file for details.
+
+package configurer
+
+const (
+	// CentOSCloudArchiveUrl is the url of the (future) cloud archive for CentOS.
+	// TODO (people of the distant future): add this when it is available.
+	CentOSCloudArchiveUrl = "yes"
+
+	// CentOSSourcesFile is the default file which lists all core sources
+	// for yum packages on CentOS.
+	CentOSSourcesFile = "/etc/yum/repos.d/CentOS-Base.repo"
+)
+
+// CentOSDefaultPackages is the default package set we'd like installed
+// on all CentOS machines.
+var CentOSDefaultPackages = append(DefaultPackages, []string{
+	// TODO (everyone): further populate this.
+	"epel-release",
+	"yum-utils",
+}...)
+
+// cloudArchivePackagesCentOS maintains a list of CentOS packages that
+// Configurer.IsCloudArchivePackage will reference when determining the
+// repository from which to install a package.
+var cloudArchivePackagesCentOS = map[string]bool{
+// TODO (people from the distant future): if a separate repository for
+// CentOS 7+ especially for Juju is to ever occur, please add the relevant
+// package listings here.
+}
+
+// centOSToUbuntuPackageNameMap is a map for converting package names from
+// their names as found in CentOS repositories to their equivalent in Ubuntu.
+// It is implemented as the flipped package mapper for Ubuntu.
+var centOSToUbuntuPackageNameMap = flipMap(ubuntuToCentOSPackageNameMap)
+
+// configureCloudArchiveSourceCentOS is a helper function which returns the
+// cloud archive PackageSource and PackagePreferences for the given series for
+// CentOS machines.
+func configureCloudArchiveSourceCentOS(series string) (PackageSource, PackagePreferences) {
+	// TODO (peole of the distant future): implement this when the
+	// archive for CentOS goes up.
+	return PackageSource{}, PackagePreferences{}
+}

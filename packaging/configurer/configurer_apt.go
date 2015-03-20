@@ -4,17 +4,21 @@
 
 package configurer
 
+import (
+	"github.com/juju/utils/packaging"
+)
+
 // aptConfigurer is the PackagingConfigurer implementation for apt-based systems.
 type aptConfigurer struct {
 	*baseConfigurer
 }
 
 // RenderSource implements PackagingConfigurer.
-func (c *aptConfigurer) RenderSource(src PackageSource) string {
-	return src.renderSourceFile(AptSourceTemplate[1:])
+func (c *aptConfigurer) RenderSource(src packaging.PackageSource) string {
+	return src.RenderSourceFile(AptSourceTemplate[1:])
 }
 
 // RenderPreferences implements PackagingConfigurer.
-func (c *aptConfigurer) RenderPreferences(prefs PackagePreferences) string {
-	return prefs.renderPreferenceFile(AptPreferenceTemplate[1:])
+func (c *aptConfigurer) RenderPreferences(prefs packaging.PackagePreferences) string {
+	return prefs.RenderPreferenceFile(AptPreferenceTemplate[1:])
 }

@@ -2,7 +2,7 @@
 // Copyright 2015 Cloudbase Solutions SRL
 // Licensed under the AGPLv3, see LICENCE file for details.
 
-package configurer
+package packaging
 
 import (
 	"bytes"
@@ -16,8 +16,8 @@ type PackageSource struct {
 	Key  string `yaml:"key, omitempty"`
 }
 
-// renderSourceFile renders the current source based on a template it recieves.
-func (s *PackageSource) renderSourceFile(fileTemplate string) string {
+// RenderSourceFile renders the current source based on a template it recieves.
+func (s *PackageSource) RenderSourceFile(fileTemplate string) string {
 	var buf bytes.Buffer
 	t := template.Must(template.New("").Parse(fileTemplate))
 

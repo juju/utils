@@ -2,21 +2,11 @@
 // Copyright 2015 Cloudbase Solutions SRL
 // Licensed under the AGPLv3, see LICENCE file for details.
 
-package configurer
+package packaging
 
 import (
 	"bytes"
 	"text/template"
-)
-
-const (
-	// AptPreferenceTemplate is the template specific to an apt preference file.
-	AptPreferenceTemplate = `
-Explanation: {{.Explanation}}
-Package: {{.Package}}
-Pin: {{.Pin}}
-Pin-Priority: {{.PinPriority}}
-`
 )
 
 // AptPreferences is a set of apt_preferences(5) compatible preferences for an
@@ -30,9 +20,9 @@ type PackagePreferences struct {
 	Priority    int    // the priority of that source
 }
 
-// fileContents returns contents of the package-manager specific config file
+// RenderPreferenceFile returns contents of the package-manager specific config file
 // of this paritcular package source.
-func (s *PackagePreferences) renderPreferenceFile(temp string) string {
+func (s *PackagePreferences) RenderPreferenceFile(temp string) string {
 	var buf bytes.Buffer
 
 	t := template.Must(template.New("").Parse(temp))

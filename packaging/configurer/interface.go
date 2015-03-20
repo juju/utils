@@ -4,6 +4,10 @@
 
 package configurer
 
+import (
+	"github.com/juju/utils/packaging"
+)
+
 // PackagingConfigurer is an interface which handles various packaging-related configuration
 // functions fot he specific distribution it represents.
 type PackagingConfigurer interface {
@@ -21,11 +25,11 @@ type PackagingConfigurer interface {
 
 	// RenderSource returns the os-specific full file contents
 	// of a given PackageSource.
-	RenderSource(PackageSource) string
+	RenderSource(packaging.PackageSource) string
 
 	// RenderPreferences returns the os-specific full file contents of a given
 	// set of PackagePreferences.
-	RenderPreferences(PackagePreferences) string
+	RenderPreferences(packaging.PackagePreferences) string
 }
 
 func NewPackagingConfigurer(series string) PackagingConfigurer {

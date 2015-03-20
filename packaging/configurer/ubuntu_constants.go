@@ -4,7 +4,11 @@
 
 package configurer
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/juju/utils/packaging"
+)
 
 const (
 	// UbuntuCloudArchiveUrl is the url of the cloud archive on Ubuntu.
@@ -124,13 +128,13 @@ var ubuntuToCentOSPackageNameMap = map[string]string{
 // configureCloudArchiveSourceUbuntu is a helper function which returns the
 // cloud archive PackageSource and PackagePreferences for the given series for
 // Ubuntu machines.
-func configureCloudArchiveSourceUbuntu(series string) (PackageSource, PackagePreferences) {
-	source := PackageSource{
+func configureCloudArchiveSourceUbuntu(series string) (packaging.PackageSource, packaging.PackagePreferences) {
+	source := packaging.PackageSource{
 		Url: fmt.Sprintf("deb %s %s-updates/cloud-tools main", UbuntuCloudArchiveUrl, series),
 		Key: UbuntuCloudArchiveSigningKey,
 	}
 
-	prefs := PackagePreferences{
+	prefs := packaging.PackagePreferences{
 		Path:        UbuntuCloudToolsPrefsPath,
 		Explanation: "Pin with lower priority, not to interfere with charms.",
 		Package:     "*",

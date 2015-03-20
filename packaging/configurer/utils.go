@@ -13,10 +13,3 @@ func flipMap(m map[string]string) map[string]string {
 	}
 	return res
 }
-
-// sourceWithPrefs is a simple wrapper struct meant to unify a PackageSource
-// with PackagePreferences.
-type sourceWithPrefs struct {
-	src   *PackageSource
-	prefs *PackagePreferences
-}

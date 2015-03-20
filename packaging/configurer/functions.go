@@ -4,6 +4,10 @@
 
 package configurer
 
+import (
+	"github.com/juju/utils/packaging"
+)
+
 // SeriesRequiresCloudArchiveTools signals whether the given series requires
 // requires the configuration of cloud archive cloud tools.
 func SeriesRequiresCloudArchiveTools(series string) bool {
@@ -12,7 +16,7 @@ func SeriesRequiresCloudArchiveTools(series string) bool {
 
 // GetCloudArchiveSource returns the PackageSource and associated
 // PackagePreferences for the cloud archive for the given series.
-func GetCloudArchiveSource(series string) (PackageSource, PackagePreferences) {
+func GetCloudArchiveSource(series string) (packaging.PackageSource, packaging.PackagePreferences) {
 	// TODO (aznashwan): find a more deterministic way of filtering series that
 	// does not imply importing version from core.
 	switch series {

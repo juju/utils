@@ -29,6 +29,14 @@ const (
 	// underscores.
 	AptSourceListPrefix = `sed 's,.*://,,' | sed 's,/$,,' | tr / _`
 
+	// AptPreferenceTemplate is the template specific to an apt preference file.
+	AptPreferenceTemplate = `
+Explanation: {{.Explanation}}
+Package: {{.Package}}
+Pin: {{.Pin}}
+Pin-Priority: {{.PinPriority}}
+`
+
 	// AptSourceTemplate is the template specific to an apt source file.
 	AptSourceTemplate = `
 # {{.Name}} (added by Juju)

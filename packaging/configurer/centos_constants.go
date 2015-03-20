@@ -4,6 +4,10 @@
 
 package configurer
 
+import (
+	"github.com/juju/utils/packaging"
+)
+
 const (
 	// CentOSCloudArchiveUrl is the url of the (future) cloud archive for CentOS.
 	// TODO (people of the distant future): add this when it is available.
@@ -39,8 +43,8 @@ var centOSToUbuntuPackageNameMap = flipMap(ubuntuToCentOSPackageNameMap)
 // configureCloudArchiveSourceCentOS is a helper function which returns the
 // cloud archive PackageSource and PackagePreferences for the given series for
 // CentOS machines.
-func configureCloudArchiveSourceCentOS(series string) (PackageSource, PackagePreferences) {
+func configureCloudArchiveSourceCentOS(series string) (packaging.PackageSource, packaging.PackagePreferences) {
 	// TODO (peole of the distant future): implement this when the
 	// archive for CentOS goes up.
-	return PackageSource{}, PackagePreferences{}
+	return packaging.PackageSource{}, packaging.PackagePreferences{}
 }

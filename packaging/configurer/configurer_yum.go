@@ -24,3 +24,9 @@ func (c *yumConfigurer) RenderPreferences(src packaging.PackagePreferences) stri
 	// of single/multiple package pinning and implement it.
 	return ""
 }
+
+// ApplyCloudArchiveTarget implements PackagingConfigurer.
+func (c *yumConfigurer) ApplyCloudArchiveTarget(pack string) []string {
+	// TODO (aznashwan): implement target application when archive is available.
+	return []string{pack}
+}

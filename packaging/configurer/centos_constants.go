@@ -16,6 +16,11 @@ const (
 	// CentOSSourcesFile is the default file which lists all core sources
 	// for yum packages on CentOS.
 	CentOSSourcesFile = "/etc/yum/repos.d/CentOS-Base.repo"
+
+	// ReplaceCentOSMirror is a mini-script which replaces the default CentOS
+	// mirros with the one formatted in.
+	ReplaceCentOSMirror = "sed -r -i -e 's|^mirrorlist|#mirrorlist|g' -e 's|#baseurl=.*|baseurl=%s|g' " +
+		CentOSSourcesFile
 )
 
 // CentOSDefaultPackages is the default package set we'd like installed
@@ -47,4 +52,15 @@ func configureCloudArchiveSourceCentOS(series string) (packaging.PackageSource, 
 	// TODO (peole of the distant future): implement this when the
 	// archive for CentOS goes up.
 	return packaging.PackageSource{}, packaging.PackagePreferences{}
+}
+
+// getTargetReleaseSpecifierCentOS returns the specifier that can be passed to
+// yum in order to ensure that it pulls the package from that particular source.
+func getTargetReleaseSpecifierCentOS(series string) string {
+	switch series {
+	// TODO (people of the distant future): add these when the archive for
+	// CentOS goes up.
+	default:
+		return ""
+	}
 }

@@ -23,6 +23,10 @@ type PackagingConfigurer interface {
 	// cloud archive package and thus should be set as such.
 	IsCloudArchivePackage(string) bool
 
+	// ApplyCloudArchiveTarget returns the package with the required target
+	// release bits preceding it.
+	ApplyCloudArchiveTarget(string) []string
+
 	// RenderSource returns the os-specific full file contents
 	// of a given PackageSource.
 	RenderSource(packaging.PackageSource) string
@@ -37,14 +41,14 @@ func NewPackagingConfigurer(series string) PackagingConfigurer {
 	// TODO (aznashwan): find a more deterministic way of selection here
 	// without importing version from core.
 	case "centos7":
-		return NewYumConfigurer(series)
+		return NewYumPackagingConfigurer(series)
 	default:
-		return NewAptConfigurer(series)
+		return NewAptPackagingConfigurer(series)
 	}
 }
 
-// NewAptConfigurer returns a PackagingConfigurer for apt-based systems.
-func NewAptConfigurer(series string) PackagingConfigurer {
+// NewAptPackagingConfigurer returns a PackagingConfigurer for apt-based systems.
+func NewAptPackagingConfigurer(series string) PackagingConfigurer {
 	return &aptConfigurer{&baseConfigurer{
 		series:               series,
 		defaultPackages:      UbuntuDefaultPackages,
@@ -52,8 +56,8 @@ func NewAptConfigurer(series string) PackagingConfigurer {
 	}}
 }
 
-// NewYumConfigurer returns a PackagingConfigurer for yum-based systems.
-func NewYumConfigurer(series string) PackagingConfigurer {
+// NewYumPackagingConfigurer returns a PackagingConfigurer for yum-based systems.
+func NewYumPackagingConfigurer(series string) PackagingConfigurer {
 	return &yumConfigurer{&baseConfigurer{
 		series:               series,
 		defaultPackages:      CentOSDefaultPackages,

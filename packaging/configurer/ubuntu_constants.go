@@ -144,3 +144,14 @@ func configureCloudArchiveSourceUbuntu(series string) (packaging.PackageSource, 
 
 	return source, prefs
 }
+
+// getTargetReleaseSpecifierUbuntu returns the specifier that can be passed to
+// apt in order to ensure that it pulls the package from that particular source.
+func getTargetReleaseSpecifierUbuntu(series string) string {
+	switch series {
+	case "precise":
+		return "precise-updates/cloud-tools"
+	default:
+		return ""
+	}
+}

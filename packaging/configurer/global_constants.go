@@ -29,7 +29,9 @@ function package_manager_loop {
 // DefaultPackages is a list of the default packages Juju'd like to see
 // installed on all it's machines.
 var DefaultPackages = []string{
-// TODO (everyone): populate this list with all required packages.
+	// TODO (everyone): populate this list with all required packages.
+	// for example:
+	"curl",
 }
 
 // SeriesRequiringCloudTools is a map of series which require the addition of a

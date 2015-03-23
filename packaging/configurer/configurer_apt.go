@@ -4,9 +4,7 @@
 
 package configurer
 
-import (
-	"github.com/juju/utils/packaging"
-)
+import "github.com/juju/utils/packaging"
 
 // aptConfigurer is the PackagingConfigurer implementation for apt-based systems.
 type aptConfigurer struct {
@@ -21,4 +19,9 @@ func (c *aptConfigurer) RenderSource(src packaging.PackageSource) string {
 // RenderPreferences implements PackagingConfigurer.
 func (c *aptConfigurer) RenderPreferences(prefs packaging.PackagePreferences) string {
 	return prefs.RenderPreferenceFile(AptPreferenceTemplate[1:])
+}
+
+// ApplyCloudArchiveTarget implements PackagingConfigurer.
+func (c *aptConfigurer) ApplyCloudArchiveTarget(pack string) []string {
+	return []string{"--target-release %s %s", getTargetReleaseSpecifierUbuntu(c.series), pack}
 }

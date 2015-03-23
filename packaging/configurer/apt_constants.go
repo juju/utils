@@ -14,7 +14,11 @@ const (
 
 	// AptConfigDirectory is the default directory in which
 	// apt configuration files are stored.
-	UbuntuAptConfigFile = "/etc/apt/apt.conf.d"
+	AptConfigFile = "/etc/apt/apt.conf.d"
+
+	// AptProxyConfigFile is the full file path for the proxy settings that are
+	// written by cloudinit and the machine environ worker.
+	AptProxyConfigFile = AptConfigFile + "/42-juju-proxy-settings"
 
 	// ExtractAptSource is a shell command that will extract the
 	// currently configured APT source location. We assume that

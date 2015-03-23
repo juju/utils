@@ -16,6 +16,11 @@ type PackageSource struct {
 	Key  string `yaml:"key, omitempty"`
 }
 
+// KeyFileName returns the name of this source's keyfile.
+func (s *PackageSource) KeyFileName() string {
+	return s.Name + ".key"
+}
+
 // RenderSourceFile renders the current source based on a template it recieves.
 func (s *PackageSource) RenderSourceFile(fileTemplate string) string {
 	var buf bytes.Buffer

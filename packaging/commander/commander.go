@@ -8,17 +8,17 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/juju/errors"
 	"github.com/juju/utils/proxy"
-
-	"github.com/juju/juju/version"
 )
 
 // packageCommander is a struct which returns system-specific commands for all
 // the operations that may be required of a package management system.
 // It implements the PackageCommander interface.
 type packageCommander struct {
-	// mapped commands:
+	// The following are the options expected of the cmds map of a
+	// packageCommander. They must all be present for the Commander to be
+	// fully-featured:
+	//
 	// prereq				installs prerequisite repo management package
 	// update				updates the local package list
 	// upgrade				upgrades all packages
@@ -37,20 +37,6 @@ type packageCommander struct {
 	// proxy-setting-format	format for proxy setting in package manager config file
 	// set-proxy			command for adding a proxy setting to the config file
 	cmds map[string]string
-}
-
-func New(series string) (*packageCommander, error) {
-	os, err := version.GetOSFromSeries(series)
-	if err != nil {
-		return nil, err
-	}
-	switch os {
-	case version.Ubuntu:
-		return &packageCommander{aptCmds}, nil
-	case version.CentOS:
-		return &packageCommander{yumCmds}, nil
-	}
-	return nil, errors.NotFoundf("cannot find package commander for: %s", series)
 }
 
 // InstallPrerequisiteCmd implements PackageCommander.

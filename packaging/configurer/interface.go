@@ -36,15 +36,17 @@ type PackagingConfigurer interface {
 	RenderPreferences(packaging.PackagePreferences) string
 }
 
-func NewPackagingConfigurer(series string) PackagingConfigurer {
+func NewPackagingConfigurer(series string) (PackagingConfigurer, error) {
 	switch series {
 	// TODO (aznashwan): find a more deterministic way of selection here
 	// without importing version from core.
 	case "centos7":
-		return NewYumPackagingConfigurer(series)
+		return NewYumPackagingConfigurer(series), nil
 	default:
-		return NewAptPackagingConfigurer(series)
+		return NewAptPackagingConfigurer(series), nil
 	}
+
+	return nil, nil
 }
 
 // NewAptPackagingConfigurer returns a PackagingConfigurer for apt-based systems.

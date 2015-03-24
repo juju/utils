@@ -84,6 +84,21 @@ type PackageManager interface {
 	SetProxy(proxy.Settings) error
 }
 
+// NewPackageManager returns the appropriate PackageManager implementation
+// based on the provided series.
+func NewPackageManager(series string) (PackageManager, error) {
+	// TODO (aznashwan): find a more deterministic way of filtering out
+	// release series without importing version from core.
+	switch series {
+	case "centos7":
+		return NewYumPackageManager(), nil
+	default:
+		return NewAptPackageManager(), nil
+	}
+
+	return nil, nil
+}
+
 // NewAptPackageManager returns a PackageManager for apt-based systems.
 func NewAptPackageManager() PackageManager {
 	return &apt{basePackageManager{commander.NewAptPackageCommander()}}

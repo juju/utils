@@ -23,5 +23,5 @@ func (c *aptConfigurer) RenderPreferences(prefs packaging.PackagePreferences) st
 
 // ApplyCloudArchiveTarget implements PackagingConfigurer.
 func (c *aptConfigurer) ApplyCloudArchiveTarget(pack string) []string {
-	return []string{"--target-release %s %s", getTargetReleaseSpecifierUbuntu(c.series), pack}
+	return []string{"--target-release", getTargetReleaseSpecifierUbuntu(c.series), pack}
 }

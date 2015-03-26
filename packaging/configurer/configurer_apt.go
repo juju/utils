@@ -13,12 +13,12 @@ type aptConfigurer struct {
 
 // RenderSource implements PackagingConfigurer.
 func (c *aptConfigurer) RenderSource(src packaging.PackageSource) string {
-	return src.RenderSourceFile(AptSourceTemplate[1:])
+	return src.RenderSourceFile(AptSourceTemplate)
 }
 
 // RenderPreferences implements PackagingConfigurer.
 func (c *aptConfigurer) RenderPreferences(prefs packaging.PackagePreferences) string {
-	return prefs.RenderPreferenceFile(AptPreferenceTemplate[1:])
+	return prefs.RenderPreferenceFile(AptPreferenceTemplate)
 }
 
 // ApplyCloudArchiveTarget implements PackagingConfigurer.

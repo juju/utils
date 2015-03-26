@@ -2,6 +2,9 @@
 // Copyright 2015 Cloudbase Solutions SRL
 // Licensed under the AGPLv3, see LICENCE file for details.
 
+// The configurer package defines an interface which returns packaging-related
+// configuration options and operations depending on the desired
+// package-management system.
 package configurer
 
 import (
@@ -9,7 +12,7 @@ import (
 )
 
 // PackagingConfigurer is an interface which handles various packaging-related configuration
-// functions fot he specific distribution it represents.
+// functions for the specific distribution it represents.
 type PackagingConfigurer interface {
 	// DefaultPackages returns a list of default packages whcih should be
 	// installed the vast majority of cases on any specific machine

@@ -15,7 +15,7 @@ type yumConfigurer struct {
 
 // RenderSource implements PackagingConfigurer.
 func (c *yumConfigurer) RenderSource(src packaging.PackageSource) string {
-	return src.RenderSourceFile(YumSourceTemplate[1:])
+	return src.RenderSourceFile(YumSourceTemplate)
 }
 
 // RenderPreferences implements PackagingConfigurer.

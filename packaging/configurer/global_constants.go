@@ -33,11 +33,3 @@ var DefaultPackages = []string{
 	// for example:
 	"curl",
 }
-
-// SeriesRequiringCloudTools is a map of series which require the addition of a
-// cloud archive cloud tools source.
-var SeriesRequiringCloudTools = map[string]bool{
-	// TODO (everyone): add any and all LTS's or other OS which require cloud
-	// tools' series here.
-	"precise": true,
-}

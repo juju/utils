@@ -10,14 +10,14 @@ const (
 
 	// YumKeyfileDir is the default directory for yum repository keys.
 	YumKeyfileDir = "/etc/pki/rpm-gpg/"
+)
 
-	// YumSourceTemplate is the template specific to a yum source file.
-	YumSourceTemplate = `
+// YumSourceTemplate is the template specific to a yum source file.
+var YumSourceTemplate = `
 [{{.Name}}]
 name={{.Name}} (added by Juju)
 baseurl={{.Url}}
 {{if .Key}}gpgcheck=1
 gpgkey=%s{{end}}
 enabled=1
-`
-)
+`[1:]

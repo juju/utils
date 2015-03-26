@@ -32,19 +32,19 @@ const (
 	// URL scheme prefix, and finally translating slashes to
 	// underscores.
 	AptSourceListPrefix = `sed 's,.*://,,' | sed 's,/$,,' | tr / _`
+)
 
-	// AptPreferenceTemplate is the template specific to an apt preference file.
-	AptPreferenceTemplate = `
+// AptPreferenceTemplate is the template specific to an apt preference file.
+var AptPreferenceTemplate = `
 Explanation: {{.Explanation}}
 Package: {{.Package}}
 Pin: {{.Pin}}
 Pin-Priority: {{.PinPriority}}
-`
+`[1:]
 
-	// AptSourceTemplate is the template specific to an apt source file.
-	AptSourceTemplate = `
+// AptSourceTemplate is the template specific to an apt source file.
+var AptSourceTemplate = `
 # {{.Name}} (added by Juju)
 deb {{.Url}} %s main
 # deb-src {{.Url}} %s main
-`
-)
+`[1:]

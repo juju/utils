@@ -2,6 +2,9 @@
 // Copyright 2015 Cloudbase Solutions SRL
 // Licensed under the AGPLv3, see LICENCE file for details.
 
+// The commander package contains an interface which returns common
+// package-manager related commands and the reference implementation for apt
+// and yum-based systems.
 package commander
 
 import (
@@ -101,10 +104,10 @@ func NewPackageCommander(series string) (PackageCommander, error) {
 
 // NewAptPackageCommander returns a PackageCommander for apt-based systems.
 func NewAptPackageCommander() PackageCommander {
-	return &packageCommander{aptCmds}
+	return &aptCmder
 }
 
 // NewYumPackageCommander returns a PackageCommander for yum-based systems.
 func NewYumPackageCommander() PackageCommander {
-	return &packageCommander{yumCmds}
+	return &yumCmder
 }

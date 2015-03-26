@@ -2,12 +2,10 @@
 // Copyright 2015 Cloudbase Solutions SRL
 // Licensed under the AGPLv3, see LICENCE file for details.
 
+// The packaging package contains definitions for general packaging-related
+// types as well as implementations of objects which either return or configure
+// packaging-related parameters in its three subpackages.
 package packaging
-
-import (
-	"bytes"
-	"text/template"
-)
 
 // Source contains all the data required for a package source.
 type PackageSource struct {
@@ -23,12 +21,5 @@ func (s *PackageSource) KeyFileName() string {
 
 // RenderSourceFile renders the current source based on a template it recieves.
 func (s *PackageSource) RenderSourceFile(fileTemplate string) string {
-	var buf bytes.Buffer
-	t := template.Must(template.New("").Parse(fileTemplate))
-
-	if err := t.Execute(&buf, s); err != nil {
-		panic(err)
-	}
-
-	return buf.String()
+	return renderTemplate(fileTemplate, s)
 }

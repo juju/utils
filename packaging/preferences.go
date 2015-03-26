@@ -4,12 +4,9 @@
 
 package packaging
 
-import (
-	"bytes"
-	"text/template"
-)
-
-// AptPreferences is a set of apt_preferences(5) compatible preferences for an
+// PackagePreferences is a set of packaging preferences associated to a
+// particular set of packages and repository.
+// On apt-based systems, they are apt_preferences(5) compatible preferences for an
 // apt source. It can be used to override the default priority for the source.
 // Path where the file will be created (usually in /etc/apt/preferences.d/).
 type PackagePreferences struct {
@@ -22,14 +19,6 @@ type PackagePreferences struct {
 
 // RenderPreferenceFile returns contents of the package-manager specific config file
 // of this paritcular package source.
-func (s *PackagePreferences) RenderPreferenceFile(temp string) string {
-	var buf bytes.Buffer
-
-	t := template.Must(template.New("").Parse(temp))
-	err := t.Execute(&buf, s)
-	if err != nil {
-		panic(err)
-	}
-
-	return buf.String()
+func (p *PackagePreferences) RenderPreferenceFile(fileTemplate string) string {
+	return renderTemplate(fileTemplate, p)
 }

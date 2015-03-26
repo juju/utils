@@ -8,10 +8,15 @@ import (
 	"github.com/juju/utils/packaging"
 )
 
-// SeriesRequiresCloudArchiveTools signals whether the given series requires
+// SeriesRequiresCloudArchiveTools signals whether the given series
 // requires the configuration of cloud archive cloud tools.
 func SeriesRequiresCloudArchiveTools(series string) bool {
-	return SeriesRequiringCloudTools[series]
+	var seriesRequiringCloudTools = map[string]bool{
+		// TODO (everyone): add any and all LTS's or other OS which require cloud
+		// tools' series here.
+		"precise": true,
+	}
+	return seriesRequiringCloudTools[series]
 }
 
 // GetCloudArchiveSource returns the PackageSource and associated

@@ -25,7 +25,7 @@ func (apt *apt) Search(pack string) (bool, error) {
 	}
 
 	// apt-cache search --names-only package returns no output
-	// if the search was unsuccesfull
+	// if the search was unsuccesful
 	if out == "" {
 		return false, nil
 	}

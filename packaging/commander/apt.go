@@ -10,45 +10,44 @@ const (
 	AptConfFilePath = "/etc/apt/apt.conf.d/42-juju-proxy-settings"
 
 	// the basic command for all dpkg calls:
-	dpkg = "dpkg "
+	dpkg = "dpkg"
 
-	// the basic command for all apt-get calls
+	// the basic command for all apt-get calls:
 	//		--assume-yes to never prompt for confirmation
 	//		--force-confold is passed to dpkg to never overwrite config files
-	aptget = "apt-get --assume-yes --option Dpkg::Options::=--force-confold "
+	aptget = "apt-get --assume-yes --option Dpkg::Options::=--force-confold"
 
 	// the basic command for all apt-cache calls:
-	aptcache = "apt-cache "
+	aptcache = "apt-cache"
 
-	// the basic command for all add-apt-repository calls
+	// the basic command for all add-apt-repository calls:
 	//		--yes to never prompt for confirmation
-	addaptrepo = "add-apt-repository --yes "
+	addaptrepo = "add-apt-repository --yes"
 
 	// the basic command for all apt-config calls:
-	aptconfig = "apt-config dump "
+	aptconfig = "apt-config dump"
 
-	// the basic format for specifying a proxy option for apt :
+	// the basic format for specifying a proxy option for apt:
 	aptProxySettingFormat = "Acquire::%s::Proxy %q;"
 )
 
-// aptCmds is a map of available actions specific to a package manager
-// and their direct equivalent command on an apt-based system.
-var aptCmds map[string]string = map[string]string{
-	"prereq":               aptget + "install python-software-properties",
-	"update":               aptget + "update",
-	"upgrade":              aptget + "upgrade",
-	"install":              aptget + "install ",
-	"remove":               aptget + "remove ",
-	"purge":                aptget + "purge ",
-	"search":               aptcache + "search --names-only ^%s$",
-	"is-installed":         dpkg + "-s %s",
-	"list-available":       aptcache + "pkgnames",
-	"list-installed":       dpkg + "--get-selections",
-	"add-repository":       addaptrepo + "ppa:%s",
-	"list-repositories":    `sed -r -n "s|^deb(-src)? (.*)|\1|p"`,
-	"remove-repository":    addaptrepo + "--remove ppa:%s",
-	"cleanup":              aptget + "autoremove",
-	"get-proxy":            aptconfig + "Acquire::http::Proxy Acquire::https::Proxy Acquire::ftp::Proxy",
-	"proxy-setting-format": aptProxySettingFormat,
-	"set-proxy":            "echo %s >> " + AptConfFilePath,
+// aptCmder is the packageCommander instanciation for apt-based systems.
+var aptCmder = packageCommander{
+	prereq:                join(aptget, "install python-software-properties"),
+	update:                join(aptget, "update"),
+	upgrade:               join(aptget, "upgrade"),
+	install:               join(aptget, "install"),
+	remove:                join(aptget, "remove"),
+	purge:                 join(aptget, "purge"),
+	search:                join(aptcache, "search --names-only ^%s$"),
+	is_installed:          join(dpkg, "-s %s"),
+	list_available:        join(aptcache, "pkgnames"),
+	list_installed:        join(dpkg, "--get-selections"),
+	add_repository:        join(addaptrepo, "ppa:%s"),
+	list_repositories:     `sed -r -n "s|^deb(-src)? (.*)|\1|p"`,
+	remove_repository:     join(addaptrepo, "--remove ppa:%s"),
+	cleanup:               join(aptget, "autoremove"),
+	get_proxy:             join(aptconfig, "Acquire::http::Proxy Acquire::https::Proxy Acquire::ftp::Proxy"),
+	proxy_settings_format: aptProxySettingFormat,
+	set_proxy:             join("echo %s >> ", AptConfFilePath),
 }

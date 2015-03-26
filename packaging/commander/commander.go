@@ -15,127 +15,122 @@ import (
 // the operations that may be required of a package management system.
 // It implements the PackageCommander interface.
 type packageCommander struct {
-	// The following are the options expected of the cmds map of a
-	// packageCommander. They must all be present for the Commander to be
-	// fully-featured:
-	//
-	// prereq				installs prerequisite repo management package
-	// update				updates the local package list
-	// upgrade				upgrades all packages
-	// install packages...	installs the given packages
-	// remove packages...	removes the given packages
-	// purge packages...	removes the given packages along with all data
-	// search package		searches for the given package
-	// is-installed package	checks if a given package is installed
-	// list-available		lists all packes available
-	// list-installed		lists all installed packages
-	// list-repositories	lists all currently configured repositories
-	// add-repository repo	adds the given repository
-	// remove-repository	removes the given repository
-	// cleanup				cleans up orhaned packages and the package cache
-	// get-proxy			command for getting the currently set packagemanager proxy
-	// proxy-setting-format	format for proxy setting in package manager config file
-	// set-proxy			command for adding a proxy setting to the config file
-	cmds map[string]string
+	prereq                string // installs prerequisite repo management package
+	update                string // updates the local package list
+	upgrade               string // upgrades all packages
+	install               string // installs the given packages
+	remove                string // removes the given packages
+	purge                 string // removes the given packages along with all data
+	search                string // searches for the given package
+	is_installed          string // checks if a given package is installed
+	list_available        string // lists all packes available
+	list_installed        string // lists all installed packages
+	list_repositories     string // lists all currently configured repositories
+	add_repository        string // adds the given repository
+	remove_repository     string // removes the given repository
+	cleanup               string // cleans up orhaned packages and the package cache
+	get_proxy             string // command for getting the currently set packagemanager proxy
+	proxy_settings_format string // format for proxy setting in package manager config file
+	set_proxy             string // command for adding a proxy setting to the config file
 }
 
 // InstallPrerequisiteCmd implements PackageCommander.
 func (p *packageCommander) InstallPrerequisiteCmd() string {
-	return p.cmds["prereq"]
+	return p.prereq
 }
 
 // UpdateCmd implements PackageCommander.
 func (p *packageCommander) UpdateCmd() string {
-	return p.cmds["update"]
+	return p.update
 }
 
 // UpgradeCmd implements PackageCommander.
 func (p *packageCommander) UpgradeCmd() string {
-	return p.cmds["upgrade"]
+	return p.upgrade
 }
 
 // InstallCmd implements PackageCommander.
 func (p *packageCommander) InstallCmd(packs ...string) string {
-	cmd := p.cmds["install"]
+	cmd := p.install
 
 	for _, pack := range packs {
-		cmd = cmd + pack + " "
+		cmd = join(cmd, pack)
 	}
 
-	return cmd[:len(cmd)-1]
+	return cmd
 }
 
 // RemoveCmd implements PackageCommander.
 func (p *packageCommander) RemoveCmd(packs ...string) string {
-	cmd := p.cmds["remove"]
+	cmd := p.remove
 
 	for _, pack := range packs {
-		cmd = cmd + pack + " "
+		cmd = join(cmd, pack)
 	}
 
-	return cmd[:len(cmd)-1]
+	return cmd
 }
 
 // PurgeCmd implements PackageCommander.
 func (p *packageCommander) PurgeCmd(packs ...string) string {
-	cmd := p.cmds["purge"]
+	cmd := p.purge
 
 	for _, pack := range packs {
-		cmd = cmd + pack + " "
+		cmd = join(cmd, pack)
 	}
 
-	return cmd[:len(cmd)-1]
+	return cmd
 }
 
 // SearchCmd implements PackageCommander.
 func (p *packageCommander) SearchCmd(pack string) string {
-	return fmt.Sprintf(p.cmds["search"], pack)
+	return fmt.Sprintf(p.search, pack)
 }
 
 // IsInstalledCmd implements PackageCommander.
 func (p *packageCommander) IsInstalledCmd(pack string) string {
-	return fmt.Sprintf(p.cmds["is-installed"], pack)
+	return fmt.Sprintf(p.is_installed, pack)
 }
 
 // ListAvailableCmd implements PackageCommander.
 func (p *packageCommander) ListAvailableCmd() string {
-	return p.cmds["list-available"]
+	return p.list_available
 }
 
 // ListInstalledCmd implements PackageCommander.
 func (p *packageCommander) ListInstalledCmd() string {
-	return p.cmds["list-installed"]
+	return p.list_installed
 }
 
 // ListRepositoriesCmd implements PackageCommander.
 func (p *packageCommander) ListRepositoriesCmd() string {
-	return p.cmds["list-repositories"]
+	return p.list_repositories
 }
 
 // AddRepositoryCmd implements PackageCommander.
 func (p *packageCommander) AddRepositoryCmd(repo string) string {
-	return fmt.Sprintf(p.cmds["add-repository"], repo)
+	return fmt.Sprintf(p.add_repository, repo)
 }
 
 // RemoveRepositoryCmd implements PackageCommander.
 func (p *packageCommander) RemoveRepositoryCmd(repo string) string {
-	return fmt.Sprintf(p.cmds["remove-repository"], repo)
+	return fmt.Sprintf(p.remove_repository, repo)
 }
 
 // CleanupCmd implements PackageCommander.
 func (p *packageCommander) CleanupCmd() string {
-	return p.cmds["cleanup"]
+	return p.cleanup
 }
 
 // GetProxyCmd implements PackageCommander.
 func (p *packageCommander) GetProxyCmd() string {
-	return p.cmds["get-proxy"]
+	return p.get_proxy
 }
 
 // giveProxyOptions is a helper function which takes a possible proxy setting
 // and its value and returns the formatted option for it.
 func (p *packageCommander) giveProxyOption(setting, proxy string) string {
-	return fmt.Sprintf(p.cmds["proxy-setting-format"], setting, proxy)
+	return fmt.Sprintf(p.proxy_settings_format, setting, proxy)
 }
 
 // ProxyConfigContents implements PackageCommander.
@@ -161,7 +156,7 @@ func (p *packageCommander) SetProxyCmds(settings proxy.Settings) []string {
 
 	addProxyCmd := func(setting, proxy string) {
 		if proxy != "" {
-			cmds = append(cmds, fmt.Sprintf(p.cmds["set-proxy"], p.giveProxyOption(setting, proxy)))
+			cmds = append(cmds, fmt.Sprintf(p.set_proxy, p.giveProxyOption(setting, proxy)))
 		}
 	}
 

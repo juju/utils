@@ -1,3 +1,8 @@
+This licence applies to the following files:
+
+* filepath/stdlib.go
+* filepath/stdlibmatch.go
+
 Copyright (c) 2010 The Go Authors. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without

@@ -26,7 +26,7 @@ var (
 )
 
 // CommandOutput is cmd.Output. It was aliased for testing purposes.
-var commandOutput = (*exec.Cmd).CombinedOutput
+var CommandOutput = (*exec.Cmd).CombinedOutput
 
 // processStateSys is ps.Sys. It was aliased for testing purposes.
 var processStateSys = (*os.ProcessState).Sys
@@ -62,7 +62,7 @@ func runCommandWithRetry(cmd string) (string, int, error) {
 		// call cmd.CombinedOutput only once. See http://pad.lv/1394524.
 		cmd := exec.Command(args[0], args[1:]...)
 
-		out, err = commandOutput(cmd)
+		out, err = CommandOutput(cmd)
 
 		if err == nil {
 			return string(out), 0, nil

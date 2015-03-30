@@ -14,11 +14,7 @@ const (
 
 	// AptConfigDirectory is the default directory in which
 	// apt configuration files are stored.
-	AptConfigFile = "/etc/apt/apt.conf.d"
-
-	// AptProxyConfigFile is the full file path for the proxy settings that are
-	// written by cloudinit and the machine environ worker.
-	AptProxyConfigFile = AptConfigFile + "/42-juju-proxy-settings"
+	AptConfigDirectory = "/etc/apt/apt.conf.d"
 
 	// ExtractAptSource is a shell command that will extract the
 	// currently configured APT source location. We assume that
@@ -34,17 +30,23 @@ const (
 	AptSourceListPrefix = `sed 's,.*://,,' | sed 's,/$,,' | tr / _`
 )
 
-// AptPreferenceTemplate is the template specific to an apt preference file.
-var AptPreferenceTemplate = `
+var (
+	// AptProxyConfigFile is the full file path for the proxy settings that are
+	// written by cloudinit and the machine environ worker.
+	AptProxyConfigFile = AptConfigDirectory + "/42-juju-proxy-settings"
+
+	// AptPreferenceTemplate is the template specific to an apt preference file.
+	AptPreferenceTemplate = `
 Explanation: {{.Explanation}}
 Package: {{.Package}}
 Pin: {{.Pin}}
-Pin-Priority: {{.PinPriority}}
+Pin-Priority: {{Priority}}
 `[1:]
 
-// AptSourceTemplate is the template specific to an apt source file.
-var AptSourceTemplate = `
+	// AptSourceTemplate is the template specific to an apt source file.
+	AptSourceTemplate = `
 # {{.Name}} (added by Juju)
 deb {{.Url}} %s main
 # deb-src {{.Url}} %s main
 `[1:]
+)

@@ -11,7 +11,7 @@ package packaging
 type PackageSource struct {
 	Name string `yaml:"-"`
 	Url  string `yaml:"source"`
-	Key  string `yaml:"key, omitempty"`
+	Key  string `yaml:"key,omitempty"`
 }
 
 // KeyFileName returns the name of this source's keyfile.

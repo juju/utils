@@ -2,12 +2,11 @@
 // Copyright 2015 Cloudbase Solutions SRL
 // Licensed under the AGPLv3, see LICENCE file for details.
 
-// The packaging package contains definitions for general packaging-related
-// types as well as implementations of objects which either return or configure
-// packaging-related parameters in its three subpackages.
+// Package packaging abstracts away differences between package managers like
+// apt and yum and allows for easy extension for other package managers/distros.
 package packaging
 
-// Source contains all the data required for a package source.
+// PackageSource contains all the data required for a package source.
 type PackageSource struct {
 	Name string `yaml:"-"`
 	Url  string `yaml:"source"`
@@ -20,6 +19,6 @@ func (s *PackageSource) KeyFileName() string {
 }
 
 // RenderSourceFile renders the current source based on a template it recieves.
-func (s *PackageSource) RenderSourceFile(fileTemplate string) string {
+func (s *PackageSource) RenderSourceFile(fileTemplate string) (string, error) {
 	return renderTemplate(fileTemplate, s)
 }

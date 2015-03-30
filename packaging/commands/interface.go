@@ -2,10 +2,10 @@
 // Copyright 2015 Cloudbase Solutions SRL
 // Licensed under the AGPLv3, see LICENCE file for details.
 
-// The commander package contains an interface which returns common
+// Package commands contains an interface which returns common
 // package-manager related commands and the reference implementation for apt
 // and yum-based systems.
-package commander
+package commands
 
 import (
 	"github.com/juju/utils/proxy"
@@ -95,9 +95,9 @@ func NewPackageCommander(series string) (PackageCommander, error) {
 	// does not imply importing version from core.
 	switch series {
 	case "centos7":
-		return NewAptPackageCommander(), nil
-	default:
 		return NewYumPackageCommander(), nil
+	default:
+		return NewAptPackageCommander(), nil
 	}
 	return nil, nil
 }

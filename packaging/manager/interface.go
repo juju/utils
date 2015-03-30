@@ -8,7 +8,7 @@
 package manager
 
 import (
-	"github.com/juju/utils/packaging/commander"
+	"github.com/juju/utils/packaging/commands"
 	"github.com/juju/utils/proxy"
 )
 
@@ -44,24 +44,6 @@ type PackageManager interface {
 	// IsInstalled runs the command which determines whether or not the
 	// given package is currently installed on the system.
 	IsInstalled(string) bool
-
-	// ListAvailable runs the command which will list all packages
-	// available for installation from the currently configured repositories.
-	// NOTE: includes already installed packages.
-	// TODO(aznashwan): actually implement this.
-	//	ListAvailable() ([]string, error)
-
-	// ListInstalled runs the command which will list all
-	// packages currently installed on the system.
-	// TODO(aznashwan): actually implement this.
-	//	ListInstalled() ([]string, error)
-
-	// ListRepositories runs the command that lists all repositories
-	// currently configured on the system.
-	// NOTE: requires the prerequisite package whose installation command
-	// is done by running InstallPrerequisite().
-	// TODO(aznashwan): actually implement this.
-	//	ListRepositories() ([]string, error)
 
 	// AddRepository runs the command that adds a repository to the
 	// list of available repositories.
@@ -104,10 +86,10 @@ func NewPackageManager(series string) (PackageManager, error) {
 
 // NewAptPackageManager returns a PackageManager for apt-based systems.
 func NewAptPackageManager() PackageManager {
-	return &apt{basePackageManager{commander.NewAptPackageCommander()}}
+	return &apt{basePackageManager{commands.NewAptPackageCommander()}}
 }
 
 // NewYumPackageManager returns a PackageManager for yum-based systems.
 func NewYumPackageManager() PackageManager {
-	return &yum{basePackageManager{commander.NewYumPackageCommander()}}
+	return &yum{basePackageManager{commands.NewYumPackageCommander()}}
 }

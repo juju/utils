@@ -9,14 +9,14 @@ import (
 	"strings"
 
 	"github.com/juju/utils"
-	"github.com/juju/utils/packaging/commander"
+	"github.com/juju/utils/packaging/commands"
 	"github.com/juju/utils/proxy"
 )
 
 // basePackageManager is the struct which executes various
 // packaging-related operations.
 type basePackageManager struct {
-	cmder commander.PackageCommander
+	cmder commands.PackageCommander
 }
 
 // InstallPrerequisite implements PackageManager.

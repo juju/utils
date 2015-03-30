@@ -2,7 +2,7 @@
 // Copyright 2015 Cloudbase Solutions SRL
 // Licensed under the AGPLv3, see LICENCE file for details.
 
-package configurer
+package configuration
 
 const (
 	// PackageManagerLoopFunction is a bash function that executes its arguments

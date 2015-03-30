@@ -2,7 +2,7 @@
 // Copyright 2015 Cloudbase Solutions SRL
 // Licensed under the AGPLv3, see LICENCE file for details.
 
-package configurer
+package configuration
 
 import (
 	"fmt"
@@ -73,14 +73,14 @@ p/+af/HU1smBrOfIeRoxb8jQoHu3
 // UbuntuDefaultPackages is the default package set we'd like to installed on
 // all Ubuntu machines.
 var UbuntuDefaultPackages = append(DefaultPackages, []string{
-	// TODO (everyone): populate this list.
+	// TODO (aznashwan, all): populate this list.
 	"python-software-properties",
 }...)
 
 // UbuntuDefaultRepositories is the default repository set we'd like to enable
 // on all Ubuntu machines.
 var UbuntuDefaultRepositories = []string{
-//TODO (everyone): popuate this list.
+//TODO (aznashwan, all): populate this list.
 }
 
 // cloudArchivePackagesUbuntu maintains a list of Ubuntu packages that
@@ -117,10 +117,12 @@ var cloudArchivePackagesUbuntu = map[string]bool{
 // ubuntuToCentOSPackageNameMap is a map for converting package names from their
 // names in Ubuntu repositories to their equivalent CentOS names.
 var ubuntuToCentOSPackageNameMap = map[string]string{
-// TODO(everyone): thouroughly research differing package names and add
-// them to this map.
-
-// "cpu-checker":		"???",
+// TODO(aznashwan, everyone): thouroughly research differing package
+// names and add them to this map.
+// NOTE: the following are the packages which currently count as cloud
+// archive packages and require an equivalent on CentOS when an rpm
+// cloud archive is up and running:
+//
 // "cloud-utils":		"???",
 // "cloud-image-utils":	"???",
 }

@@ -2,10 +2,10 @@
 // Copyright 2015 Cloudbase Solutions SRL
 // Licensed under the AGPLv3, see LICENCE file for details.
 
-// The configurer package defines an interface which returns packaging-related
+// The configuration package defines an interface which returns packaging-related
 // configuration options and operations depending on the desired
 // package-management system.
-package configurer
+package configuration
 
 import (
 	"github.com/juju/utils/packaging"

@@ -2,7 +2,7 @@
 // Copyright 2015 Cloudbase Solutions SRL
 // Licensed under the AGPLv3, see LICENCE file for details.
 
-package commander
+package commands
 
 const (
 	// CentOSSourcesDir is the default directory in which yum sourcefiles
@@ -36,21 +36,21 @@ const (
 
 // yumCmder is the packageCommander instanciation for yum-based systems.
 var yumCmder = packageCommander{
-	prereq:                join(yum, "install yum-utils"),
-	update:                join(yum, "clean expire-cache"),
-	upgrade:               join(yum, "update"),
-	install:               join(yum, "install"),
-	remove:                join(yum, "remove"),
-	purge:                 join(yum, "remove"), // purges by default
-	search:                join(yum, "list %s"),
-	is_installed:          join(yum, " list installed %s"),
-	list_available:        join(yum, "list all"),
-	list_installed:        join(yum, "list installed"),
-	list_repositories:     join(yum, "repolist all"),
-	add_repository:        join(yumconf, "--add-repo %s"),
-	remove_repository:     join(yumconf, "--disable %s"),
-	cleanup:               join(yum, "clean all"),
-	get_proxy:             join("grep proxy ", WgetRCFilePath, " | grep -v ^#"),
+	prereq:                buildCommand(yum, "install yum-utils"),
+	update:                buildCommand(yum, "clean expire-cache"),
+	upgrade:               buildCommand(yum, "update"),
+	install:               buildCommand(yum, "install"),
+	remove:                buildCommand(yum, "remove"),
+	purge:                 buildCommand(yum, "remove"), // purges by default
+	search:                buildCommand(yum, "list %s"),
+	is_installed:          buildCommand(yum, " list installed %s"),
+	list_available:        buildCommand(yum, "list all"),
+	list_installed:        buildCommand(yum, "list installed"),
+	list_repositories:     buildCommand(yum, "repolist all"),
+	add_repository:        buildCommand(yumconf, "--add-repo %s"),
+	remove_repository:     buildCommand(yumconf, "--disable %s"),
+	cleanup:               buildCommand(yum, "clean all"),
+	get_proxy:             buildCommand("grep proxy ", WgetRCFilePath, " | grep -v ^#"),
 	proxy_settings_format: wgetProxySettingFormat,
-	set_proxy:             join("echo %s >> ", WgetRCFilePath),
+	set_proxy:             buildCommand("echo %s >> ", WgetRCFilePath),
 }

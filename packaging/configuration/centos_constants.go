@@ -2,7 +2,7 @@
 // Copyright 2015 Cloudbase Solutions SRL
 // Licensed under the AGPLv3, see LICENCE file for details.
 
-package configurer
+package configuration
 
 import (
 	"github.com/juju/utils/packaging"
@@ -26,7 +26,7 @@ const (
 // CentOSDefaultPackages is the default package set we'd like installed
 // on all CentOS machines.
 var CentOSDefaultPackages = append(DefaultPackages, []string{
-	// TODO (everyone): further populate this.
+	// TODO (aznashwan, all): further populate this list.
 	"epel-release",
 	"yum-utils",
 }...)
@@ -35,7 +35,7 @@ var CentOSDefaultPackages = append(DefaultPackages, []string{
 // Configurer.IsCloudArchivePackage will reference when determining the
 // repository from which to install a package.
 var cloudArchivePackagesCentOS = map[string]bool{
-// TODO (people from the distant future): if a separate repository for
+// TODO (aznashwan, all): if a separate repository for
 // CentOS 7+ especially for Juju is to ever occur, please add the relevant
 // package listings here.
 }
@@ -49,7 +49,7 @@ var centOSToUbuntuPackageNameMap = flipMap(ubuntuToCentOSPackageNameMap)
 // cloud archive PackageSource and PackagePreferences for the given series for
 // CentOS machines.
 func configureCloudArchiveSourceCentOS(series string) (packaging.PackageSource, packaging.PackagePreferences) {
-	// TODO (peole of the distant future): implement this when the
+	// TODO (aznashwan, all): implement this when the
 	// archive for CentOS goes up.
 	return packaging.PackageSource{}, packaging.PackagePreferences{}
 }
@@ -58,8 +58,7 @@ func configureCloudArchiveSourceCentOS(series string) (packaging.PackageSource, 
 // yum in order to ensure that it pulls the package from that particular source.
 func getTargetReleaseSpecifierCentOS(series string) string {
 	switch series {
-	// TODO (people of the distant future): add these when the archive for
-	// CentOS goes up.
+	// TODO (aznashwan, all): add these when the archive for CentOS goes up.
 	default:
 		return ""
 	}

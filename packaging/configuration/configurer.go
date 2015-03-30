@@ -2,7 +2,7 @@
 // Copyright 2015 Cloudbase Solutions SRL
 // Licensed under the AGPLv3, see LICENCE file for details.
 
-package configurer
+package configuration
 
 // baseConfigurer is the base type of a Configurer object.
 type baseConfigurer struct {
@@ -19,7 +19,6 @@ func (c *baseConfigurer) DefaultPackages() []string {
 // GetPackageNameForSeries implements PackagingConfigurer.
 func (c *baseConfigurer) GetPackageNameForSeries(pack, series string) string {
 	if c.series == series {
-		// trivial case
 		return pack
 	}
 

@@ -2,7 +2,7 @@
 // Copyright 2015 Cloudbase Solutions SRL
 // Licensed under the AGPLv3, see LICENCE file for details.
 
-package configurer
+package configuration
 
 import (
 	"github.com/juju/utils/packaging"
@@ -12,8 +12,8 @@ import (
 // requires the configuration of cloud archive cloud tools.
 func SeriesRequiresCloudArchiveTools(series string) bool {
 	var seriesRequiringCloudTools = map[string]bool{
-		// TODO (everyone): add any and all LTS's or other OS which require cloud
-		// tools' series here.
+		// TODO (aznashwan, all): add any and all LTS's or other OS's
+		// which require cloud tools' series here.
 		"precise": true,
 	}
 	return seriesRequiringCloudTools[series]
@@ -26,7 +26,7 @@ func GetCloudArchiveSource(series string) (packaging.PackageSource, packaging.Pa
 	// does not imply importing version from core.
 	switch series {
 	case "centos7":
-		// NOTE: as of yet, the below function does nothing
+		// NOTE: as of yet, the below function does nothing for CentOS.
 		return configureCloudArchiveSourceCentOS(series)
 	default:
 		return configureCloudArchiveSourceUbuntu(series)

@@ -2,7 +2,7 @@
 // Copyright 2015 Cloudbase Solutions SRL
 // Licensed under the AGPLv3, see LICENCE file for details.
 
-package configurer
+package configuration
 
 // flipMap is a helper function which flips a strings map, making the
 // keys of the initial one the values and vice-versa.

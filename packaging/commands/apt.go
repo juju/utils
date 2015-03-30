@@ -2,7 +2,7 @@
 // Copyright 2015 Cloudbase Solutions SRL
 // Licensed under the AGPLv3, see LICENCE file for details.
 
-package commander
+package commands
 
 const (
 	// AptConfFilePath is the full file path for the proxy settings that are
@@ -33,21 +33,21 @@ const (
 
 // aptCmder is the packageCommander instanciation for apt-based systems.
 var aptCmder = packageCommander{
-	prereq:                join(aptget, "install python-software-properties"),
-	update:                join(aptget, "update"),
-	upgrade:               join(aptget, "upgrade"),
-	install:               join(aptget, "install"),
-	remove:                join(aptget, "remove"),
-	purge:                 join(aptget, "purge"),
-	search:                join(aptcache, "search --names-only ^%s$"),
-	is_installed:          join(dpkg, "-s %s"),
-	list_available:        join(aptcache, "pkgnames"),
-	list_installed:        join(dpkg, "--get-selections"),
-	add_repository:        join(addaptrepo, "ppa:%s"),
-	list_repositories:     `sed -r -n "s|^deb(-src)? (.*)|\1|p"`,
-	remove_repository:     join(addaptrepo, "--remove ppa:%s"),
-	cleanup:               join(aptget, "autoremove"),
-	get_proxy:             join(aptconfig, "Acquire::http::Proxy Acquire::https::Proxy Acquire::ftp::Proxy"),
+	prereq:                buildCommand(aptget, "install python-software-properties"),
+	update:                buildCommand(aptget, "update"),
+	upgrade:               buildCommand(aptget, "upgrade"),
+	install:               buildCommand(aptget, "install"),
+	remove:                buildCommand(aptget, "remove"),
+	purge:                 buildCommand(aptget, "purge"),
+	search:                buildCommand(aptcache, "search --names-only ^%s$"),
+	is_installed:          buildCommand(dpkg, "-s %s"),
+	list_available:        buildCommand(aptcache, "pkgnames"),
+	list_installed:        buildCommand(dpkg, "--get-selections"),
+	add_repository:        buildCommand(addaptrepo, "ppa:%s"),
+	list_repositories:     buildCommand(`sed -r -n "s|^deb(-src)? (.*)|\2|p"`, "/etc/apt/sources.list"),
+	remove_repository:     buildCommand(addaptrepo, "--remove ppa:%s"),
+	cleanup:               buildCommand(aptget, "autoremove"),
+	get_proxy:             buildCommand(aptconfig, "Acquire::http::Proxy Acquire::https::Proxy Acquire::ftp::Proxy"),
 	proxy_settings_format: aptProxySettingFormat,
-	set_proxy:             join("echo %s >> ", AptConfFilePath),
+	set_proxy:             buildCommand("echo %s >> ", AptConfFilePath),
 }

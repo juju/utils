@@ -2,7 +2,7 @@
 // Copyright 2015 Cloudbase Solutions SRL
 // Licensed under the AGPLv3, see LICENCE file for details.
 
-package commander
+package commands
 
 import (
 	"fmt"
@@ -54,7 +54,7 @@ func (p *packageCommander) InstallCmd(packs ...string) string {
 	cmd := p.install
 
 	for _, pack := range packs {
-		cmd = join(cmd, pack)
+		cmd = buildCommand(cmd, pack)
 	}
 
 	return cmd
@@ -65,7 +65,7 @@ func (p *packageCommander) RemoveCmd(packs ...string) string {
 	cmd := p.remove
 
 	for _, pack := range packs {
-		cmd = join(cmd, pack)
+		cmd = buildCommand(cmd, pack)
 	}
 
 	return cmd
@@ -76,7 +76,7 @@ func (p *packageCommander) PurgeCmd(packs ...string) string {
 	cmd := p.purge
 
 	for _, pack := range packs {
-		cmd = join(cmd, pack)
+		cmd = buildCommand(cmd, pack)
 	}
 
 	return cmd

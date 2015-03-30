@@ -11,14 +11,14 @@ import (
 
 // renderTemplate is a helper function which renders a given object to a given
 // template and returns its output as a string.
-func renderTemplate(temp string, obj interface{}) (string, error) {
+func renderTemplate(temp string, obj interface{}) string {
 	var buf bytes.Buffer
 
 	t := template.Must(template.New("").Parse(temp))
 	err := t.Execute(&buf, obj)
 	if err != nil {
-		return "", err
+		panic(err)
 	}
 
-	return buf.String(), nil
+	return buf.String()
 }

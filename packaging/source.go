@@ -19,6 +19,6 @@ func (s *PackageSource) KeyFileName() string {
 }
 
 // RenderSourceFile renders the current source based on a template it recieves.
-func (s *PackageSource) RenderSourceFile(fileTemplate string) (string, error) {
+func (s *PackageSource) RenderSourceFile(fileTemplate string) string {
 	return renderTemplate(fileTemplate, s)
 }

@@ -40,7 +40,7 @@ var (
 Explanation: {{.Explanation}}
 Package: {{.Package}}
 Pin: {{.Pin}}
-Pin-Priority: {{Priority}}
+Pin-Priority: {{.Priority}}
 `[1:]
 
 	// AptSourceTemplate is the template specific to an apt source file.

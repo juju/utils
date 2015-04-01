@@ -14,8 +14,12 @@ import (
 func renderTemplate(temp string, obj interface{}) (string, error) {
 	var buf bytes.Buffer
 
-	t := template.Must(template.New("").Parse(temp))
-	err := t.Execute(&buf, obj)
+	t, err := template.New("").Parse(temp)
+	if err != nil {
+		return "", err
+	}
+
+	err = t.Execute(&buf, obj)
 	if err != nil {
 		return "", err
 	}

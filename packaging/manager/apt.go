@@ -17,7 +17,7 @@ type apt struct {
 	basePackageManager
 }
 
-// Search implements PackageManager.
+// Search is defined on the PackageManager interface.
 func (apt *apt) Search(pack string) (bool, error) {
 	out, _, err := runCommandWithRetry(apt.cmder.SearchCmd(pack))
 	if err != nil {
@@ -32,7 +32,7 @@ func (apt *apt) Search(pack string) (bool, error) {
 	return true, nil
 }
 
-// GetProxySettings implements PackageManager.
+// GetProxySettings is defined on the PackageManager interface.
 func (apt *apt) GetProxySettings() (proxy.Settings, error) {
 	var res proxy.Settings
 	proxyRE := regexp.MustCompile(`(?im)^\s*Acquire::(?P<protocol>[a-z]+)::Proxy\s+"(?P<proxy>[^"]+)";\s*$`)

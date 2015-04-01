@@ -9,7 +9,7 @@ package packaging
 // PackageSource contains all the data required for a package source.
 type PackageSource struct {
 	Name string `yaml:"-"`
-	Url  string `yaml:"source"`
+	URL  string `yaml:"source"`
 	Key  string `yaml:"key,omitempty"`
 }
 
@@ -19,6 +19,6 @@ func (s *PackageSource) KeyFileName() string {
 }
 
 // RenderSourceFile renders the current source based on a template it recieves.
-func (s *PackageSource) RenderSourceFile(fileTemplate string) string {
+func (s *PackageSource) RenderSourceFile(fileTemplate string) (string, error) {
 	return renderTemplate(fileTemplate, s)
 }

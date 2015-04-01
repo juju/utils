@@ -2,10 +2,10 @@
 // Copyright 2015 Cloudbase Solutions SRL
 // Licensed under the AGPLv3, see LICENCE file for details.
 
-// The configuration package defines an interface which returns packaging-related
+// The config package defines an interface which returns packaging-related
 // configuration options and operations depending on the desired
 // package-management system.
-package configuration
+package config
 
 import (
 	"github.com/juju/utils/packaging"
@@ -19,8 +19,9 @@ type PackagingConfigurer interface {
 	DefaultPackages() []string
 
 	// GetPackageNameForSeries returns the equivalent package name of the
-	// specified package for the given series.
-	GetPackageNameForSeries(string, string) string
+	// specified package for the given series or an error if no mapping
+	// for it exists.
+	GetPackageNameForSeries(string, string) (string, error)
 
 	// IsCloudArchivePackage signals whether the given package is a
 	// cloud archive package and thus should be set as such.
@@ -32,11 +33,11 @@ type PackagingConfigurer interface {
 
 	// RenderSource returns the os-specific full file contents
 	// of a given PackageSource.
-	RenderSource(packaging.PackageSource) string
+	RenderSource(packaging.PackageSource) (string, error)
 
 	// RenderPreferences returns the os-specific full file contents of a given
 	// set of PackagePreferences.
-	RenderPreferences(packaging.PackagePreferences) string
+	RenderPreferences(packaging.PackagePreferences) (string, error)
 }
 
 func NewPackagingConfigurer(series string) (PackagingConfigurer, error) {

@@ -14,67 +14,67 @@ import "github.com/juju/utils/proxy"
 type MockPackageManager struct {
 }
 
-// InstallPrerequisite implements PackageManager.
+// InstallPrerequisite is defined on the PackageManager interface.
 func (pm *MockPackageManager) InstallPrerequisite() error {
 	return nil
 }
 
-// Update implements PackageManager.
+// Update is defined on the PackageManager interface.
 func (pm *MockPackageManager) Update() error {
 	return nil
 }
 
-// Upgrade implements PackageManager.
+// Upgrade is defined on the PackageManager interface.
 func (pm *MockPackageManager) Upgrade() error {
 	return nil
 }
 
-// Install implements PackageManager.
+// Install is defined on the PackageManager interface.
 func (pm *MockPackageManager) Install(...string) error {
 	return nil
 }
 
-// Remove implements PackageManager.
+// Remove is defined on the PackageManager interface.
 func (pm *MockPackageManager) Remove(...string) error {
 	return nil
 }
 
-// Purge implements PackageManager.
+// Purge is defined on the PackageManager interface.
 func (pm *MockPackageManager) Purge(...string) error {
 	return nil
 }
 
-// Search implements PackageManager.
+// Search is defined on the PackageManager interface.
 func (pm *MockPackageManager) Search(string) (bool, error) {
 	return true, nil
 }
 
-// IsInstalled implements PackageManager.
+// IsInstalled is defined on the PackageManager interface.
 func (pm *MockPackageManager) IsInstalled(string) bool {
 	return true
 }
 
-// AddRepository implements PackageManager.
+// AddRepository is defined on the PackageManager interface.
 func (pm *MockPackageManager) AddRepository(string) error {
 	return nil
 }
 
-// RemoveRepository implements PackageManager.
+// RemoveRepository is defined on the PackageManager interface.
 func (pm *MockPackageManager) RemoveRepository(string) error {
 	return nil
 }
 
-// Cleanup implements PackageManager.
+// Cleanup is defined on the PackageManager interface.
 func (pm *MockPackageManager) Cleanup() error {
 	return nil
 }
 
-// GetProxySettings implements PackageManager.
+// GetProxySettings is defined on the PackageManager interface.
 func (pm *MockPackageManager) GetProxySettings() (proxy.Settings, error) {
 	return proxy.Settings{"http proxy", "https proxy", "ftp proxy", "no proxy"}, nil
 }
 
-// SetProxy implements PackageManager.
+// SetProxy is defined on the PackageManager interface.
 func (pm *MockPackageManager) SetProxy(proxy.Settings) error {
 	return nil
 }

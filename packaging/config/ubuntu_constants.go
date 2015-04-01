@@ -2,7 +2,7 @@
 // Copyright 2015 Cloudbase Solutions SRL
 // Licensed under the AGPLv3, see LICENCE file for details.
 
-package configuration
+package config
 
 import (
 	"fmt"
@@ -132,7 +132,7 @@ var ubuntuToCentOSPackageNameMap = map[string]string{
 // Ubuntu machines.
 func configureCloudArchiveSourceUbuntu(series string) (packaging.PackageSource, packaging.PackagePreferences) {
 	source := packaging.PackageSource{
-		Url: fmt.Sprintf("deb %s %s-updates/cloud-tools main", UbuntuCloudArchiveUrl, series),
+		URL: fmt.Sprintf("deb %s %s-updates/cloud-tools main", UbuntuCloudArchiveUrl, series),
 		Key: UbuntuCloudArchiveSigningKey,
 	}
 

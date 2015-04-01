@@ -2,7 +2,7 @@
 // Copyright 2015 Cloudbase Solutions SRL
 // Licensed under the AGPLv3, see LICENCE file for details.
 
-package configuration
+package config
 
 import (
 	"github.com/juju/utils/packaging"
@@ -13,19 +13,19 @@ type yumConfigurer struct {
 	*baseConfigurer
 }
 
-// RenderSource implements PackagingConfigurer.
-func (c *yumConfigurer) RenderSource(src packaging.PackageSource) string {
+// RenderSource is defined on the PackagingConfigurer interface.
+func (c *yumConfigurer) RenderSource(src packaging.PackageSource) (string, error) {
 	return src.RenderSourceFile(YumSourceTemplate)
 }
 
-// RenderPreferences implements PackagingConfigurer.
-func (c *yumConfigurer) RenderPreferences(src packaging.PackagePreferences) string {
+// RenderPreferences is defined on the PackagingConfigurer interface.
+func (c *yumConfigurer) RenderPreferences(src packaging.PackagePreferences) (string, error) {
 	// TODO (aznashwan): research a way of using yum-priorities in the context
 	// of single/multiple package pinning and implement it.
-	return ""
+	return "", nil
 }
 
-// ApplyCloudArchiveTarget implements PackagingConfigurer.
+// ApplyCloudArchiveTarget is defined on the PackagingConfigurer interface.
 func (c *yumConfigurer) ApplyCloudArchiveTarget(pack string) []string {
 	// TODO (aznashwan): implement target application when archive is available.
 	return []string{pack}

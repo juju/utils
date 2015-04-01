@@ -2,7 +2,11 @@
 // Copyright 2015 Cloudbase Solutions SRL
 // Licensed under the AGPLv3, see LICENCE file for details.
 
-package configuration
+package config
+
+import (
+	"github.com/juju/errors"
+)
 
 // baseConfigurer is the base type of a Configurer object.
 type baseConfigurer struct {
@@ -11,15 +15,15 @@ type baseConfigurer struct {
 	cloudArchivePackages map[string]bool
 }
 
-// DefaultPackages implements PackagingConfigurer.
+// DefaultPackages is defined on the PackagingConfigurer interface.
 func (c *baseConfigurer) DefaultPackages() []string {
 	return c.defaultPackages
 }
 
-// GetPackageNameForSeries implements PackagingConfigurer.
-func (c *baseConfigurer) GetPackageNameForSeries(pack, series string) string {
+// GetPackageNameForSeries is defined on the PackagingConfigurer interface.
+func (c *baseConfigurer) GetPackageNameForSeries(pack, series string) (string, error) {
 	if c.series == series {
-		return pack
+		return pack, nil
 	}
 
 	// TODO(aznashwan): find a more deterministic way of filtering series that
@@ -28,23 +32,21 @@ func (c *baseConfigurer) GetPackageNameForSeries(pack, series string) string {
 	case "centos7":
 		res, ok := centOSToUbuntuPackageNameMap[pack]
 		if !ok {
-			// seems harsh, but this is to encourage all further additions of
-			// packages to be made for all distributions...
-			panic("Cannot find equivalent Ubuntu package: " + pack)
+			return "", errors.Errorf("no equivalent package found for series %s: %s", series, pack)
 		}
-		return res
+		return res, nil
 	default:
 		res, ok := ubuntuToCentOSPackageNameMap[pack]
 		if !ok {
-			panic("Cannot find equivalent CentOS package: " + pack)
+			return "", errors.Errorf("no equivalent package found for series %s: %s", series, pack)
 		}
-		return res
+		return res, nil
 	}
 
-	return pack
+	return pack, nil
 }
 
-// IsCloudArchivePackage implements PackagingConfigurer.
+// IsCloudArchivePackage is defined on the PackagingConfigurer interface.
 func (c *baseConfigurer) IsCloudArchivePackage(pack string) bool {
 	return c.cloudArchivePackages[pack]
 }

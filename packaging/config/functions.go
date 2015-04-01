@@ -2,7 +2,7 @@
 // Copyright 2015 Cloudbase Solutions SRL
 // Licensed under the AGPLv3, see LICENCE file for details.
 
-package configuration
+package config
 
 import (
 	"github.com/juju/utils/packaging"
@@ -12,7 +12,7 @@ import (
 // requires the configuration of cloud archive cloud tools.
 func SeriesRequiresCloudArchiveTools(series string) bool {
 	var seriesRequiringCloudTools = map[string]bool{
-		// TODO (aznashwan, all): add any and all LTS's or other OS's
+		// TODO (aznashwan, all): add any other OS's
 		// which require cloud tools' series here.
 		"precise": true,
 	}

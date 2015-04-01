@@ -2,7 +2,7 @@
 // Copyright 2015 Cloudbase Solutions SRL
 // Licensed under the AGPLv3, see LICENCE file for details.
 
-package configuration
+package config
 
 const (
 	// YumSourcesDir is the default directory in which yum sourcefiles are located.
@@ -16,7 +16,7 @@ const (
 var YumSourceTemplate = `
 [{{.Name}}]
 name={{.Name}} (added by Juju)
-baseurl={{.Url}}
+baseurl={{.URL}}
 {{if .Key}}gpgcheck=1
 gpgkey=%s{{end}}
 enabled=1

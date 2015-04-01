@@ -2,7 +2,7 @@
 // Copyright 2015 Cloudbase Solutions SRL
 // Licensed under the AGPLv3, see LICENCE file for details.
 
-package configuration
+package config
 
 import (
 	"github.com/juju/utils/packaging"
@@ -57,9 +57,6 @@ func configureCloudArchiveSourceCentOS(series string) (packaging.PackageSource, 
 // getTargetReleaseSpecifierCentOS returns the specifier that can be passed to
 // yum in order to ensure that it pulls the package from that particular source.
 func getTargetReleaseSpecifierCentOS(series string) string {
-	switch series {
 	// TODO (aznashwan, all): add these when the archive for CentOS goes up.
-	default:
-		return ""
-	}
+	return ""
 }

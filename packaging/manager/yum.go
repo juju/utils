@@ -16,7 +16,7 @@ type yum struct {
 	basePackageManager
 }
 
-// Search implements PackageManager.
+// Search is defined on the PackageManager interface.
 func (yum *yum) Search(pack string) (bool, error) {
 	_, code, err := runCommandWithRetry(yum.cmder.SearchCmd(pack))
 
@@ -28,7 +28,7 @@ func (yum *yum) Search(pack string) (bool, error) {
 	return false, err
 }
 
-// GetProxySettings implements PackageManager.
+// GetProxySettings is defined on the PackageManager interface.
 func (yum *yum) GetProxySettings() (proxy.Settings, error) {
 	var res proxy.Settings
 	args := []string{"bash", "-c", fmt.Sprintf("%q", yum.cmder.GetProxyCmd())}

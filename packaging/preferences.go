@@ -19,6 +19,6 @@ type PackagePreferences struct {
 
 // RenderPreferenceFile returns contents of the package-manager specific config file
 // of this paritcular package source.
-func (p *PackagePreferences) RenderPreferenceFile(fileTemplate string) string {
+func (p *PackagePreferences) RenderPreferenceFile(fileTemplate string) (string, error) {
 	return renderTemplate(fileTemplate, p)
 }

@@ -2,7 +2,7 @@
 // Copyright 2015 Cloudbase Solutions SRL
 // Licensed under the AGPLv3, see LICENCE file for details.
 
-package configuration
+package config
 
 const (
 	// AptSourcesFile is the default file which list all core
@@ -46,7 +46,7 @@ Pin-Priority: {{.Priority}}
 	// AptSourceTemplate is the template specific to an apt source file.
 	AptSourceTemplate = `
 # {{.Name}} (added by Juju)
-deb {{.Url}} %s main
-# deb-src {{.Url}} %s main
+deb {{.URL}} %s main
+# deb-src {{.URL}} %s main
 `[1:]
 )

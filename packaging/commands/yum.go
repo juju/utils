@@ -34,23 +34,23 @@ const (
 	wgetProxySettingFormat = "%s_proxy = %s"
 )
 
-// yumCmder is the packageCommander instanciation for yum-based systems.
+// yumCmder is the packageCommander instantiation for yum-based systems.
 var yumCmder = packageCommander{
-	prereq:                buildCommand(yum, "install yum-utils"),
-	update:                buildCommand(yum, "clean expire-cache"),
-	upgrade:               buildCommand(yum, "update"),
-	install:               buildCommand(yum, "install"),
-	remove:                buildCommand(yum, "remove"),
-	purge:                 buildCommand(yum, "remove"), // purges by default
-	search:                buildCommand(yum, "list %s"),
-	is_installed:          buildCommand(yum, " list installed %s"),
-	list_available:        buildCommand(yum, "list all"),
-	list_installed:        buildCommand(yum, "list installed"),
-	list_repositories:     buildCommand(yum, "repolist all"),
-	add_repository:        buildCommand(yumconf, "--add-repo %s"),
-	remove_repository:     buildCommand(yumconf, "--disable %s"),
-	cleanup:               buildCommand(yum, "clean all"),
-	get_proxy:             buildCommand("grep proxy ", WgetRCFilePath, " | grep -v ^#"),
-	proxy_settings_format: wgetProxySettingFormat,
-	set_proxy:             buildCommand("echo %s >> ", WgetRCFilePath),
+	prereq:              buildCommand(yum, "install yum-utils"),
+	update:              buildCommand(yum, "clean expire-cache"),
+	upgrade:             buildCommand(yum, "update"),
+	install:             buildCommand(yum, "install"),
+	remove:              buildCommand(yum, "remove"),
+	purge:               buildCommand(yum, "remove"), // purges by default
+	search:              buildCommand(yum, "list %s"),
+	isInstalled:         buildCommand(yum, " list installed %s"),
+	listAvailable:       buildCommand(yum, "list all"),
+	listInstalled:       buildCommand(yum, "list installed"),
+	listRepositories:    buildCommand(yum, "repolist all"),
+	addRepository:       buildCommand(yumconf, "--add-repo %s"),
+	removeRepository:    buildCommand(yumconf, "--disable %s"),
+	cleanup:             buildCommand(yum, "clean all"),
+	getProxy:            buildCommand("grep proxy ", WgetRCFilePath, " | grep -v ^#"),
+	proxySettingsFormat: wgetProxySettingFormat,
+	setProxy:            buildCommand("echo %s >> ", WgetRCFilePath),
 }

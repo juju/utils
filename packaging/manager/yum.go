@@ -18,14 +18,14 @@ type yum struct {
 
 // Search is defined on the PackageManager interface.
 func (yum *yum) Search(pack string) (bool, error) {
-	_, code, err := runCommandWithRetry(yum.cmder.SearchCmd(pack))
+	_, code, err := RunCommandWithRetry(yum.cmder.SearchCmd(pack))
 
-	// yum list package returns 1 when it cannot find it
+	// yum list package returns 1 when it cannot find the package.
 	if code == 1 {
 		return false, nil
 	}
 
-	return false, err
+	return true, err
 }
 
 // GetProxySettings is defined on the PackageManager interface.
@@ -33,7 +33,7 @@ func (yum *yum) GetProxySettings() (proxy.Settings, error) {
 	var res proxy.Settings
 	args := []string{"bash", "-c", fmt.Sprintf("%q", yum.cmder.GetProxyCmd())}
 
-	out, err := runCommand(args[0], args[1:]...)
+	out, err := RunCommand(args[0], args[1:]...)
 	if err != nil {
 		logger.Errorf("command failed: %v\nargs: %#v\n%s",
 			err, args, string(out))

@@ -31,19 +31,20 @@ var CommandOutput = (*exec.Cmd).CombinedOutput
 // processStateSys is ps.Sys. It was aliased for testing purposes.
 var processStateSys = (*os.ProcessState).Sys
 
-// runCommand is utils.RunCommand. It was aliased for testing purposes.
-var runCommand = utils.RunCommand
+// RunCommand is utils.RunCommand. It was aliased for testing purposes.
+var RunCommand = utils.RunCommand
 
 // exitStatuser is a mini-interface for the ExitStatus() method.
 type exitStatuser interface {
 	ExitStatus() int
 }
 
-// runCommandWithRetry is a helper function which tries to execute the given command.
+// RunCommandWithRetry is a helper function which tries to execute the given command.
 // It tries to do so for 30 times with a 10 second sleep between commands.
 // It returns the output of the command, the exit code, and an error, if one occurs,
 // logging along the way.
-func runCommandWithRetry(cmd string) (string, int, error) {
+// It was aliased for testing purposes.
+var RunCommandWithRetry = func(cmd string) (string, int, error) {
 	var code int
 	var err error
 	var out []byte

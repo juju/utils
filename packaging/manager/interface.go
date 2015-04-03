@@ -38,7 +38,6 @@ type PackageManager interface {
 
 	// Search runs the command that determines whether the given package is
 	// available for installation from the currently configured repositories.
-	// TODO(aznashwan): actually implement this.
 	Search(string) (bool, error)
 
 	// IsInstalled runs the command which determines whether or not the

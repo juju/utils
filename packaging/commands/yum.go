@@ -43,7 +43,7 @@ var yumCmder = packageCommander{
 	remove:              buildCommand(yum, "remove"),
 	purge:               buildCommand(yum, "remove"), // purges by default
 	search:              buildCommand(yum, "list %s"),
-	isInstalled:         buildCommand(yum, " list installed %s"),
+	isInstalled:         buildCommand(yum, "list installed %s"),
 	listAvailable:       buildCommand(yum, "list all"),
 	listInstalled:       buildCommand(yum, "list installed"),
 	listRepositories:    buildCommand(yum, "repolist all"),

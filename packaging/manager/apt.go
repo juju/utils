@@ -19,7 +19,7 @@ type apt struct {
 
 // Search is defined on the PackageManager interface.
 func (apt *apt) Search(pack string) (bool, error) {
-	out, _, err := runCommandWithRetry(apt.cmder.SearchCmd(pack))
+	out, _, err := RunCommandWithRetry(apt.cmder.SearchCmd(pack))
 	if err != nil {
 		return false, err
 	}
@@ -38,7 +38,7 @@ func (apt *apt) GetProxySettings() (proxy.Settings, error) {
 	proxyRE := regexp.MustCompile(`(?im)^\s*Acquire::(?P<protocol>[a-z]+)::Proxy\s+"(?P<proxy>[^"]+)";\s*$`)
 	args := strings.Fields(apt.cmder.GetProxyCmd())
 
-	out, err := runCommand(args[0], args[1:]...)
+	out, err := RunCommand(args[0], args[1:]...)
 	if err != nil {
 		logger.Errorf("command failed: %v\nargs: %#v\n%s",
 			err, args, string(out))

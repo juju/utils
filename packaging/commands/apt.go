@@ -13,9 +13,10 @@ const (
 	dpkg = "dpkg"
 
 	// the basic command for all apt-get calls:
-	//		--assume-yes to never prompt for confirmation
 	//		--force-confold is passed to dpkg to never overwrite config files
-	aptget = "apt-get --assume-yes --option Dpkg::Options::=--force-confold"
+	//		--force-unsafe-io makes dpkg less sync-happy
+	//		--assume-yes to never prompt for confirmation
+	aptget = "apt-get --option=Dpkg::Options::=--force-confold --option=Dpkg::options::=--force-unsafe-io --assume-yes --quiet"
 
 	// the basic command for all apt-cache calls:
 	aptcache = "apt-cache"

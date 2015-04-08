@@ -44,7 +44,7 @@ var aptCmder = packageCommander{
 	isInstalled:         buildCommand(dpkg, "-s %s"),
 	listAvailable:       buildCommand(aptcache, "pkgnames"),
 	listInstalled:       buildCommand(dpkg, "--get-selections"),
-	addRepository:       buildCommand(addaptrepo, "%s"),
+	addRepository:       buildCommand(addaptrepo, "%q"),
 	listRepositories:    buildCommand(`sed -r -n "s|^deb(-src)? (.*)|\2|p"`, "/etc/apt/sources.list"),
 	removeRepository:    buildCommand(addaptrepo, "--remove ppa:%s"),
 	cleanup:             buildCommand(aptget, "autoremove"),

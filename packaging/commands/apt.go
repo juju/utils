@@ -12,6 +12,9 @@ const (
 	// the basic command for all dpkg calls:
 	dpkg = "dpkg"
 
+	// the basic command for all dpkg-query calls:
+	dpkgquery = "dpkg-query"
+
 	// the basic command for all apt-get calls:
 	//		--force-confold is passed to dpkg to never overwrite config files
 	//		--force-unsafe-io makes dpkg less sync-happy
@@ -41,7 +44,7 @@ var aptCmder = packageCommander{
 	remove:              buildCommand(aptget, "remove"),
 	purge:               buildCommand(aptget, "purge"),
 	search:              buildCommand(aptcache, "search --names-only ^%s$"),
-	isInstalled:         buildCommand(dpkg, "-s %s"),
+	isInstalled:         buildCommand(dpkgquery, "-s %s"),
 	listAvailable:       buildCommand(aptcache, "pkgnames"),
 	listInstalled:       buildCommand(dpkg, "--get-selections"),
 	addRepository:       buildCommand(addaptrepo, "%q"),

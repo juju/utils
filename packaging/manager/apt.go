@@ -5,7 +5,9 @@
 package manager
 
 import (
+	"bytes"
 	"fmt"
+	"os/exec"
 	"regexp"
 	"strings"
 
@@ -38,14 +40,18 @@ func (apt *apt) GetProxySettings() (proxy.Settings, error) {
 	proxyRE := regexp.MustCompile(`(?im)^\s*Acquire::(?P<protocol>[a-z]+)::Proxy\s+"(?P<proxy>[^"]+)";\s*$`)
 	args := strings.Fields(apt.cmder.GetProxyCmd())
 
-	out, err := RunCommand(args[0], args[1:]...)
+	cmd := exec.Command(args[0], args[1:]...)
+	out, err := CommandOutput(cmd)
+
 	if err != nil {
 		logger.Errorf("command failed: %v\nargs: %#v\n%s",
 			err, args, string(out))
 		return res, fmt.Errorf("command failed: %v", err)
 	}
 
-	for _, match := range proxyRE.FindAllStringSubmatch(out, -1) {
+	output := string(bytes.Join(proxyRE.FindAll(out, -1), []byte("\n")))
+
+	for _, match := range proxyRE.FindAllStringSubmatch(output, -1) {
 		switch match[1] {
 		case "http":
 			res.Http = match[2]

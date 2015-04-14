@@ -19,7 +19,7 @@ import (
 var (
 	logger = loggo.GetLogger("juju.utils.packaging.manager")
 
-	attemptStrategy = utils.AttemptStrategy{
+	AttemptStrategy = utils.AttemptStrategy{
 		Delay: 10 * time.Second,
 		Min:   30,
 	}
@@ -29,7 +29,7 @@ var (
 var CommandOutput = (*exec.Cmd).CombinedOutput
 
 // processStateSys is ps.Sys. It was aliased for testing purposes.
-var processStateSys = (*os.ProcessState).Sys
+var ProcessStateSys = (*os.ProcessState).Sys
 
 // RunCommand is utils.RunCommand. It was aliased for testing purposes.
 var RunCommand = utils.RunCommand
@@ -58,7 +58,7 @@ var RunCommandWithRetry = func(cmd string) (string, int, error) {
 	// This avoids failure in the case of
 	// something else having the dpkg lock (e.g. a charm on the
 	// machine we're deploying containers to).
-	for a := attemptStrategy.Start(); a.Next(); {
+	for a := AttemptStrategy.Start(); a.Next(); {
 		// Create the command for each attempt, because we need to
 		// call cmd.CombinedOutput only once. See http://pad.lv/1394524.
 		cmd := exec.Command(args[0], args[1:]...)
@@ -74,7 +74,7 @@ var RunCommandWithRetry = func(cmd string) (string, int, error) {
 			err = errors.Annotatef(err, "unexpected error type %T", err)
 			break
 		}
-		waitStatus, ok := processStateSys(exitError.ProcessState).(exitStatuser)
+		waitStatus, ok := ProcessStateSys(exitError.ProcessState).(exitStatuser)
 		if !ok {
 			err = errors.Annotatef(err, "unexpected process state type %T", exitError.ProcessState.Sys())
 			break

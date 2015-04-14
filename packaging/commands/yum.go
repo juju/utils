@@ -15,12 +15,12 @@ const (
 	// CentOSSourcesFile is the default file which lists all core sources
 	// for yum packages on CentOS.
 	CentOSSourcesFile = "/etc/yum/repos.d/CentOS-Base.repo"
+
+	// YumConfigFile is the default configuration file for yum settings.
+	YumConfigFilePath = "/etc/yum.conf"
 )
 
 const (
-	// WgetRCFilePath is the default path of the wget config file.
-	WgetRCFilePath = "/etc/wgetrc"
-
 	// the basic command for all yum calls
 	// 		--assumeyes to never prompt for confirmation
 	//		--debuglevel=1 to limit output verbosity
@@ -29,9 +29,9 @@ const (
 	// the basic command for all yum repository configuration operations.
 	yumconf = "yum-config-manager"
 
-	// the basic format for specifying a proxy setting for wget
-	// (which is used by yum in the background)
-	wgetProxySettingFormat = "%s_proxy = %s"
+	// the basic format for specifying a proxy setting for yum.
+	// NOTE: only http(s) proxies are relevant.
+	yumProxySettingFormat = "%s_proxy = %s"
 )
 
 // yumCmder is the packageCommander instantiation for yum-based systems.
@@ -50,7 +50,7 @@ var yumCmder = packageCommander{
 	addRepository:       buildCommand(yumconf, "--add-repo %s"),
 	removeRepository:    buildCommand(yumconf, "--disable %s"),
 	cleanup:             buildCommand(yum, "clean all"),
-	getProxy:            buildCommand("grep proxy ", WgetRCFilePath, " | grep -v ^#"),
-	proxySettingsFormat: wgetProxySettingFormat,
-	setProxy:            buildCommand("echo %s >> ", WgetRCFilePath),
+	getProxy:            buildCommand("grep -R \"^proxy=\"", YumConfigFilePath),
+	proxySettingsFormat: yumProxySettingFormat,
+	setProxy:            buildCommand("echo %s >>", YumConfigFilePath),
 }

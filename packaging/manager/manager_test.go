@@ -5,7 +5,6 @@
 package manager_test
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/juju/testing"
@@ -21,28 +20,26 @@ var _ = gc.Suite(&ManagerSuite{})
 
 type ManagerSuite struct {
 	apt, yum manager.PackageManager
-	testing.CleanupSuite
+	testing.IsolationSuite
 	calledCommand string
 }
 
 func (s *ManagerSuite) SetUpSuite(c *gc.C) {
-	s.CleanupSuite.SetUpSuite(c)
+	s.IsolationSuite.SetUpSuite(c)
 	s.apt = manager.NewAptPackageManager()
 	s.yum = manager.NewYumPackageManager()
 }
 
 func (s *ManagerSuite) SetUpTest(c *gc.C) {
-	s.CleanupSuite.SetUpTest(c)
-	s.PatchValue(&manager.RunCommand, getMockRunCommand(&s.calledCommand))
-	s.PatchValue(&manager.RunCommandWithRetry, getMockRunCommandWithRetry(&s.calledCommand))
+	s.IsolationSuite.SetUpTest(c)
 }
 
 func (s *ManagerSuite) TearDownTest(c *gc.C) {
-	s.CleanupSuite.TearDownTest(c)
+	s.IsolationSuite.TearDownTest(c)
 }
 
 func (s *ManagerSuite) TearDownSuite(c *gc.C) {
-	s.CleanupSuite.TearDownSuite(c)
+	s.IsolationSuite.TearDownSuite(c)
 }
 
 var (
@@ -233,19 +230,12 @@ var simpleTestCases = []*simpleTestCase{
 			return nil, pacman.Cleanup()
 		},
 	},
-	&simpleTestCase{
-		"Test get proxy settings.",
-		aptCmder.GetProxyCmd(),
-		proxy.Settings{},
-		strings.Join([]string{"bash", "-c", fmt.Sprintf("%q", yumCmder.GetProxyCmd())}, " "),
-		proxy.Settings{},
-		func(pacman manager.PackageManager) (interface{}, error) {
-			return pacman.GetProxySettings()
-		},
-	},
 }
 
 func (s *ManagerSuite) TestSimpleCases(c *gc.C) {
+	s.PatchValue(&manager.RunCommand, getMockRunCommand(&s.calledCommand))
+	s.PatchValue(&manager.RunCommandWithRetry, getMockRunCommandWithRetry(&s.calledCommand))
+
 	for i, testCase := range simpleTestCases {
 		c.Logf("Test %d: %s", i+1, testCase.desc)
 

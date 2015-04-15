@@ -31,7 +31,7 @@ const (
 
 	// the basic format for specifying a proxy setting for yum.
 	// NOTE: only http(s) proxies are relevant.
-	yumProxySettingFormat = "%s_proxy = %s"
+	yumProxySettingFormat = "%s_proxy=%s"
 )
 
 // yumCmder is the packageCommander instantiation for yum-based systems.
@@ -50,7 +50,7 @@ var yumCmder = packageCommander{
 	addRepository:       buildCommand(yumconf, "--add-repo %s"),
 	removeRepository:    buildCommand(yumconf, "--disable %s"),
 	cleanup:             buildCommand(yum, "clean all"),
-	getProxy:            buildCommand("grep -R \"^proxy=\"", YumConfigFilePath),
+	getProxy:            buildCommand("grep -R \".*_proxy=\"", YumConfigFilePath),
 	proxySettingsFormat: yumProxySettingFormat,
 	setProxy:            buildCommand("echo %s >>", YumConfigFilePath),
 }

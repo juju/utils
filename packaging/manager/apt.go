@@ -14,6 +14,10 @@ import (
 	"github.com/juju/utils/proxy"
 )
 
+// proxyRe is a regexp which matches all proxy-related configuration options in
+// the apt configuration file.
+var proxyRE = regexp.MustCompile(`(?im)^\s*Acquire::(?P<protocol>[a-z]+)::Proxy\s+"(?P<proxy>[^"]+)";\s*$`)
+
 // apt is the PackageManager implementation for deb-based systems.
 type apt struct {
 	basePackageManager
@@ -37,7 +41,6 @@ func (apt *apt) Search(pack string) (bool, error) {
 // GetProxySettings is defined on the PackageManager interface.
 func (apt *apt) GetProxySettings() (proxy.Settings, error) {
 	var res proxy.Settings
-	proxyRE := regexp.MustCompile(`(?im)^\s*Acquire::(?P<protocol>[a-z]+)::Proxy\s+"(?P<proxy>[^"]+)";\s*$`)
 	args := strings.Fields(apt.cmder.GetProxyCmd())
 
 	cmd := exec.Command(args[0], args[1:]...)

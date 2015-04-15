@@ -14,7 +14,7 @@ import (
 	gc "gopkg.in/check.v1"
 )
 
-var _ = gc.Suite(UtilsSuite{})
+var _ = gc.Suite(&UtilsSuite{})
 
 type UtilsSuite struct {
 	testing.IsolationSuite
@@ -47,8 +47,8 @@ func (s *UtilsSuite) TestRunCommandWithRetryDoesNotCallCombinedOutputTwice(c *gc
 	var calls int
 	state := os.ProcessState{}
 	cmdError := &exec.ExitError{&state}
-	s.PatchValue(manager.AttemptStrategy, utils.AttemptStrategy{Min: minRetries})
-	s.PatchValue(manager.ProcessStateSys, func(*os.ProcessState) interface{} {
+	s.PatchValue(&manager.AttemptStrategy, utils.AttemptStrategy{Min: minRetries})
+	s.PatchValue(&manager.ProcessStateSys, func(*os.ProcessState) interface{} {
 		return mockExitStatuser(100) // retry each time.
 	})
 	s.PatchValue(&manager.CommandOutput, func(cmd *exec.Cmd) ([]byte, error) {
@@ -69,11 +69,13 @@ func (s *UtilsSuite) TestRunCommandWithRetryDoesNotCallCombinedOutputTwice(c *gc
 	apt := manager.NewAptPackageManager()
 
 	err := apt.Install(testedPackageName)
-	c.Check(err, gc.ErrorMatches, "apt-get failed: exit status.*")
+	c.Check(err, gc.ErrorMatches, "packaging command failed: exit status.*")
 	c.Check(calls, gc.Equals, minRetries)
 
+	// reset calls and re-test for Yum calls:
+	calls = 0
 	yum := manager.NewYumPackageManager()
 	err = yum.Install(testedPackageName)
-	c.Check(err, gc.ErrorMatches, "apt-get failed: exit status.*")
+	c.Check(err, gc.ErrorMatches, "packaging command failed: exit status.*")
 	c.Check(calls, gc.Equals, minRetries)
 }

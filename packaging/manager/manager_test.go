@@ -5,6 +5,8 @@
 package manager_test
 
 import (
+	"os"
+	"os/exec"
 	"strings"
 
 	"github.com/juju/testing"
@@ -181,26 +183,6 @@ var simpleTestCases = []*simpleTestCase{
 		},
 	},
 	&simpleTestCase{
-		"Test package search.",
-		aptCmder.SearchCmd(testedPackageName),
-		false,
-		yumCmder.SearchCmd(testedPackageName),
-		true,
-		func(pacman manager.PackageManager) (interface{}, error) {
-			return pacman.Search(testedPackageName)
-		},
-	},
-	&simpleTestCase{
-		"Test local package search.",
-		aptCmder.IsInstalledCmd(testedPackageName),
-		true,
-		yumCmder.IsInstalledCmd(testedPackageName),
-		true,
-		func(pacman manager.PackageManager) (interface{}, error) {
-			return pacman.IsInstalled(testedPackageName), nil
-		},
-	},
-	&simpleTestCase{
 		"Test repository addition.",
 		aptCmder.AddRepositoryCmd(testedRepoName),
 		nil,
@@ -232,12 +214,39 @@ var simpleTestCases = []*simpleTestCase{
 	},
 }
 
+// searchingTestCases are a couple of simple test cases which search for a
+// given package; either localy or remotely, and need to be tested seperately
+// on the case of their return value being a boolean.
+var searchingTestCases = []*simpleTestCase{
+	&simpleTestCase{
+		"Test package search.",
+		aptCmder.SearchCmd(testedPackageName),
+		false,
+		yumCmder.SearchCmd(testedPackageName),
+		true,
+		func(pacman manager.PackageManager) (interface{}, error) {
+			return pacman.Search(testedPackageName)
+		},
+	},
+	&simpleTestCase{
+		"Test local package search.",
+		aptCmder.IsInstalledCmd(testedPackageName),
+		true,
+		yumCmder.IsInstalledCmd(testedPackageName),
+		true,
+		func(pacman manager.PackageManager) (interface{}, error) {
+			return pacman.IsInstalled(testedPackageName), nil
+		},
+	},
+}
+
 func (s *ManagerSuite) TestSimpleCases(c *gc.C) {
 	s.PatchValue(&manager.RunCommand, getMockRunCommand(&s.calledCommand))
 	s.PatchValue(&manager.RunCommandWithRetry, getMockRunCommandWithRetry(&s.calledCommand))
 
-	for i, testCase := range simpleTestCases {
-		c.Logf("Test %d: %s", i+1, testCase.desc)
+	testCases := append(simpleTestCases, searchingTestCases...)
+	for i, testCase := range testCases {
+		c.Logf("Simple test %d: %s", i+1, testCase.desc)
 
 		// run for the apt PackageManager implementation:
 		res, err := testCase.operation(s.apt)
@@ -250,5 +259,37 @@ func (s *ManagerSuite) TestSimpleCases(c *gc.C) {
 		c.Assert(err, jc.ErrorIsNil)
 		c.Assert(s.calledCommand, gc.Equals, testCase.expectedYumCmd)
 		c.Assert(res, jc.DeepEquals, testCase.expectedYumResult)
+	}
+}
+
+func (s *ManagerSuite) TestSimpleErrorCases(c *gc.C) {
+	const (
+		expectedErr    = "packaging command failed: exit status 0"
+		expectedErrMsg = `E: I done failed :(`
+	)
+	state := os.ProcessState{}
+	cmdError := &exec.ExitError{&state}
+
+	cmdChan := s.HookCommandOutput(&manager.CommandOutput, []byte(expectedErrMsg), error(cmdError))
+
+	for i, testCase := range simpleTestCases {
+		c.Logf("Error'd test %d: %s", i+1, testCase.desc)
+		s.PatchValue(&manager.ProcessStateSys, func(*os.ProcessState) interface{} {
+			return mockExitStatuser(i + 1)
+		})
+
+		// run for the apt PackageManager implementation:
+		_, err := testCase.operation(s.apt)
+		c.Assert(err, gc.ErrorMatches, expectedErr)
+
+		cmd := <-cmdChan
+		c.Assert(strings.Join(cmd.Args, " "), gc.DeepEquals, testCase.expectedAptCmd)
+
+		// run for the yum PackageManager implementation:
+		_, err = testCase.operation(s.yum)
+		c.Assert(err, gc.ErrorMatches, expectedErr)
+
+		cmd = <-cmdChan
+		c.Assert(strings.Join(cmd.Args, " "), gc.DeepEquals, testCase.expectedYumCmd)
 	}
 }

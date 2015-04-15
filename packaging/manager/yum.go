@@ -6,6 +6,7 @@ package manager
 
 import (
 	"fmt"
+	"os/exec"
 	"strings"
 
 	"github.com/juju/utils/proxy"
@@ -31,16 +32,18 @@ func (yum *yum) Search(pack string) (bool, error) {
 // GetProxySettings is defined on the PackageManager interface.
 func (yum *yum) GetProxySettings() (proxy.Settings, error) {
 	var res proxy.Settings
-	args := []string{"bash", "-c", fmt.Sprintf("%q", yum.cmder.GetProxyCmd())}
+	args := strings.Fields(yum.cmder.GetProxyCmd())
 
-	out, err := RunCommand(args[0], args[1:]...)
+	cmd := exec.Command(args[0], args[1:]...)
+	out, err := CommandOutput(cmd)
+
 	if err != nil {
 		logger.Errorf("command failed: %v\nargs: %#v\n%s",
 			err, args, string(out))
 		return res, fmt.Errorf("command failed: %v", err)
 	}
 
-	for _, match := range strings.Split(out, "\n") {
+	for _, match := range strings.Split(string(out), "\n") {
 		fields := strings.Split(match, "=")
 		if strings.HasPrefix(fields[0], "https") {
 			res.Https = strings.TrimSpace(fields[1])

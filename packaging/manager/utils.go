@@ -80,7 +80,8 @@ var RunCommandWithRetry = func(cmd string) (string, int, error) {
 			break
 		}
 
-		// Both apt-get and yum return 100 on abnormal execution
+		// Both apt-get and yum return 100 on abnormal execution due to outside
+		// issues (ex: momentary dns failure).
 		code = waitStatus.ExitStatus()
 		if code != 100 {
 			break

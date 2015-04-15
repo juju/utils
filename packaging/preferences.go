@@ -4,6 +4,10 @@
 
 package packaging
 
+import (
+	"text/template"
+)
+
 // PackagePreferences is a set of packaging preferences associated to a
 // particular set of packages and repository.
 // On apt-based systems, they are apt_preferences(5) compatible preferences for an
@@ -19,6 +23,6 @@ type PackagePreferences struct {
 
 // RenderPreferenceFile returns contents of the package-manager specific config file
 // of this paritcular package source.
-func (p *PackagePreferences) RenderPreferenceFile(fileTemplate string) (string, error) {
+func (p *PackagePreferences) RenderPreferenceFile(fileTemplate *template.Template) (string, error) {
 	return renderTemplate(fileTemplate, p)
 }

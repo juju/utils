@@ -6,6 +6,10 @@
 // apt and yum and allows for easy extension for other package managers/distros.
 package packaging
 
+import (
+	"text/template"
+)
+
 // PackageSource contains all the data required for a package source.
 type PackageSource struct {
 	Name string `yaml:"-"`
@@ -19,6 +23,6 @@ func (s *PackageSource) KeyFileName() string {
 }
 
 // RenderSourceFile renders the current source based on a template it recieves.
-func (s *PackageSource) RenderSourceFile(fileTemplate string) (string, error) {
+func (s *PackageSource) RenderSourceFile(fileTemplate *template.Template) (string, error) {
 	return renderTemplate(fileTemplate, s)
 }

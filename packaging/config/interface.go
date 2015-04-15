@@ -21,23 +21,23 @@ type PackagingConfigurer interface {
 	// GetPackageNameForSeries returns the equivalent package name of the
 	// specified package for the given series or an error if no mapping
 	// for it exists.
-	GetPackageNameForSeries(string, string) (string, error)
+	GetPackageNameForSeries(pack string, series string) (string, error)
 
 	// IsCloudArchivePackage signals whether the given package is a
 	// cloud archive package and thus should be set as such.
-	IsCloudArchivePackage(string) bool
+	IsCloudArchivePackage(pack string) bool
 
 	// ApplyCloudArchiveTarget returns the package with the required target
 	// release bits preceding it.
-	ApplyCloudArchiveTarget(string) []string
+	ApplyCloudArchiveTarget(pack string) []string
 
 	// RenderSource returns the os-specific full file contents
 	// of a given PackageSource.
-	RenderSource(packaging.PackageSource) (string, error)
+	RenderSource(src packaging.PackageSource) (string, error)
 
 	// RenderPreferences returns the os-specific full file contents of a given
 	// set of PackagePreferences.
-	RenderPreferences(packaging.PackagePreferences) (string, error)
+	RenderPreferences(prefs packaging.PackagePreferences) (string, error)
 }
 
 func NewPackagingConfigurer(series string) (PackagingConfigurer, error) {

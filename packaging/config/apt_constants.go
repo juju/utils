@@ -4,6 +4,10 @@
 
 package config
 
+import (
+	"text/template"
+)
+
 const (
 	// AptSourcesFile is the default file which list all core
 	// sources for apt packages on an apt-based system.
@@ -36,17 +40,17 @@ var (
 	AptProxyConfigFile = AptConfigDirectory + "/42-juju-proxy-settings"
 
 	// AptPreferenceTemplate is the template specific to an apt preference file.
-	AptPreferenceTemplate = `
+	AptPreferenceTemplate = template.Must(template.New("").Parse(`
 Explanation: {{.Explanation}}
 Package: {{.Package}}
 Pin: {{.Pin}}
 Pin-Priority: {{.Priority}}
-`[1:]
+`[1:]))
 
 	// AptSourceTemplate is the template specific to an apt source file.
-	AptSourceTemplate = `
+	AptSourceTemplate = template.Must(template.New("").Parse(`
 # {{.Name}} (added by Juju)
 deb {{.URL}} %s main
 # deb-src {{.URL}} %s main
-`[1:]
+`[1:]))
 )

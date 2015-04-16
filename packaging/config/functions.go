@@ -11,11 +11,6 @@ import (
 // SeriesRequiresCloudArchiveTools signals whether the given series
 // requires the configuration of cloud archive cloud tools.
 func SeriesRequiresCloudArchiveTools(series string) bool {
-	var seriesRequiringCloudTools = map[string]bool{
-		// TODO (aznashwan, all): add any other OS's
-		// which require cloud tools' series here.
-		"precise": true,
-	}
 	return seriesRequiringCloudTools[series]
 }
 

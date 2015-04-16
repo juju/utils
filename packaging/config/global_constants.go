@@ -26,10 +26,18 @@ function package_manager_loop {
 }`
 )
 
-// DefaultPackages is a list of the default packages Juju'd like to see
-// installed on all it's machines.
-var DefaultPackages = []string{
-	// TODO (everyone): populate this list with all required packages.
-	// for example:
-	"curl",
-}
+var (
+	seriesRequiringCloudTools = map[string]bool{
+		// TODO (aznashwan, all): add any other OS's
+		// which require cloud tools' series here.
+		"precise": true,
+	}
+
+	// DefaultPackages is a list of the default packages Juju'd like to see
+	// installed on all it's machines.
+	DefaultPackages = []string{
+		// TODO (everyone): populate this list with all required packages.
+		// for example:
+		"curl",
+	}
+)

@@ -5,6 +5,7 @@
 package manager
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"strings"
@@ -44,20 +45,20 @@ type exitStatuser interface {
 // It returns the output of the command, the exit code, and an error, if one occurs,
 // logging along the way.
 // It was aliased for testing purposes.
-var RunCommandWithRetry = func(cmd string) (string, int, error) {
-	var code int
-	var err error
+var RunCommandWithRetry = func(cmd string) (output string, code int, err error) {
 	var out []byte
 
 	// split the command for use with exec
 	args := strings.Fields(cmd)
+	if len(args) <= 1 {
+		return "", 1, errors.New(fmt.Sprintf("too few arguments: expected at least 2, got %d", len(args)))
+	}
 
 	logger.Infof("Running: %s", cmd)
 
-	// Retry oeration 30 times, sleeping every 10 seconds between attempts.
-	// This avoids failure in the case of
-	// something else having the dpkg lock (e.g. a charm on the
-	// machine we're deploying containers to).
+	// Retry operation 30 times, sleeping every 10 seconds between attempts.
+	// This avoids failure in the case of something else having the dpkg lock
+	// (e.g. a charm on the machine we're deploying containers to).
 	for a := AttemptStrategy.Start(); a.Next(); {
 		// Create the command for each attempt, because we need to
 		// call cmd.CombinedOutput only once. See http://pad.lv/1394524.

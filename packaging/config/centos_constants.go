@@ -11,7 +11,7 @@ import (
 const (
 	// CentOSCloudArchiveUrl is the url of the (future) cloud archive for CentOS.
 	// TODO (people of the distant future): add this when it is available.
-	CentOSCloudArchiveUrl = "yes"
+	// CentOSCloudArchiveUrl = "http://fill-me-in.com/cloud-archive.repo"
 
 	// CentOSSourcesFile is the default file which lists all core sources
 	// for yum packages on CentOS.
@@ -34,7 +34,7 @@ var CentOSDefaultPackages = append(DefaultPackages, []string{
 // cloudArchivePackagesCentOS maintains a list of CentOS packages that
 // Configurer.IsCloudArchivePackage will reference when determining the
 // repository from which to install a package.
-var cloudArchivePackagesCentOS = map[string]bool{
+var cloudArchivePackagesCentOS = map[string]struct{}{
 // TODO (aznashwan, all): if a separate repository for
 // CentOS 7+ especially for Juju is to ever occur, please add the relevant
 // package listings here.

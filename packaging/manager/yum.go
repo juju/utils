@@ -32,7 +32,11 @@ func (yum *yum) Search(pack string) (bool, error) {
 // GetProxySettings is defined on the PackageManager interface.
 func (yum *yum) GetProxySettings() (proxy.Settings, error) {
 	var res proxy.Settings
+
 	args := strings.Fields(yum.cmder.GetProxyCmd())
+	if len(args) <= 1 {
+		return proxy.Settings{}, fmt.Errorf("expected at least 2 arguments, got %d %v", len(args), args)
+	}
 
 	cmd := exec.Command(args[0], args[1:]...)
 	out, err := CommandOutput(cmd)
@@ -45,6 +49,10 @@ func (yum *yum) GetProxySettings() (proxy.Settings, error) {
 
 	for _, match := range strings.Split(string(out), "\n") {
 		fields := strings.Split(match, "=")
+		if len(fields) != 2 {
+			continue
+		}
+
 		if strings.HasPrefix(fields[0], "https") {
 			res.Https = strings.TrimSpace(fields[1])
 		} else if strings.HasPrefix(fields[0], "http") {

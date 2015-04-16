@@ -12,7 +12,7 @@ import (
 type baseConfigurer struct {
 	series               string
 	defaultPackages      []string
-	cloudArchivePackages map[string]bool
+	cloudArchivePackages map[string]struct{}
 }
 
 // DefaultPackages is defined on the PackagingConfigurer interface.
@@ -48,5 +48,6 @@ func (c *baseConfigurer) GetPackageNameForSeries(pack, series string) (string, e
 
 // IsCloudArchivePackage is defined on the PackagingConfigurer interface.
 func (c *baseConfigurer) IsCloudArchivePackage(pack string) bool {
-	return c.cloudArchivePackages[pack]
+	_, ok := c.cloudArchivePackages[pack]
+	return ok
 }

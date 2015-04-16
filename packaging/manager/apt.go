@@ -41,7 +41,11 @@ func (apt *apt) Search(pack string) (bool, error) {
 // GetProxySettings is defined on the PackageManager interface.
 func (apt *apt) GetProxySettings() (proxy.Settings, error) {
 	var res proxy.Settings
+
 	args := strings.Fields(apt.cmder.GetProxyCmd())
+	if len(args) <= 1 {
+		return proxy.Settings{}, fmt.Errorf("expected at least 2 arguments, got %d %v", len(args), args)
+	}
 
 	cmd := exec.Command(args[0], args[1:]...)
 	out, err := CommandOutput(cmd)

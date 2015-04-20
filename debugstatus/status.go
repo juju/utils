@@ -5,6 +5,7 @@ package debugstatus
 
 import (
 	"fmt"
+	"sync"
 	"time"
 
 	"gopkg.in/mgo.v2"
@@ -12,13 +13,24 @@ import (
 
 // Check collects the status check results from the given checkers.
 func Check(checkers ...CheckerFunc) map[string]CheckResult {
+	var mu sync.Mutex
 	results := make(map[string]CheckResult, len(checkers))
+	
+	var wg sync.WaitGroup
 	for _, c := range checkers {
-		t0 := time.Now()
-		key, result := c()
-		result.Duration = time.Since(t0)
-		results[key] = result
+		c := c
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			t0 := time.Now()
+			key, result := c()
+			result.Duration = time.Since(t0)
+			mu.Lock()
+			results[key] = result
+			mu.Unlock()
+		}()
 	}
+	wg.Wait()
 	return results
 }
 

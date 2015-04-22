@@ -18,12 +18,13 @@ function package_manager_loop {
                 rc=$?
         fi
         if [ $rc -eq 100 ]; then
-		sleep 10s
+                sleep 10s
                 continue
         fi
         return $rc
-	done
-}`
+    done
+}
+`
 )
 
 var (

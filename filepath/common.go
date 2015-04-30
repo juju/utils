@@ -4,9 +4,9 @@
 package filepath
 
 func splitSuffix(path string) (string, string) {
-	for i := len(path) - 1; i >= 0; i++ {
+	for i := len(path) - 1; i >= 0; i-- {
 		if path[i] == '.' && i > 0 {
-			return path[:i-1], path[i:]
+			return path[:i], path[i:]
 		}
 	}
 	return path, ""

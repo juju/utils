@@ -67,6 +67,45 @@ func (s windowsSuite) TestVolumeName(c *gc.C) {
 	}
 }
 
+func (s windowsSuite) TestNormCaseLower(c *gc.C) {
+	normalized := s.renderer.NormCase("spam")
+
+	c.Check(normalized, gc.Equals, "spam")
+}
+
+func (s windowsSuite) TestNormCaseUpper(c *gc.C) {
+	normalized := s.renderer.NormCase("SPAM")
+
+	c.Check(normalized, gc.Equals, "spam")
+}
+
+func (s windowsSuite) TestNormCaseMixed(c *gc.C) {
+	normalized := s.renderer.NormCase("sPaM")
+
+	c.Check(normalized, gc.Equals, "spam")
+}
+
+func (s windowsSuite) TestNormCaseCapitalized(c *gc.C) {
+	normalized := s.renderer.NormCase("Spam")
+
+	c.Check(normalized, gc.Equals, "spam")
+}
+
+func (s windowsSuite) TestNormCasePunctuation(c *gc.C) {
+	normalized := s.renderer.NormCase("spam-eggs.ext")
+
+	c.Check(normalized, gc.Equals, "spam-eggs.ext")
+}
+
+func (s windowsSuite) TestSplitSuffix(c *gc.C) {
+	// This is just a sanity check. The splitSuffix tests are more
+	// comprehensive.
+	path, suffix := s.renderer.SplitSuffix("spam.ext")
+
+	c.Check(path, gc.Equals, "spam")
+	c.Check(suffix, gc.Equals, ".ext")
+}
+
 // windowsThinWrapperSuite contains test methods for WindowsRenderer methods
 // that are just thin wrappers around the corresponding helpers in the
 // filepath package. As such the test coverage is minimal (more of a

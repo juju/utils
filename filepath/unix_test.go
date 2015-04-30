@@ -63,6 +63,45 @@ func (s unixSuite) TestVolumeName(c *gc.C) {
 	c.Check(volumeName, gc.Equals, "")
 }
 
+func (s unixSuite) TestNormCaseLower(c *gc.C) {
+	normalized := s.renderer.NormCase("spam")
+
+	c.Check(normalized, gc.Equals, "spam")
+}
+
+func (s unixSuite) TestNormCaseUpper(c *gc.C) {
+	normalized := s.renderer.NormCase("SPAM")
+
+	c.Check(normalized, gc.Equals, "SPAM")
+}
+
+func (s unixSuite) TestNormCaseMixed(c *gc.C) {
+	normalized := s.renderer.NormCase("sPaM")
+
+	c.Check(normalized, gc.Equals, "sPaM")
+}
+
+func (s unixSuite) TestNormCaseCapitalized(c *gc.C) {
+	normalized := s.renderer.NormCase("Spam")
+
+	c.Check(normalized, gc.Equals, "Spam")
+}
+
+func (s unixSuite) TestNormCasePunctuation(c *gc.C) {
+	normalized := s.renderer.NormCase("spam-eggs.ext")
+
+	c.Check(normalized, gc.Equals, "spam-eggs.ext")
+}
+
+func (s unixSuite) TestSplitSuffix(c *gc.C) {
+	// This is just a sanity check. The splitSuffix tests are more
+	// comprehensive.
+	path, suffix := s.renderer.SplitSuffix("spam.ext")
+
+	c.Check(path, gc.Equals, "spam")
+	c.Check(suffix, gc.Equals, ".ext")
+}
+
 // unixThinWrapperSuite contains test methods for UnixRenderer methods
 // that are just thin wrappers around the corresponding helpers in the
 // filepath package. As such the test coverage is minimal (more of a

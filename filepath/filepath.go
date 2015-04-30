@@ -43,11 +43,40 @@ type Renderer interface {
 	// Match mimics path/filepath.
 	Match(pattern, name string) (matched bool, err error)
 
+	// NormCase normalizes the case of a pathname. On Unix and Mac OS X,
+	// this returns the path unchanged; on case-insensitive filesystems,
+	// it converts the path to lowercase. On Windows, it also converts
+	// forward slashes to backward slashes.
+	NormCase(path string) string
+
 	// Split mimics path/filepath.
 	Split(path string) (dir, file string)
 
+	// SplitDrive splits the pathname into a pair (drive, tail) where
+	// drive is either a mount point or the empty string. On systems
+	// which do not use drive specifications, drive will always be the
+	// empty string. In all cases, drive + tail will be the same as path.
+	//
+	// On Windows, splits a pathname into drive/UNC sharepoint and
+	// relative path.
+	//
+	// If the path contains a drive letter, drive will contain
+	// everything up to and including the colon. e.g.
+	// splitdrive("c:/dir") returns ("c:", "/dir")
+	//
+	// If the path contains a UNC path, drive will contain the host name
+	// and share, up to but not including the fourth separator. e.g.
+	// SplitDrive("//host/computer/dir") returns ("//host/computer", "/dir").
+	SplitDrive(path string) string
+
 	// SplitList mimics path/filepath.
 	SplitList(path string) []string
+
+	// SplitSuffix splits the pathname into a pair (root, suffix) such
+	// that root + suffix == path, and ext is empty or begins with a
+	// period and contains at most one period. Leading periods on the
+	// basename are ignored; SplitSuffix('.cshrc') returns ('.cshrc', '').
+	SplitSuffix(path string) (string, string)
 
 	// ToSlash mimics path/filepath.
 	ToSlash(path string) string

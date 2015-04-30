@@ -79,3 +79,13 @@ func (UnixRenderer) ToSlash(path string) string {
 func (UnixRenderer) VolumeName(path string) string {
 	return ""
 }
+
+// NormCase implements Renderer.
+func (UnixRenderer) NormCase(path string) string {
+	return path
+}
+
+// SplitSuffix implements Renderer.
+func (UnixRenderer) SplitSuffix(path string) (string, string) {
+	return splitSuffix(path)
+}

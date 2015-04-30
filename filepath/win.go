@@ -111,6 +111,16 @@ func (WindowsRenderer) VolumeName(path string) string {
 	return path[:volumeNameLen(path)]
 }
 
+// NormCase implements Renderer.
+func (WindowsRenderer) NormCase(path string) string {
+	return strings.ToLower(path)
+}
+
+// SplitSuffix implements Renderer.
+func (WindowsRenderer) SplitSuffix(path string) (string, string) {
+	return splitSuffix(path)
+}
+
 func isSlash(c uint8) bool {
 	return c == WindowsSeparator || c == '/'
 }

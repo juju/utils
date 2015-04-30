@@ -45,8 +45,7 @@ type Renderer interface {
 
 	// NormCase normalizes the case of a pathname. On Unix and Mac OS X,
 	// this returns the path unchanged; on case-insensitive filesystems,
-	// it converts the path to lowercase. On Windows, it also converts
-	// forward slashes to backward slashes.
+	// it converts the path to lowercase.
 	NormCase(path string) string
 
 	// Split mimics path/filepath.

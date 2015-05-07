@@ -63,7 +63,10 @@ func ShQuote(s string) string {
 // within s will be interpreted as such.
 func WinPSQuote(s string) string {
 	// See http://ss64.com/ps/syntax-esc.html#quotes.
-	return `'` + strings.Replace(s, `'`, `''`, -1) + `'`
+	// Double quotes inside single quotes are fine, double single quotes inside
+	// single quotes, not so much so. Having double quoted strings inside single
+	// quoted strings, ensure no expansion happens.
+	return `'` + strings.Replace(s, `'`, `"`, -1) + `'`
 }
 
 // WinCmdQuote quotes s so that when read by cmd.exe, no metacharacters

@@ -71,11 +71,11 @@ func (*utilsSuite) TestWinCmdQuote(c *gc.C) {
 func (*utilsSuite) TestWinPSQuote(c *gc.C) {
 	args := map[string]string{
 		"":                 "''",
-		"a":                "'a'",
+		"a":                `'a'`,
 		`"a"`:              `'"a"'`,
-		"'a":               "'''a'",
-		"a'":               "'a'''",
-		"'a'":              "'''a'''",
+		"'a":               `'"a'`,
+		"a'":               `'a"'`,
+		"'a'":              `'"a"'`,
 		"abc > xyz 2>&1 &": "'abc > xyz 2>&1 &'",
 	}
 	checkQuoting(c, utils.WinPSQuote, args)

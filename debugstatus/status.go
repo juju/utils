@@ -15,7 +15,7 @@ import (
 func Check(checkers ...CheckerFunc) map[string]CheckResult {
 	var mu sync.Mutex
 	results := make(map[string]CheckResult, len(checkers))
-	
+
 	var wg sync.WaitGroup
 	for _, c := range checkers {
 		c := c

@@ -113,6 +113,15 @@ func (ur unixRenderer) RedirectOutput(filename string) []string {
 	}
 }
 
+// RedirectOutputReset implements OutputRenderer.
+func (ur unixRenderer) RedirectOutputReset(filename string) []string {
+	filename = ur.Quote(filename)
+
+	return []string{
+		"exec > " + filename,
+	}
+}
+
 // ScriptFilename implements ScriptWriter.
 func (ur *unixRenderer) ScriptFilename(name, dirname string) string {
 	return ur.Join(dirname, name+".sh")

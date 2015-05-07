@@ -34,6 +34,18 @@ type OutputRenderer interface {
 	// specific permissions or a specific owner then Chmod and Chown
 	// should be called before calling RedirectOutput.
 	RedirectOutput(filename string) []string
+
+	// RedirectOutputReset will cause all subsequent output from the
+	// shell (or script) to go be written to the given file. The file
+	// will be reset (truncated to 0) before anything is written. Only
+	// stdout is redirected (use RedirectFD to redirect stderr or
+	// other FDs).
+	//
+	// The file should already exist (so a call to Touch may be
+	// necessary before calling RedirectOutput). If the file should have
+	// specific permissions or a specific owner then Chmod and Chown
+	// should be called before calling RedirectOutput.
+	RedirectOutputReset(filename string) []string
 }
 
 // ResolveFD converts the file descriptor name to the corresponding int.

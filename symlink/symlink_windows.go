@@ -11,6 +11,7 @@ import (
 	"strings"
 	"syscall"
 	"unicode/utf16"
+	"unsafe"
 )
 
 const (
@@ -18,6 +19,10 @@ const (
 	// This is the equivalent of syscall.GENERIC_EXECUTION
 	// Using syscall.GENERIC_EXECUTION results in an "Access denied" error
 	GENERIC_EXECUTION = 33554432
+	// (TODO): bogdanteleaga or anybody else:
+	// Remove this once we upgrade to a go version that has it in the syscall
+	// package
+	FILE_ATTRIBUTE_REPARSE_POINT = 0x00000400
 )
 
 //sys createSymbolicLink(symlinkname *uint16, targetname *uint16, flags uint32) (err error) = CreateSymbolicLinkW
@@ -98,6 +103,22 @@ func Read(link string) (string, error) {
 		return "", &os.PathError{"readlink", link, err}
 	}
 	return syscall.UTF16ToString(retp), nil
+}
+
+func IsSymlink(path string) (bool, error) {
+	var fa syscall.Win32FileAttributeData
+	namep, err := syscall.UTF16PtrFromString(path)
+	if err != nil {
+		return false, err
+	}
+	err = syscall.GetFileAttributesEx(namep, syscall.GetFileExInfoStandard, (*byte)(unsafe.Pointer(&fa)))
+	if err != nil {
+		return false, err
+	}
+	if fa.FileAttributes&FILE_ATTRIBUTE_REPARSE_POINT != 0 {
+		return true, nil
+	}
+	return false, nil
 }
 
 // getLongPath converts windows 8.1 short style paths (c:\Progra~1\foo) to full

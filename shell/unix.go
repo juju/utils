@@ -89,7 +89,7 @@ func (unixRenderer) outFD(name string) (int, bool) {
 	return fd, true
 }
 
-// RedirectFD implements Renderer.
+// RedirectFD implements OutputRenderer.
 func (ur unixRenderer) RedirectFD(dst, src string) []string {
 	dstFD, ok := ur.outFD(dst)
 	if !ok {
@@ -104,8 +104,17 @@ func (ur unixRenderer) RedirectFD(dst, src string) []string {
 	}
 }
 
-// RedirectOutput implements Renderer.
+// RedirectOutput implements OutputRenderer.
 func (ur unixRenderer) RedirectOutput(filename string) []string {
+	filename = ur.Quote(filename)
+
+	return []string{
+		"exec >> " + filename,
+	}
+}
+
+// RedirectOutputReset implements OutputRenderer.
+func (ur unixRenderer) RedirectOutputReset(filename string) []string {
 	filename = ur.Quote(filename)
 
 	return []string{

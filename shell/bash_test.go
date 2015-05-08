@@ -119,6 +119,14 @@ func (s bashSuite) TestRedirectOutput(c *gc.C) {
 	commands := s.renderer.RedirectOutput("/a/b/c")
 
 	c.Check(commands, jc.DeepEquals, []string{
+		"exec >> '/a/b/c'",
+	})
+}
+
+func (s bashSuite) TestRedirectOutputReset(c *gc.C) {
+	commands := s.renderer.RedirectOutputReset("/a/b/c")
+
+	c.Check(commands, jc.DeepEquals, []string{
 		"exec > '/a/b/c'",
 	})
 }

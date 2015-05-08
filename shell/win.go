@@ -45,15 +45,22 @@ func (w windowsRenderer) Touch(path string, timestamp *time.Time) []string {
 	return nil
 }
 
-// RedirectFD implements Renderer.
+// RedirectFD implements OutputRenderer.
 func (w windowsRenderer) RedirectFD(dst, src string) []string {
 	// TODO(ericsnow) Use ???
 	panic("not supported")
 	return nil
 }
 
-// RedirectOutput implements Renderer.
+// RedirectOutput implements OutputRenderer.
 func (w windowsRenderer) RedirectOutput(filename string) []string {
+	// TODO(ericsnow) Use ???
+	panic("not supported")
+	return nil
+}
+
+// RedirectOutputReset implements OutputRenderer.
+func (w windowsRenderer) RedirectOutputReset(filename string) []string {
 	// TODO(ericsnow) Use ???
 	panic("not supported")
 	return nil

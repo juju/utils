@@ -42,9 +42,9 @@ type OutputRenderer interface {
 	// other FDs).
 	//
 	// The file should already exist (so a call to Touch may be
-	// necessary before calling RedirectOutput). If the file should have
-	// specific permissions or a specific owner then Chmod and Chown
-	// should be called before calling RedirectOutput.
+	// necessary before calling RedirectOutputReset). If the file should
+	// have specific permissions or a specific owner then Chmod and
+	// Chown should be called before calling RedirectOutputReset.
 	RedirectOutputReset(filename string) []string
 }
 

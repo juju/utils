@@ -12,6 +12,7 @@ import (
 	jc "github.com/juju/testing/checkers"
 	gc "gopkg.in/check.v1"
 
+	"github.com/juju/utils"
 	"github.com/juju/utils/symlink"
 )
 
@@ -86,4 +87,41 @@ func (*SymlinkSuite) TestIsSymlinkFolder(c *gc.C) {
 	isSymlink, err := symlink.IsSymlink(link)
 	c.Assert(err, gc.IsNil)
 	c.Assert(isSymlink, jc.IsTrue)
+}
+
+func (*SymlinkSuite) TestIsSymlinkFalseFile(c *gc.C) {
+	dir := c.MkDir()
+
+	target := filepath.Join(dir, "file")
+	err := ioutil.WriteFile(target, []byte("TOP SECRET"), 0644)
+	c.Assert(err, gc.IsNil)
+
+	_, err = os.Stat(target)
+	c.Assert(err, gc.IsNil)
+
+	isSymlink, err := symlink.IsSymlink(target)
+	c.Assert(err, gc.IsNil)
+	c.Assert(isSymlink, jc.IsFalse)
+}
+
+func (*SymlinkSuite) TestIsSymlinkFalseFolder(c *gc.C) {
+	target, err := symlink.GetLongPathAsString(c.MkDir())
+	c.Assert(err, gc.IsNil)
+
+	_, err = os.Stat(target)
+	c.Assert(err, gc.IsNil)
+
+	isSymlink, err := symlink.IsSymlink(target)
+	c.Assert(err, gc.IsNil)
+	c.Assert(isSymlink, jc.IsFalse)
+}
+
+func (*SymlinkSuite) TestIsSymlinkFileDoesNotExist(c *gc.C) {
+	dir := c.MkDir()
+
+	target := filepath.Join(dir, "file")
+
+	isSymlink, err := symlink.IsSymlink(target)
+	c.Assert(err, gc.ErrorMatches, ".*"+utils.NoSuchFileErrRegexp)
+	c.Assert(isSymlink, jc.IsFalse)
 }

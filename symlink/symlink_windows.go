@@ -6,12 +6,13 @@
 package symlink
 
 import (
-	"errors"
 	"os"
 	"strings"
 	"syscall"
 	"unicode/utf16"
 	"unsafe"
+
+	"github.com/juju/errors"
 )
 
 const (
@@ -109,16 +110,13 @@ func IsSymlink(path string) (bool, error) {
 	var fa syscall.Win32FileAttributeData
 	namep, err := syscall.UTF16PtrFromString(path)
 	if err != nil {
-		return false, err
+		return false, errors.Trace(err)
 	}
 	err = syscall.GetFileAttributesEx(namep, syscall.GetFileExInfoStandard, (*byte)(unsafe.Pointer(&fa)))
 	if err != nil {
-		return false, err
+		return false, errors.Trace(err)
 	}
-	if fa.FileAttributes&FILE_ATTRIBUTE_REPARSE_POINT != 0 {
-		return true, nil
-	}
-	return false, nil
+	return fa.FileAttributes&FILE_ATTRIBUTE_REPARSE_POINT != 0, nil
 }
 
 // getLongPath converts windows 8.1 short style paths (c:\Progra~1\foo) to full

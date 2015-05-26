@@ -20,11 +20,13 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"sync"
 
 	"github.com/juju/utils/set"
 )
 
 var (
+	flaglock sync.Mutex	 // seralises access to flags
 	flags = set.NewStrings()
 )
 
@@ -38,6 +40,8 @@ var (
 // use any mutux when setting the flag set.  Should this change in the future,
 // a mutex should be used.
 func SetFlagsFromEnvironment(envVarName string) {
+	flaglock.Lock()	
+	defer flaglock.Unlock()	
 	values := strings.ToLower(os.Getenv(envVarName))
 	flags = set.NewStrings()
 	for _, flag := range strings.Split(values, ",") {
@@ -50,6 +54,8 @@ func SetFlagsFromEnvironment(envVarName string) {
 // Enabled is used to determine if a particular feature flag is enabled for
 // the process.
 func Enabled(flag string) bool {
+	flaglock.Lock()	
+	defer flaglock.Unlock()	
 	flag = strings.TrimSpace(strings.ToLower(flag))
 	if flag == "" {
 		// The empty feature is always enabled.
@@ -60,6 +66,8 @@ func Enabled(flag string) bool {
 
 // All returns all the current feature flags.
 func All() []string {
+	flaglock.Lock()	
+	defer flaglock.Unlock()	
 	return flags.Values()
 }
 
@@ -67,12 +75,16 @@ func All() []string {
 // environment value that will be parsed into the same set of values currently
 // set.
 func AsEnvironmentValue() string {
+	flaglock.Lock()	
+	defer flaglock.Unlock()	
 	return strings.Join(flags.SortedValues(), ",")
 }
 
 // String provides a nice human readable string for the feature flags that
 // are set.
 func String() string {
+	flaglock.Lock()	
+	defer flaglock.Unlock()	
 	var quoted []string
 	for _, flag := range flags.SortedValues() {
 		quoted = append(quoted, fmt.Sprintf("%q", flag))

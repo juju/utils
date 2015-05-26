@@ -5,6 +5,7 @@ package exec_test
 
 import (
 	"path/filepath"
+	"strings"
 	"syscall"
 
 	"github.com/juju/testing"
@@ -123,7 +124,8 @@ func (*execSuite) TestExecUnknownCommand(c *gc.C) {
 	)
 	c.Assert(err, gc.IsNil)
 	c.Assert(result.Stdout, gc.HasLen, 0)
-	c.Assert(string(result.Stderr), jc.Contains, "is not recognized as the name of a cmdlet")
+	stderr := strings.Replace(string(result.Stderr), "\r\n", "", -1)
+	c.Assert(stderr, jc.Contains, "is not recognized as the name of a cmdlet")
 	// 1 is returned by RunCommands when powershell commands throw exceptions
 	c.Assert(result.Code, gc.Equals, 1)
 }

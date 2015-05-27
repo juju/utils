@@ -51,6 +51,10 @@ func (*execSuite) TestRunCommands(c *gc.C) {
 			commands:    "echo $OMG_IT_WORKS",
 			environment: []string{"OMG_IT_WORKS=like magic"},
 			stdout:      "like magic\n",
+		}, {
+			message:  "multiple commands",
+			commands: "cat\necho 123",
+			stdout:   "123\n",
 		},
 	} {
 		c.Logf("%v: %s", i, test.message)

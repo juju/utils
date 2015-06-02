@@ -128,3 +128,11 @@ func homeDir(user string) (string, error) {
 	}
 	return homeFromRegistry(u)
 }
+
+// ChownPath is not implemented for Windows.
+func ChownPath(path, username string) error {
+	// This only exists to allow building on Windows. User lookup and
+	// file ownership needs to be handled in a completely different
+	// way and hasn't yet been implemented.
+	return nil
+}

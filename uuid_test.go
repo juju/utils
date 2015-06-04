@@ -42,7 +42,7 @@ func (*uuidSuite) TestIsValidUUIDFailsWhenNotValid(c *gc.C) {
 	}{
 		{
 			utils.UUID{}.String(),
-			false,
+			true,
 		},
 		{
 			"",

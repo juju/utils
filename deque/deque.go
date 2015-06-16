@@ -24,6 +24,7 @@ import "container/list"
 // memory deallocations are required when popping items. Bookkeeping
 // overhead per item is also reduced.
 type Deque struct {
+	maxLen            int
 	blocks            list.List
 	frontIdx, backIdx int
 	len               int
@@ -41,7 +42,16 @@ type blockT []interface{}
 
 // New returns a new Deque instance.
 func New() *Deque {
-	var d Deque
+	return NewWithMaxLen(0)
+}
+
+// New returns a new Deque instance which is limited to a certain
+// length. Pushes which cause the length to exceed the specified size
+// will cause an item to be dropped from the opposing side.
+//
+// A maxLen of 0 means that there is no maximum length limit in place.
+func NewWithMaxLen(maxLen int) *Deque {
+	d := Deque{maxLen: maxLen}
 	d.blocks.PushBack(newBlock())
 	d.recenter()
 	return &d
@@ -79,6 +89,10 @@ func (d *Deque) PushBack(item interface{}) {
 	d.backIdx++
 	block[d.backIdx] = item
 	d.len++
+
+	if d.maxLen > 0 && d.len > d.maxLen {
+		d.PopFront()
+	}
 }
 
 // PushFront adds an item to the front of the queue.
@@ -96,6 +110,10 @@ func (d *Deque) PushFront(item interface{}) {
 	d.frontIdx--
 	block[d.frontIdx] = item
 	d.len++
+
+	if d.maxLen > 0 && d.len > d.maxLen {
+		d.PopBack()
+	}
 }
 
 // PopBack removes an item from the back of the queue and returns

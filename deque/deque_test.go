@@ -19,7 +19,7 @@ type suite struct {
 
 var _ = gc.Suite(&suite{})
 
-const maxTestLen = 1000
+const testLen = 1000
 
 func (s *suite) SetUpTest(c *gc.C) {
 	s.deque = deque.New()
@@ -31,13 +31,13 @@ func (s *suite) TestInit(c *gc.C) {
 
 func (s *suite) TestStackBack(c *gc.C) {
 	// Push many values on to the back.
-	for i := 0; i < maxTestLen; i++ {
+	for i := 0; i < testLen; i++ {
 		c.Assert(s.deque.Len(), gc.Equals, i)
 		s.deque.PushBack(i)
 	}
 
 	// Pop them all off from the back.
-	for i := maxTestLen; i > 0; i-- {
+	for i := testLen; i > 0; i-- {
 		c.Assert(s.deque.Len(), gc.Equals, i)
 		v, ok := s.deque.PopBack()
 		c.Assert(ok, jc.IsTrue)
@@ -49,13 +49,13 @@ func (s *suite) TestStackBack(c *gc.C) {
 
 func (s *suite) TestStackFront(c *gc.C) {
 	// Push many values on to the front.
-	for i := 0; i < maxTestLen; i++ {
+	for i := 0; i < testLen; i++ {
 		c.Assert(s.deque.Len(), gc.Equals, i)
 		s.deque.PushFront(i)
 	}
 
 	// Pop them all off from the front.
-	for i := maxTestLen; i > 0; i-- {
+	for i := testLen; i > 0; i-- {
 		c.Assert(s.deque.Len(), gc.Equals, i)
 		v, ok := s.deque.PopFront()
 		c.Assert(ok, jc.IsTrue)
@@ -67,12 +67,12 @@ func (s *suite) TestStackFront(c *gc.C) {
 
 func (s *suite) TestQueueFromFront(c *gc.C) {
 	// Push many values on to the back.
-	for i := 0; i < maxTestLen; i++ {
+	for i := 0; i < testLen; i++ {
 		s.deque.PushBack(i)
 	}
 
 	// Pop them all off the front.
-	for i := 0; i < maxTestLen; i++ {
+	for i := 0; i < testLen; i++ {
 		v, ok := s.deque.PopFront()
 		c.Assert(ok, jc.IsTrue)
 		c.Assert(v.(int), gc.Equals, i)
@@ -83,12 +83,12 @@ func (s *suite) TestQueueFromFront(c *gc.C) {
 
 func (s *suite) TestQueueFromBack(c *gc.C) {
 	// Push many values on to the front.
-	for i := 0; i < maxTestLen; i++ {
+	for i := 0; i < testLen; i++ {
 		s.deque.PushFront(i)
 	}
 
 	// Pop them all off the back.
-	for i := 0; i < maxTestLen; i++ {
+	for i := 0; i < testLen; i++ {
 		v, ok := s.deque.PopBack()
 		c.Assert(ok, jc.IsTrue)
 		c.Assert(v.(int), gc.Equals, i)
@@ -99,14 +99,14 @@ func (s *suite) TestQueueFromBack(c *gc.C) {
 
 func (s *suite) TestFrontBack(c *gc.C) {
 	// Populate from the front and back.
-	for i := 0; i < maxTestLen; i++ {
+	for i := 0; i < testLen; i++ {
 		c.Assert(s.deque.Len(), gc.Equals, i*2)
 		s.deque.PushFront(i)
 		s.deque.PushBack(i)
 	}
 
 	//  Remove half the items from the front and back.
-	for i := maxTestLen; i > maxTestLen/2; i-- {
+	for i := testLen; i > testLen/2; i-- {
 		c.Assert(s.deque.Len(), gc.Equals, i*2)
 
 		vb, ok := s.deque.PopBack()
@@ -119,14 +119,14 @@ func (s *suite) TestFrontBack(c *gc.C) {
 	}
 
 	// Expand out again.
-	for i := maxTestLen / 2; i < maxTestLen; i++ {
+	for i := testLen / 2; i < testLen; i++ {
 		c.Assert(s.deque.Len(), gc.Equals, i*2)
 		s.deque.PushFront(i)
 		s.deque.PushBack(i)
 	}
 
 	// Consume all.
-	for i := maxTestLen; i > 0; i-- {
+	for i := testLen; i > 0; i-- {
 		c.Assert(s.deque.Len(), gc.Equals, i*2)
 
 		vb, ok := s.deque.PopBack()
@@ -141,11 +141,41 @@ func (s *suite) TestFrontBack(c *gc.C) {
 	s.checkEmpty(c)
 }
 
+func (s *suite) TestMaxLenFront(c *gc.C) {
+	const max = 5
+	d := deque.NewWithMaxLen(max)
+
+	// Exceed the maximum length by 2
+	for i := 0; i < max+2; i++ {
+		d.PushFront(i)
+	}
+
+	// Observe the the first 2 items on the back were dropped.
+	v, ok := d.PopBack()
+	c.Assert(ok, jc.IsTrue)
+	c.Assert(v.(int), gc.Equals, 2)
+}
+
+func (s *suite) TestMaxLenBack(c *gc.C) {
+	const max = 5
+	d := deque.NewWithMaxLen(max)
+
+	// Exceed the maximum length by 3
+	for i := 0; i < max+3; i++ {
+		d.PushBack(i)
+	}
+
+	// Observe the the first 3 items on the front were dropped.
+	v, ok := d.PopFront()
+	c.Assert(ok, jc.IsTrue)
+	c.Assert(v.(int), gc.Equals, 3)
+}
+
 func (s *suite) TestBlockAllocation(c *gc.C) {
 	// This test confirms that the Deque allocates and deallocates
 	// blocks as expected.
 
-	for i := 0; i < maxTestLen; i++ {
+	for i := 0; i < testLen; i++ {
 		s.deque.PushFront(i)
 		s.deque.PushBack(i)
 	}
@@ -153,7 +183,7 @@ func (s *suite) TestBlockAllocation(c *gc.C) {
 	// 31 full blocks + 1 partial front + 1 partial back = 33
 	c.Assert(deque.GetDequeBlocks(s.deque), gc.Equals, 33)
 
-	for i := 0; i < maxTestLen; i++ {
+	for i := 0; i < testLen; i++ {
 		s.deque.PopFront()
 		s.deque.PopBack()
 	}

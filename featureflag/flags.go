@@ -13,7 +13,7 @@
 //
 // The feature flags should be read and identified at program initialisation
 // time using an init function.  This function should call the
-// `SetFlagsFromEnvironment` function.
+// `SetFlagsFromEnvironment` or the `SetFlagsFromRegistry` function.
 package featureflag
 
 import (
@@ -22,27 +22,46 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/juju/loggo"
 	"github.com/juju/utils/set"
 )
 
 var (
+	logger   = loggo.GetLogger("utils.featureflag")
 	flaglock sync.Mutex // seralises access to flags
 	flags    = set.NewStrings()
 )
 
 // SetFlagsFromEnvironment populates the global set from the environment.
-// White space between flags is ignored, and the flags are lower cased. Under
-// normal circumstances this method is only ever called from the init
-// function.
 //
 // NOTE: since SetFlagsFromEnvironment should only ever called during the
 // program startup (or tests), and it is serialized by the runtime, we don't
 // use any mutux when setting the flag set.  Should this change in the future,
 // a mutex should be used.
 func SetFlagsFromEnvironment(envVarName string) {
+	setFlags(os.Getenv(envVarName))
+}
+
+// SetFlagsFromRegistry populates the global set from the registry keys on windows
+// and from the environment on linux.
+//
+// NOTE: since SetFlagsFromRegistry should only ever called during the
+// program startup (or tests), and it is serialized by the runtime, we don't
+// use any mutux when setting the flag set.  Should this change in the future,
+// a mutex should be used.
+func SetFlagsFromRegistry(envVarKey string, envVarName string) {
+	setFlags(getFlagsFromRegistry(envVarKey, envVarName))
+}
+
+// setFlags populates the global set using a function passed to it.
+// White space between flags is ignored, and the flags are lower cased. Under
+// normal circumstances this method is only ever called from the init
+// function.
+func setFlags(val string) {
+	values := strings.ToLower(val)
+
 	flaglock.Lock()
 	defer flaglock.Unlock()
-	values := strings.ToLower(os.Getenv(envVarName))
 	flags = set.NewStrings()
 	for _, flag := range strings.Split(values, ",") {
 		if flag = strings.TrimSpace(flag); flag != "" {

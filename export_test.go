@@ -4,8 +4,9 @@
 package utils
 
 var (
-	GOMAXPROCS = &gomaxprocs
-	NumCPU     = &numCPU
-	Dial       = dial
-	NetDial    = &netDial
+	GOMAXPROCS        = &gomaxprocs
+	NumCPU            = &numCPU
+	Dial              = dial
+	NetDial           = &netDial
+	ResolveSudoByFunc = resolveSudo
 )

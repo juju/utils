@@ -20,7 +20,7 @@ type flagWinSuite struct {
 var _ = gc.Suite(&flagWinSuite{})
 
 // We use a "random" key here for the tests
-const regKey = `HKLM:\SOFTWARE\Wow6432Node\juju-9362394821442`
+const regKey = `HKLM:\SOFTWARE\juju-9362394821442`
 
 func (s *flagWinSuite) SetUpTest(c *gc.C) {
 	k, _, err := registry.CreateKey(registry.LOCAL_MACHINE, regKey[6:], registry.ALL_ACCESS)

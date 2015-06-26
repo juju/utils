@@ -13,7 +13,7 @@
 //
 // The feature flags should be read and identified at program initialisation
 // time using an init function.  This function should call the
-// `SetFlagsFromEnvironment` function.
+// `SetFlagsFromEnvironment` or the `SetFlagsFromRegistry` function.
 package featureflag
 
 import (
@@ -22,10 +22,12 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/juju/loggo"
 	"github.com/juju/utils/set"
 )
 
 var (
+	logger   = loggo.GetLogger("utils.featureflag")
 	flaglock sync.Mutex // seralises access to flags
 	flags    = set.NewStrings()
 )
@@ -40,9 +42,16 @@ var (
 // use any mutux when setting the flag set.  Should this change in the future,
 // a mutex should be used.
 func SetFlagsFromEnvironment(envVarName string) {
+	setFlags(os.Getenv(envVarName))
+}
+
+// setFlags populates the global set using a string passed to it containing the
+// flags.
+func setFlags(val string) {
+	values := strings.ToLower(val)
+
 	flaglock.Lock()
 	defer flaglock.Unlock()
-	values := strings.ToLower(os.Getenv(envVarName))
 	flags = set.NewStrings()
 	for _, flag := range strings.Split(values, ",") {
 		if flag = strings.TrimSpace(flag); flag != "" {

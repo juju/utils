@@ -25,16 +25,17 @@ func Parse(src []string, allowEmptyValues bool) (map[string]string, error) {
 	results := map[string]string{}
 	for _, kv := range src {
 		parts := strings.SplitN(kv, "=", 2)
-		if len(parts) != 2 || len(parts[0]) == 0 {
+		if len(parts) != 2 {
 			return nil, fmt.Errorf(`expected "key=value", got %q`, kv)
 		}
-		if !allowEmptyValues && len(parts[1]) == 0 {
-			return nil, fmt.Errorf(`expected "key=value", got %q`, kv)
+		key, value := strings.TrimSpace(parts[0]), strings.TrimSpace(parts[1])
+		if len(key) == 0 || (!allowEmptyValues && len(value) == 0) {
+			return nil, fmt.Errorf(`expected "key=value", got "%s=%s"`, key, value)
 		}
-		if _, exists := results[parts[0]]; exists {
-			return nil, DuplicateError(fmt.Sprintf("key %q specified more than once", parts[0]))
+		if _, exists := results[key]; exists {
+			return nil, DuplicateError(fmt.Sprintf("key %q specified more than once", key))
 		}
-		results[parts[0]] = parts[1]
+		results[key] = value
 	}
 	return results, nil
 }

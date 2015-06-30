@@ -85,6 +85,36 @@ var testCases = []struct {
 	allowEmptyVal: true,
 	output:        map[string]string{"key": ""},
 	error:         "",
+}, {
+	about:         "whitespace trimmed",
+	input:         []string{"key=value\n", "key2\t=\tvalue2"},
+	allowEmptyVal: true,
+	output:        map[string]string{"key": "value", "key2": "value2"},
+	error:         "",
+}, {
+	about:         "whitespace trimming and duplicate keys",
+	input:         []string{"key =value", "key\t=\tvalue2"},
+	allowEmptyVal: true,
+	output:        nil,
+	error:         `key "key" specified more than once`,
+}, {
+	about:         "whitespace trimming and empty value not allowed",
+	input:         []string{"key=    "},
+	allowEmptyVal: false,
+	output:        nil,
+	error:         `expected "key=value", got "key="`,
+}, {
+	about:         "whitespace trimming and empty value",
+	input:         []string{"key=    "},
+	allowEmptyVal: true,
+	output:        map[string]string{"key": ""},
+	error:         "",
+}, {
+	about:         "whitespace trimming and missing key",
+	input:         []string{"   =value"},
+	allowEmptyVal: true,
+	output:        nil,
+	error:         `expected "key=value", got "=value"`,
 }}
 
 func (keyValuesSuite) TestMapParsing(c *gc.C) {

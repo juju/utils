@@ -1,6 +1,6 @@
 // Copyright 2015 Canonical Ltd.
 // Copyright 2015 Cloudbase Solutions SRL
-// Licensed under the AGPLv3, see LICENCE file for details.
+// Licensed under the LGPLv3, see LICENCE file for details.
 
 // Package packaging abstracts away differences between package managers like
 // apt and yum and allows for easy extension for other package managers/distros.

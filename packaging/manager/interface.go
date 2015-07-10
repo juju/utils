@@ -1,6 +1,6 @@
 // Copyright 2015 Canonical Ltd.
 // Copyright 2015 Cloudbase Solutions SRL
-// Licensed under the AGPLv3, see LICENCE file for details.
+// Licensed under the LGPLv3, see LICENCE file for details.
 
 // The manager package defines an interface which can carry out numerous
 // package-management related operations on the local system and the respective

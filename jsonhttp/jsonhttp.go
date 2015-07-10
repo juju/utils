@@ -1,3 +1,5 @@
+// Copyright 2015 Canonical Ltd.
+// Licensed under the LGPLv3, see LICENCE file for details.
 // The jsonhttp package provides general functions for returning
 // JSON responses to HTTP requests. It is agnostic about
 // the specific form of any returned errors.

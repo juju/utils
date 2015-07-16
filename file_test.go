@@ -183,3 +183,26 @@ func (*fileSuite) TestAtomicWriteFile(c *gc.C) {
 		c.Assert(os.Remove(path), gc.IsNil)
 	}
 }
+
+func (*fileSuite) TestMoveFile(c *gc.C) {
+	d := c.MkDir()
+	dest := filepath.Join(d, "foo")
+	f1Name := filepath.Join(d, ".foo1")
+	f2Name := filepath.Join(d, ".foo2")
+	err := ioutil.WriteFile(f1Name, []byte("macaroni"), 0644)
+	c.Assert(err, gc.IsNil)
+	err = ioutil.WriteFile(f2Name, []byte("cheese"), 0644)
+	c.Assert(err, gc.IsNil)
+
+	ok, err := utils.MoveFile(f1Name, dest)
+	c.Assert(ok, gc.Equals, true)
+	c.Assert(err, gc.IsNil)
+
+	ok, err = utils.MoveFile(f2Name, dest)
+	c.Assert(ok, gc.Equals, false)
+	c.Assert(err, gc.NotNil)
+
+	contents, err := ioutil.ReadFile(dest)
+	c.Assert(err, gc.IsNil)
+	c.Assert(contents, gc.DeepEquals, []byte("macaroni"))
+}

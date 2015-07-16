@@ -23,6 +23,27 @@ const (
 
 //sys moveFileEx(lpExistingFileName *uint16, lpNewFileName *uint16, dwFlags uint32) (err error) = MoveFileExW
 
+// MoveFile atomically moves the source file to the destination, returning
+// whether the file was moved successfully. If the destination already exists,
+// it returns an error rather than overwrite it.
+func MoveFile(source, destination string) (bool, error) {
+	src, err := syscall.UTF16PtrFromString(source)
+	if err != nil {
+		return false, &os.LinkError{"move", source, destination, err}
+	}
+	dest, err := syscall.UTF16PtrFromString(destination)
+	if err != nil {
+		return false, &os.LinkError{"move", source, destination, err}
+	}
+
+	// see http://msdn.microsoft.com/en-us/library/windows/desktop/aa365240(v=vs.85).aspx
+	if err := moveFileEx(src, dest, movefile_write_through); err != nil {
+		return false, &os.LinkError{"move", source, destination, err}
+	}
+	return true, nil
+
+}
+
 // ReplaceFile atomically replaces the destination file or directory with the source.
 // The errors that are returned are identical to those returned by os.Rename.
 func ReplaceFile(source, destination string) error {

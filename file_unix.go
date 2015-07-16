@@ -23,6 +23,24 @@ func homeDir(userName string) (string, error) {
 	return u.HomeDir, nil
 }
 
+// MoveFile atomically moves the source file to the destination, returning
+// whether the file was moved successfully. If the destination already exists,
+// it returns an error rather than overwrite it.
+//
+// On unix systems, an error may occur with a successful move, if the source
+// file location cannot be unlinked.
+func MoveFile(source, destination string) (bool, error) {
+	err := os.Link(source, destination)
+	if err != nil {
+		return false, errors.Trace(err)
+	}
+	err = os.Remove(source)
+	if err != nil {
+		return true, errors.Trace(err)
+	}
+	return true, nil
+}
+
 // ReplaceFile atomically replaces the destination file or directory
 // with the source. The errors that are returned are identical to
 // those returned by os.Rename.

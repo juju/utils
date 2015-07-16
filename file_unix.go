@@ -32,11 +32,11 @@ func homeDir(userName string) (string, error) {
 func MoveFile(source, destination string) (bool, error) {
 	err := os.Link(source, destination)
 	if err != nil {
-		return false, errors.Trace(err)
+		return false, err
 	}
 	err = os.Remove(source)
 	if err != nil {
-		return true, errors.Trace(err)
+		return true, err
 	}
 	return true, nil
 }

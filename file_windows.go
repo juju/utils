@@ -29,16 +29,16 @@ const (
 func MoveFile(source, destination string) (bool, error) {
 	src, err := syscall.UTF16PtrFromString(source)
 	if err != nil {
-		return false, &os.LinkError{"replace", source, destination, err}
+		return false, &os.LinkError{"move", source, destination, err}
 	}
 	dest, err := syscall.UTF16PtrFromString(destination)
 	if err != nil {
-		return false, &os.LinkError{"replace", source, destination, err}
+		return false, &os.LinkError{"move", source, destination, err}
 	}
 
 	// see http://msdn.microsoft.com/en-us/library/windows/desktop/aa365240(v=vs.85).aspx
 	if err := moveFileEx(src, dest, movefile_write_through); err != nil {
-		return false, &os.LinkError{"replace", source, destination, err}
+		return false, &os.LinkError{"move", source, destination, err}
 	}
 	return true, nil
 

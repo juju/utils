@@ -202,9 +202,6 @@ func (*fileSuite) TestMoveFile(c *gc.C) {
 	c.Assert(ok, gc.Equals, false)
 	c.Assert(err, gc.NotNil)
 
-	st, err := os.Stat(dest)
-	c.Assert(err, gc.IsNil)
-	c.Assert(st.Size(), gc.Equals, int64(8))
 	contents, err := ioutil.ReadFile(dest)
 	c.Assert(err, gc.IsNil)
 	c.Assert(contents, gc.DeepEquals, []byte("macaroni"))

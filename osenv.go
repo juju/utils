@@ -111,6 +111,30 @@ func (env *OSEnv) Update(vars ...string) {
 	}
 }
 
+// Reduce filters out all env vars that don't match the provided filters
+// and returns the remainder in a new OSEnv.
+func (env OSEnv) Reduce(filters ...func(name string) bool) *OSEnv {
+	newEnv := NewOSEnv()
+	for _, name := range env.Names() {
+		if filtersAnd(name, filters) {
+			value := env.Get(name)
+			newEnv.Set(name, value)
+		}
+	}
+	return newEnv
+}
+
+func filtersAnd(name string, filters []func(string) bool) bool {
+	matched := false
+	for _, filter := range filters {
+		if !filter(name) {
+			return false
+		}
+		matched = true
+	}
+	return matched
+}
+
 // TODO(ericsnow) Add an equivalent method to os.ExpandEnv.
 
 // Copy returns a copy of the env.

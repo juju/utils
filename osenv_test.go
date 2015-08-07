@@ -192,6 +192,72 @@ func (*osEnvSuite) TestOSEnvUpdateNoEqualSign(c *gc.C) {
 	c.Check(names, jc.DeepEquals, []string{"x", "y", "z"})
 }
 
+func (*osEnvSuite) TestOSEnvReduceOkay(c *gc.C) {
+	filter := func(name string) bool {
+		return name != "y"
+	}
+	env := utils.NewOSEnv("x=a", "y=b", "z=c")
+	reduced := env.Reduce(filter)
+	vars, names := utils.RawEnvVars(reduced)
+
+	c.Check(vars, jc.DeepEquals, map[string]string{"x": "a", "z": "c"})
+	c.Check(names, jc.DeepEquals, []string{"x", "z"})
+	// Ensure they aren't linked.
+	c.Check(reflect.DeepEqual(vars, env.AsMap()), jc.IsFalse)
+	c.Check(reflect.DeepEqual(names, env.Names()), jc.IsFalse)
+}
+
+func (*osEnvSuite) TestOSEnvReduceNoFilter(c *gc.C) {
+	env := utils.NewOSEnv("x=a", "y=b")
+	reduced := env.Reduce()
+	vars, names := utils.RawEnvVars(reduced)
+
+	c.Check(vars, gc.HasLen, 0)
+	c.Check(names, gc.HasLen, 0)
+}
+
+func (*osEnvSuite) TestOSEnvReduceMultipleFilters(c *gc.C) {
+	noW := func(name string) bool {
+		return name != "w"
+	}
+	noX := func(name string) bool {
+		return name != "x"
+	}
+	noZ := func(name string) bool {
+		return name != "z"
+	}
+	env := utils.NewOSEnv("x=a", "y=b", "z=c")
+	reduced := env.Reduce(noW, noX, noZ)
+	vars, names := utils.RawEnvVars(reduced)
+
+	c.Check(vars, jc.DeepEquals, map[string]string{"y": "b"})
+	c.Check(names, jc.DeepEquals, []string{"y"})
+}
+
+func (*osEnvSuite) TestOSEnvReduceNoMatch(c *gc.C) {
+	filter := func(name string) bool {
+		return name == "z"
+	}
+	env := utils.NewOSEnv("x=a", "y=b")
+	reduced := env.Reduce(filter)
+	vars, names := utils.RawEnvVars(reduced)
+
+	c.Check(vars, gc.HasLen, 0)
+	c.Check(names, gc.HasLen, 0)
+}
+
+func (*osEnvSuite) TestOSEnvReduceEmpty(c *gc.C) {
+	filter := func(name string) bool {
+		return name != "x"
+	}
+	env := utils.NewOSEnv()
+	reduced := env.Reduce(filter)
+	vars, names := utils.RawEnvVars(reduced)
+
+	c.Check(vars, gc.HasLen, 0)
+	c.Check(names, gc.HasLen, 0)
+}
+
 func (*osEnvSuite) TestOSEnvCopy(c *gc.C) {
 	env := utils.NewOSEnv("x=a", "y=b")
 	copied := env.Copy()

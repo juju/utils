@@ -22,7 +22,7 @@ func NewOSEnv(initial ...string) *OSEnv {
 	env := &OSEnv{
 		vars: make(map[string]string),
 	}
-	env.Update(initial...)
+	env.update(initial)
 	return env
 }
 
@@ -98,10 +98,17 @@ func (env *OSEnv) unset(name string) string {
 	return value
 }
 
-// Update sets all the provided env vars, in order. If any is already
-// set then it is overwritten, though its original order is preserved.
-// To reset an env var's order, unset it before calling Update.
-func (env *OSEnv) Update(vars ...string) {
+// Update sets all the provided env vars, in order, on a copy of the
+// env and returns it. If any of the provided env vars is already set
+// then it is overwritten, though its original order is preserved. To
+// reset an env var's order, unset it before calling Update.
+func (env *OSEnv) Update(vars ...string) *OSEnv {
+	copied := env.Copy()
+	copied.update(vars)
+	return copied
+}
+
+func (env *OSEnv) update(vars []string) {
 	for _, envVar := range vars {
 		name, value := SplitEnvVar(envVar)
 		if _, ok := env.vars[name]; !ok {
@@ -164,7 +171,7 @@ func (env OSEnv) AsList() []string {
 }
 
 // PushOSEnv updates the current OS environment.
-func PushOSEnv(env OSEnv) error {
+func PushOSEnv(env *OSEnv) error {
 	for _, name := range env.names {
 		value := env.vars[name]
 		if err := os.Setenv(name, value); err != nil {
@@ -175,7 +182,7 @@ func PushOSEnv(env OSEnv) error {
 }
 
 // PushOSEnvFresh updates the current OS environment after clearing it.
-func PushOSEnvFresh(env OSEnv) error {
+func PushOSEnvFresh(env *OSEnv) error {
 	os.Clearenv()
 	if err := PushOSEnv(env); err != nil {
 		return errors.Trace(err)

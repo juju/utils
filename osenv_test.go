@@ -149,17 +149,20 @@ func (*osEnvSuite) TestOSEnvUnsetMissing(c *gc.C) {
 
 func (*osEnvSuite) TestOSEnvUpdateOkay(c *gc.C) {
 	env := utils.NewOSEnv("x=a", "y=b")
-	env.Update("z=c")
-	vars, names := utils.RawEnvVars(env)
+	updated := env.Update("z=c")
+	vars, names := utils.RawEnvVars(updated)
 
 	c.Check(vars, jc.DeepEquals, map[string]string{"x": "a", "y": "b", "z": "c"})
 	c.Check(names, jc.DeepEquals, []string{"x", "y", "z"})
+	// Ensure they aren't linked.
+	c.Check(reflect.DeepEqual(vars, env.AsMap()), jc.IsFalse)
+	c.Check(reflect.DeepEqual(names, env.Names()), jc.IsFalse)
 }
 
 func (*osEnvSuite) TestOSEnvUpdateEmpty(c *gc.C) {
 	env := utils.NewOSEnv("x=a", "y=b")
-	env.Update("z=")
-	vars, names := utils.RawEnvVars(env)
+	updated := env.Update("z=")
+	vars, names := utils.RawEnvVars(updated)
 
 	c.Check(vars, jc.DeepEquals, map[string]string{"x": "a", "y": "b", "z": ""})
 	c.Check(names, jc.DeepEquals, []string{"x", "y", "z"})
@@ -167,8 +170,8 @@ func (*osEnvSuite) TestOSEnvUpdateEmpty(c *gc.C) {
 
 func (*osEnvSuite) TestOSEnvUpdateReplaceOkay(c *gc.C) {
 	env := utils.NewOSEnv("x=a", "y=b")
-	env.Update("x=c")
-	vars, names := utils.RawEnvVars(env)
+	updated := env.Update("x=c")
+	vars, names := utils.RawEnvVars(updated)
 
 	c.Check(vars, jc.DeepEquals, map[string]string{"x": "c", "y": "b"})
 	c.Check(names, jc.DeepEquals, []string{"x", "y"})
@@ -176,8 +179,8 @@ func (*osEnvSuite) TestOSEnvUpdateReplaceOkay(c *gc.C) {
 
 func (*osEnvSuite) TestOSEnvUpdateReplaceEmpty(c *gc.C) {
 	env := utils.NewOSEnv("x=a", "y=b")
-	env.Update("x=")
-	vars, names := utils.RawEnvVars(env)
+	updated := env.Update("x=")
+	vars, names := utils.RawEnvVars(updated)
 
 	c.Check(vars, jc.DeepEquals, map[string]string{"x": "", "y": "b"})
 	c.Check(names, jc.DeepEquals, []string{"x", "y"})
@@ -185,8 +188,8 @@ func (*osEnvSuite) TestOSEnvUpdateReplaceEmpty(c *gc.C) {
 
 func (*osEnvSuite) TestOSEnvUpdateNoEqualSign(c *gc.C) {
 	env := utils.NewOSEnv("x=a", "y=b")
-	env.Update("z")
-	vars, names := utils.RawEnvVars(env)
+	updated := env.Update("z")
+	vars, names := utils.RawEnvVars(updated)
 
 	c.Check(vars, jc.DeepEquals, map[string]string{"x": "a", "y": "b", "z": ""})
 	c.Check(names, jc.DeepEquals, []string{"x", "y", "z"})

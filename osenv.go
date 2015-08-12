@@ -14,6 +14,7 @@ import (
 // OSEnv is a snapshot of an OS environment. The order of env vars
 // is not preserved nor are duplicates.
 type OSEnv struct {
+	// Vars contains the unordered env vars.
 	Vars map[string]string
 }
 

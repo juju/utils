@@ -204,16 +204,6 @@ func (*osEnvSuite) TestOSEnvReduceEmpty(c *gc.C) {
 	c.Check(reduced.Vars, gc.HasLen, 0)
 }
 
-func (*osEnvSuite) TestOSEnvCopy(c *gc.C) {
-	env := utils.NewOSEnv("x=a", "y=b")
-	copied := env.Copy()
-	copied.Set("z", "c")
-
-	c.Check(copied.Vars, jc.DeepEquals, map[string]string{"x": "a", "y": "b", "z": "c"})
-	// Ensure they aren't linked.
-	c.Check(reflect.DeepEqual(copied.Vars, env.Vars), jc.IsFalse)
-}
-
 func (*osEnvSuite) TestOSEnvAsList(c *gc.C) {
 	env := utils.NewOSEnv("x=a", "y=b")
 	list := env.AsList()

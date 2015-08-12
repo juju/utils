@@ -86,7 +86,7 @@ func (env *OSEnv) unset(name string) string {
 // then it is overwritten, though its original order is preserved. To
 // reset an env var's order, unset it before calling Update.
 func (env *OSEnv) Update(vars ...string) *OSEnv {
-	copied := env.Copy()
+	copied := env.newCopy()
 	copied.update(vars)
 	return copied
 }
@@ -124,10 +124,7 @@ func filtersAnd(name string, filters []func(string) bool) bool {
 
 // TODO(ericsnow) Add an equivalent method to os.ExpandEnv.
 
-// TODO(ericsnow) Drop Copy?
-
-// Copy returns a copy of the env.
-func (env OSEnv) Copy() *OSEnv {
+func (env OSEnv) newCopy() *OSEnv {
 	return NewOSEnv(env.AsList()...)
 }
 

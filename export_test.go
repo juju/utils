@@ -10,7 +10,3 @@ var (
 	NetDial           = &netDial
 	ResolveSudoByFunc = resolveSudo
 )
-
-func RawEnvVars(env *OSEnv) map[string]string {
-	return env.vars
-}

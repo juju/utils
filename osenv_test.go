@@ -65,7 +65,7 @@ func (*osEnvSuite) TestOSEnvGetMissing(c *gc.C) {
 	c.Check(y, gc.Equals, "")
 }
 
-func (*osEnvSuite) TestOSEnvSetOkay(c *gc.C) {
+func (*osEnvSuite) TestOSEnvSetNotExists(c *gc.C) {
 	env := utils.NewOSEnv("x=a", "y=b")
 	existing := env.Set("z", "c")
 

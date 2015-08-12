@@ -56,11 +56,8 @@ func (env OSEnv) Get(name string) string {
 // Set updates the value of the named environment variable. The old
 // value, if any, is returned.
 func (env *OSEnv) Set(name, value string) string {
-	// TODO(ericsnow) Rely on existing to be "" when not found.
-	existing, ok := env.Vars[name]
-	if !ok {
-		existing = ""
-	}
+	// existing is "" when not found.
+	existing, _ := env.Vars[name]
 	env.Vars[name] = value
 	return existing
 }

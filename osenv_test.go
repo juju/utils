@@ -5,6 +5,7 @@ package utils_test
 
 import (
 	"reflect"
+	"sort"
 
 	"github.com/juju/testing"
 	jc "github.com/juju/testing/checkers"
@@ -21,18 +22,16 @@ type osEnvSuite struct {
 
 func (*osEnvSuite) TestNewOSEnvEmpty(c *gc.C) {
 	env := utils.NewOSEnv()
-	vars, names := utils.RawEnvVars(env)
+	vars := utils.RawEnvVars(env)
 
 	c.Check(vars, gc.HasLen, 0)
-	c.Check(names, gc.HasLen, 0)
 }
 
 func (*osEnvSuite) TestNewOSEnvInitial(c *gc.C) {
 	env := utils.NewOSEnv("x=a", "y=b")
-	vars, names := utils.RawEnvVars(env)
+	vars := utils.RawEnvVars(env)
 
 	c.Check(vars, jc.DeepEquals, map[string]string{"x": "a", "y": "b"})
-	c.Check(names, jc.DeepEquals, []string{"x", "y"})
 }
 
 func (*osEnvSuite) TestReadOSEnv(c *gc.C) {
@@ -43,6 +42,7 @@ func (*osEnvSuite) TestOSEnvNames(c *gc.C) {
 	env := utils.NewOSEnv("x=a", "y=b")
 	names := env.Names()
 
+	sort.Strings(names)
 	c.Check(names, jc.DeepEquals, []string{"x", "y"})
 }
 
@@ -70,108 +70,96 @@ func (*osEnvSuite) TestOSEnvGetMissing(c *gc.C) {
 func (*osEnvSuite) TestOSEnvSetOkay(c *gc.C) {
 	env := utils.NewOSEnv("x=a", "y=b")
 	existing := env.Set("z", "c")
-	vars, names := utils.RawEnvVars(env)
+	vars := utils.RawEnvVars(env)
 
 	c.Check(existing, gc.Equals, "")
 	c.Check(vars, jc.DeepEquals, map[string]string{"x": "a", "y": "b", "z": "c"})
-	c.Check(names, jc.DeepEquals, []string{"x", "y", "z"})
 }
 
 func (*osEnvSuite) TestOSEnvSetExists(c *gc.C) {
 	env := utils.NewOSEnv("x=a", "y=b")
 	existing := env.Set("x", "c")
-	vars, names := utils.RawEnvVars(env)
+	vars := utils.RawEnvVars(env)
 
 	c.Check(existing, gc.Equals, "a")
 	c.Check(vars, jc.DeepEquals, map[string]string{"x": "c", "y": "b"})
-	c.Check(names, jc.DeepEquals, []string{"x", "y"})
 }
 
 func (*osEnvSuite) TestOSEnvSetEmpty(c *gc.C) {
 	env := utils.NewOSEnv("x=a", "y=b")
 	env.Set("z", "")
-	vars, names := utils.RawEnvVars(env)
+	vars := utils.RawEnvVars(env)
 
 	c.Check(vars, jc.DeepEquals, map[string]string{"x": "a", "y": "b", "z": ""})
-	c.Check(names, jc.DeepEquals, []string{"x", "y", "z"})
 }
 
 func (*osEnvSuite) TestOSEnvUnsetOkay(c *gc.C) {
 	env := utils.NewOSEnv("x=a", "y=b", "z=c")
 	existing := env.Unset("y")
-	vars, names := utils.RawEnvVars(env)
+	vars := utils.RawEnvVars(env)
 
 	c.Check(existing, jc.DeepEquals, []string{"b"})
 	c.Check(vars, jc.DeepEquals, map[string]string{"x": "a", "z": "c"})
-	c.Check(names, jc.DeepEquals, []string{"x", "z"})
 }
 
 func (*osEnvSuite) TestOSEnvUnsetEmpty(c *gc.C) {
 	env := utils.NewOSEnv("x=a", "y=", "z=c")
 	existing := env.Unset("y")
-	vars, names := utils.RawEnvVars(env)
+	vars := utils.RawEnvVars(env)
 
 	c.Check(existing, jc.DeepEquals, []string{""})
 	c.Check(vars, jc.DeepEquals, map[string]string{"x": "a", "z": "c"})
-	c.Check(names, jc.DeepEquals, []string{"x", "z"})
 }
 
 func (*osEnvSuite) TestOSEnvUnsetMissing(c *gc.C) {
 	env := utils.NewOSEnv("x=a", "z=c")
 	existing := env.Unset("y")
-	vars, names := utils.RawEnvVars(env)
+	vars := utils.RawEnvVars(env)
 
 	c.Check(existing, jc.DeepEquals, []string{""})
 	c.Check(vars, jc.DeepEquals, map[string]string{"x": "a", "z": "c"})
-	c.Check(names, jc.DeepEquals, []string{"x", "z"})
 }
 
 func (*osEnvSuite) TestOSEnvUpdateOkay(c *gc.C) {
 	env := utils.NewOSEnv("x=a", "y=b")
 	updated := env.Update("z=c")
-	vars, names := utils.RawEnvVars(updated)
+	vars := utils.RawEnvVars(updated)
 
 	c.Check(vars, jc.DeepEquals, map[string]string{"x": "a", "y": "b", "z": "c"})
-	c.Check(names, jc.DeepEquals, []string{"x", "y", "z"})
 	// Ensure they aren't linked.
 	c.Check(reflect.DeepEqual(vars, env.AsMap()), jc.IsFalse)
-	c.Check(reflect.DeepEqual(names, env.Names()), jc.IsFalse)
 }
 
 func (*osEnvSuite) TestOSEnvUpdateEmpty(c *gc.C) {
 	env := utils.NewOSEnv("x=a", "y=b")
 	updated := env.Update("z=")
-	vars, names := utils.RawEnvVars(updated)
+	vars := utils.RawEnvVars(updated)
 
 	c.Check(vars, jc.DeepEquals, map[string]string{"x": "a", "y": "b", "z": ""})
-	c.Check(names, jc.DeepEquals, []string{"x", "y", "z"})
 }
 
 func (*osEnvSuite) TestOSEnvUpdateReplaceOkay(c *gc.C) {
 	env := utils.NewOSEnv("x=a", "y=b")
 	updated := env.Update("x=c")
-	vars, names := utils.RawEnvVars(updated)
+	vars := utils.RawEnvVars(updated)
 
 	c.Check(vars, jc.DeepEquals, map[string]string{"x": "c", "y": "b"})
-	c.Check(names, jc.DeepEquals, []string{"x", "y"})
 }
 
 func (*osEnvSuite) TestOSEnvUpdateReplaceEmpty(c *gc.C) {
 	env := utils.NewOSEnv("x=a", "y=b")
 	updated := env.Update("x=")
-	vars, names := utils.RawEnvVars(updated)
+	vars := utils.RawEnvVars(updated)
 
 	c.Check(vars, jc.DeepEquals, map[string]string{"x": "", "y": "b"})
-	c.Check(names, jc.DeepEquals, []string{"x", "y"})
 }
 
 func (*osEnvSuite) TestOSEnvUpdateNoEqualSign(c *gc.C) {
 	env := utils.NewOSEnv("x=a", "y=b")
 	updated := env.Update("z")
-	vars, names := utils.RawEnvVars(updated)
+	vars := utils.RawEnvVars(updated)
 
 	c.Check(vars, jc.DeepEquals, map[string]string{"x": "a", "y": "b", "z": ""})
-	c.Check(names, jc.DeepEquals, []string{"x", "y", "z"})
 }
 
 func (*osEnvSuite) TestOSEnvReduceOkay(c *gc.C) {
@@ -180,22 +168,19 @@ func (*osEnvSuite) TestOSEnvReduceOkay(c *gc.C) {
 	}
 	env := utils.NewOSEnv("x=a", "y=b", "z=c")
 	reduced := env.Reduce(filter)
-	vars, names := utils.RawEnvVars(reduced)
+	vars := utils.RawEnvVars(reduced)
 
 	c.Check(vars, jc.DeepEquals, map[string]string{"x": "a", "z": "c"})
-	c.Check(names, jc.DeepEquals, []string{"x", "z"})
 	// Ensure they aren't linked.
 	c.Check(reflect.DeepEqual(vars, env.AsMap()), jc.IsFalse)
-	c.Check(reflect.DeepEqual(names, env.Names()), jc.IsFalse)
 }
 
 func (*osEnvSuite) TestOSEnvReduceNoFilter(c *gc.C) {
 	env := utils.NewOSEnv("x=a", "y=b")
 	reduced := env.Reduce()
-	vars, names := utils.RawEnvVars(reduced)
+	vars := utils.RawEnvVars(reduced)
 
 	c.Check(vars, gc.HasLen, 0)
-	c.Check(names, gc.HasLen, 0)
 }
 
 func (*osEnvSuite) TestOSEnvReduceMultipleFilters(c *gc.C) {
@@ -210,10 +195,9 @@ func (*osEnvSuite) TestOSEnvReduceMultipleFilters(c *gc.C) {
 	}
 	env := utils.NewOSEnv("x=a", "y=b", "z=c")
 	reduced := env.Reduce(noW, noX, noZ)
-	vars, names := utils.RawEnvVars(reduced)
+	vars := utils.RawEnvVars(reduced)
 
 	c.Check(vars, jc.DeepEquals, map[string]string{"y": "b"})
-	c.Check(names, jc.DeepEquals, []string{"y"})
 }
 
 func (*osEnvSuite) TestOSEnvReduceNoMatch(c *gc.C) {
@@ -222,10 +206,9 @@ func (*osEnvSuite) TestOSEnvReduceNoMatch(c *gc.C) {
 	}
 	env := utils.NewOSEnv("x=a", "y=b")
 	reduced := env.Reduce(filter)
-	vars, names := utils.RawEnvVars(reduced)
+	vars := utils.RawEnvVars(reduced)
 
 	c.Check(vars, gc.HasLen, 0)
-	c.Check(names, gc.HasLen, 0)
 }
 
 func (*osEnvSuite) TestOSEnvReduceEmpty(c *gc.C) {
@@ -234,30 +217,27 @@ func (*osEnvSuite) TestOSEnvReduceEmpty(c *gc.C) {
 	}
 	env := utils.NewOSEnv()
 	reduced := env.Reduce(filter)
-	vars, names := utils.RawEnvVars(reduced)
+	vars := utils.RawEnvVars(reduced)
 
 	c.Check(vars, gc.HasLen, 0)
-	c.Check(names, gc.HasLen, 0)
 }
 
 func (*osEnvSuite) TestOSEnvCopy(c *gc.C) {
 	env := utils.NewOSEnv("x=a", "y=b")
 	copied := env.Copy()
 	copied.Set("z", "c")
-	vars, names := utils.RawEnvVars(copied)
+	vars := utils.RawEnvVars(copied)
 
 	c.Check(vars, jc.DeepEquals, map[string]string{"x": "a", "y": "b", "z": "c"})
-	c.Check(names, jc.DeepEquals, []string{"x", "y", "z"})
 	// Ensure they aren't linked.
 	c.Check(reflect.DeepEqual(vars, env.AsMap()), jc.IsFalse)
-	c.Check(reflect.DeepEqual(names, env.Names()), jc.IsFalse)
 }
 
 func (*osEnvSuite) TestOSEnvAsMap(c *gc.C) {
 	env := utils.NewOSEnv("x=a", "y=b")
 	vars := env.AsMap()
 	env.Set("z", "c")
-	varsOrig, _ := utils.RawEnvVars(env)
+	varsOrig := utils.RawEnvVars(env)
 
 	c.Check(vars, jc.DeepEquals, map[string]string{"x": "a", "y": "b"})
 	// Ensure they aren't linked.

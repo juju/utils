@@ -11,6 +11,6 @@ var (
 	ResolveSudoByFunc = resolveSudo
 )
 
-func RawEnvVars(env *OSEnv) (map[string]string, []string) {
-	return env.vars, env.names
+func RawEnvVars(env *OSEnv) map[string]string {
+	return env.vars
 }

@@ -13,8 +13,7 @@ import (
 
 // OSEnv is a snapshot of an OS environment.
 type OSEnv struct {
-	vars  map[string]string
-	names []string // ...because order matters.
+	vars map[string]string
 }
 
 // NewOSEnv creates a new OSEnv, prepopulated with the initial vars.
@@ -34,10 +33,15 @@ func ReadOSEnv() *OSEnv {
 	return env
 }
 
-// Names returns the list of env var names, in order.
+// TODO(ericsnow) Ignore env vars with empty values?
+// TODO(ericsnow) Sort the names?
+
+// Names returns an unsorted list of the env var names.
 func (env OSEnv) Names() []string {
-	names := make([]string, len(env.names))
-	copy(names, env.names)
+	names := make([]string, 0, len(env.vars))
+	for name := range env.vars {
+		names = append(names, name)
+	}
 	return names
 }
 
@@ -51,11 +55,11 @@ func (env OSEnv) Get(name string) string {
 // Set updates the value of the named environment variable. The old
 // value, if any, is returned.
 func (env *OSEnv) Set(name, value string) string {
+	// TODO(ericsnow) Rely on existing to be "" when not found.
 	existing, ok := env.vars[name]
 	if !ok {
-		env.names = append(env.names, name)
 		existing = ""
-	} // We otherwise preserve the original order.
+	}
 	env.vars[name] = value
 	return existing
 }
@@ -76,12 +80,6 @@ func (env *OSEnv) unset(name string) string {
 	if !ok {
 		return ""
 	}
-	for i, existing := range env.names {
-		if existing == name {
-			env.names = append(env.names[:i], env.names[i+1:]...)
-			break
-		}
-	}
 	delete(env.vars, name)
 	return value
 }
@@ -99,9 +97,6 @@ func (env *OSEnv) Update(vars ...string) *OSEnv {
 func (env *OSEnv) update(vars []string) {
 	for _, envVar := range vars {
 		name, value := SplitEnvVar(envVar)
-		if _, ok := env.vars[name]; !ok {
-			env.names = append(env.names, name)
-		} // We otherwise preserve the original order.
 		env.vars[name] = value
 	}
 }
@@ -146,11 +141,14 @@ func (env OSEnv) AsMap() map[string]string {
 	return envVars
 }
 
+// TODO(ericsnow) Ignore env vars with empty values?
+// TODO(ericsnow) Sort the result?
+
 // AsList copies the environment variables into a new list of raw
 // env var strings.
 func (env OSEnv) AsList() []string {
 	var envVars []string
-	for _, name := range env.names {
+	for _, name := range env.Names() {
 		value := env.vars[name]
 		envVar := JoinEnvVar(name, value)
 		envVars = append(envVars, envVar)
@@ -160,7 +158,7 @@ func (env OSEnv) AsList() []string {
 
 // PushOSEnv updates the current OS environment.
 func PushOSEnv(env *OSEnv) error {
-	for _, name := range env.names {
+	for _, name := range env.Names() {
 		value := env.vars[name]
 		if err := os.Setenv(name, value); err != nil {
 			return errors.Trace(err)

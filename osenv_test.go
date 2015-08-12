@@ -46,27 +46,6 @@ func (*osEnvSuite) TestOSEnvNames(c *gc.C) {
 	c.Check(names, jc.DeepEquals, []string{"x", "y"})
 }
 
-func (*osEnvSuite) TestOSEnvEmptyNamesOkay(c *gc.C) {
-	env := utils.NewOSEnv("x=", "y=")
-	names := env.EmptyNames()
-
-	c.Check(names, jc.DeepEquals, []string{"x", "y"})
-}
-
-func (*osEnvSuite) TestOSEnvEmptyNamesNone(c *gc.C) {
-	env := utils.NewOSEnv("x=a", "y=b")
-	names := env.EmptyNames()
-
-	c.Check(names, gc.HasLen, 0)
-}
-
-func (*osEnvSuite) TestOSEnvEmptyNamesMixed(c *gc.C) {
-	env := utils.NewOSEnv("x=a", "y=")
-	names := env.EmptyNames()
-
-	c.Check(names, jc.DeepEquals, []string{"y"})
-}
-
 func (*osEnvSuite) TestOSEnvGetOkay(c *gc.C) {
 	env := utils.NewOSEnv("x=a", "y=b")
 	y := env.Get("y")

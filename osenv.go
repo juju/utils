@@ -41,18 +41,6 @@ func (env OSEnv) Names() []string {
 	return names
 }
 
-// EmptyNames returns the list of env var names for which the value
-// is the empty string.
-func (env OSEnv) EmptyNames() []string {
-	var empty []string
-	for _, name := range env.Names() {
-		if env.vars[name] == "" {
-			empty = append(empty, name)
-		}
-	}
-	return empty
-}
-
 // Get returns the value of the named environment variable. If it is
 // not set then the empty string is returned.
 func (env OSEnv) Get(name string) string {

@@ -11,7 +11,8 @@ import (
 	"github.com/juju/errors"
 )
 
-// OSEnv is a snapshot of an OS environment.
+// OSEnv is a snapshot of an OS environment. The order of env vars
+// is not preserved nor are duplicates.
 type OSEnv struct {
 	Vars map[string]string
 }
@@ -34,7 +35,6 @@ func ReadOSEnv() *OSEnv {
 }
 
 // TODO(ericsnow) Ignore env vars with empty values?
-// TODO(ericsnow) Sort the names?
 
 // Names returns an unsorted list of the env var names.
 func (env OSEnv) Names() []string {
@@ -135,7 +135,6 @@ func (env OSEnv) Copy() *OSEnv {
 }
 
 // TODO(ericsnow) Ignore env vars with empty values?
-// TODO(ericsnow) Sort the result?
 
 // AsList copies the environment variables into a new list of raw
 // env var strings.

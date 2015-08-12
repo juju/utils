@@ -35,9 +35,8 @@ func ReadOSEnv() *OSEnv {
 	return env
 }
 
-// TODO(ericsnow) Ignore env vars with empty values?
-
-// Names returns an unsorted list of the env var names.
+// Names returns an unsorted list of the env var names. The list
+// includes those that have empty values.
 func (env OSEnv) Names() []string {
 	names := make([]string, 0, len(env.Vars))
 	for name := range env.Vars {
@@ -132,10 +131,8 @@ func (env OSEnv) Copy() *OSEnv {
 	return NewOSEnv(env.AsList()...)
 }
 
-// TODO(ericsnow) Ignore env vars with empty values?
-
 // AsList copies the environment variables into a new list of raw
-// env var strings.
+// env var strings. The list includes those with empty values.
 func (env OSEnv) AsList() []string {
 	var envVars []string
 	for _, name := range env.Names() {

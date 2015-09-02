@@ -5,8 +5,6 @@ package utils_test
 
 import (
 	"encoding/base64"
-	"fmt"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -36,15 +34,13 @@ type httpSuite struct {
 
 var _ = gc.Suite(&httpSuite{})
 
-type trivialResponseHandler struct{}
-
-func (t *trivialResponseHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "Greetings!\n")
-}
-
 func (s *httpSuite) SetUpTest(c *gc.C) {
 	s.IsolationSuite.SetUpTest(c)
-	s.Server = httptest.NewTLSServer(&trivialResponseHandler{})
+	// NewTLSServer returns a server which serves TLS, but
+	// its certificates are not validated by the default
+	// OS certificates, so any HTTPS request will fail
+	// unless a non-validating client is used.
+	s.Server = httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
 }
 
 func (s *httpSuite) TearDownTest(c *gc.C) {
@@ -60,36 +56,23 @@ func (s *httpSuite) TestDefaultClientFails(c *gc.C) {
 }
 
 func (s *httpSuite) TestValidatingClientGetter(c *gc.C) {
-	client1 := utils.GetValidatingHTTPClient()
-	client2 := utils.GetHTTPClient(utils.VerifySSLHostnames)
-	c.Check(client1, gc.Equals, client2)
-}
-
-func (s *httpSuite) TestNonValidatingClientGetter(c *gc.C) {
-	client1 := utils.GetNonValidatingHTTPClient()
-	client2 := utils.GetHTTPClient(utils.NoVerifySSLHostnames)
-	c.Check(client1, gc.Equals, client2)
-}
-
-func (s *httpSuite) TestValidatingClientFails(c *gc.C) {
 	client := utils.GetValidatingHTTPClient()
 	_, err := client.Get(s.Server.URL)
 	c.Assert(err, gc.ErrorMatches, "(.|\n)*x509: certificate signed by unknown authority")
+
+	client1 := utils.GetValidatingHTTPClient()
+	c.Assert(client1, gc.Not(gc.Equals), client)
 }
 
-func (s *httpSuite) TestInsecureClientSucceeds(c *gc.C) {
-	response, err := utils.GetNonValidatingHTTPClient().Get(s.Server.URL)
+func (s *httpSuite) TestNonValidatingClientGetter(c *gc.C) {
+	client := utils.GetNonValidatingHTTPClient()
+	resp, err := client.Get(s.Server.URL)
 	c.Assert(err, gc.IsNil)
-	defer response.Body.Close()
-	body, err := ioutil.ReadAll(response.Body)
-	c.Assert(err, gc.IsNil)
-	c.Check(string(body), gc.Equals, "Greetings!\n")
-}
+	resp.Body.Close()
+	c.Assert(resp.StatusCode, gc.Equals, http.StatusOK)
 
-func (s *httpSuite) TestInsecureClientCached(c *gc.C) {
 	client1 := utils.GetNonValidatingHTTPClient()
-	client2 := utils.GetNonValidatingHTTPClient()
-	c.Check(client1, gc.Equals, client2)
+	c.Assert(client1, gc.Not(gc.Equals), client)
 }
 
 func (s *httpSuite) TestBasicAuthHeader(c *gc.C) {

@@ -20,11 +20,11 @@ type UUID [16]byte
 // accepts any UUID version.
 // http://www.ietf.org/rfc/rfc4122.txt
 var (
-	block1  = "[0-9a-f]{8}"
-	block2  = "[0-9a-f]{4}"
-	block3  = "[0-9a-f]{4}"
-	block4  = "[0-9a-f]{4}"
-	block5  = "[0-9a-f]{12}"
+	block1 = "[0-9a-f]{8}"
+	block2 = "[0-9a-f]{4}"
+	block3 = "[0-9a-f]{4}"
+	block4 = "[0-9a-f]{4}"
+	block5 = "[0-9a-f]{12}"
 
 	UUIDSnippet = block1 + "-" + block2 + "-" + block3 + "-" + block4 + "-" + block5
 	validUUID   = regexp.MustCompile("^" + UUIDSnippet + "$")

@@ -24,7 +24,7 @@ var (
 
 func (randomStringSuite) TestLength(c *gc.C) {
 	s := utils.RandomString(length, validChars)
-	c.Assert(len(s), gc.Equals, length)
+	c.Assert(s, gc.HasLen, length)
 }
 
 func (randomStringSuite) TestContentInValidRunes(c *gc.C) {

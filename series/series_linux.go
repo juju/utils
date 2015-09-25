@@ -112,5 +112,6 @@ func updateDistroInfo() error {
 		seriesVersions[series] = seriesInfo[0]
 		ubuntuSeries[series] = seriesInfo[0]
 	}
+	updateVersionSeries()
 	return nil
 }

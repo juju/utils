@@ -34,6 +34,18 @@ func IsUnknownSeriesVersionError(err error) bool {
 	return ok
 }
 
+type unknownVersionSeriesError string
+
+func (e unknownVersionSeriesError) Error() string {
+	return `unknown series for version: "` + string(e) + `"`
+}
+
+// IsUnknownVersionSeriesError returns true if err is of type unknownVersionSeriesError.
+func IsUnknownVersionSeriesError(err error) bool {
+	_, ok := errors.Cause(err).(unknownVersionSeriesError)
+	return ok
+}
+
 var defaultVersionIDs = map[string]string{
 	"arch": "rolling",
 }
@@ -62,6 +74,9 @@ var seriesVersions = map[string]string{
 	"centos7":     "centos7",
 	"arch":        "rolling",
 }
+
+// versionSeries provides a mapping between versions and series names.
+var versionSeries = reverseSeriesVersion()
 
 var centosSeries = map[string]string{
 	"centos7": "centos7",
@@ -162,6 +177,37 @@ func SeriesVersion(series string) (string, error) {
 	}
 
 	return "", errors.Trace(unknownSeriesVersionError(series))
+}
+
+// VersionSeries returns the series (e.g.trusty) for the specified version (e.g. 14.04).
+func VersionSeries(version string) (string, error) {
+	if version == "" {
+		panic("cannot pass empty version to VersionSeries()")
+	}
+	seriesVersionsMutex.Lock()
+	defer seriesVersionsMutex.Unlock()
+	if series, ok := versionSeries[version]; ok {
+		return series, nil
+	}
+	updateSeriesVersions()
+	if series, ok := versionSeries[version]; ok {
+		return series, nil
+	}
+	return "", errors.Trace(unknownVersionSeriesError(version))
+}
+
+func updateVersionSeries() {
+	versionSeries = reverseSeriesVersion()
+}
+
+// reverseSeriesVersion returns reverse of seriesVersion map,
+// keyed on versions with series as values.
+func reverseSeriesVersion() map[string]string {
+	reverse := make(map[string]string, len(seriesVersions))
+	for k, v := range seriesVersions {
+		reverse[v] = k
+	}
+	return reverse
 }
 
 // SupportedSeries returns the series on which we can run Juju workloads.

@@ -176,19 +176,24 @@ func SeriesVersion(series string) (string, error) {
 	return "", errors.Trace(unknownSeriesVersionError(series))
 }
 
+// VersionSeries returns the series (e.g.trusty) for the specified version (e.g. 14.04).
 func VersionSeries(version string) (string, error) {
 	if version == "" {
 		panic("cannot pass empty version to VersionSeries()")
 	}
-	supportedSeries := SupportedSeries()
 	seriesVersionsMutex.Lock()
 	defer seriesVersionsMutex.Unlock()
-	for _, s := range supportedSeries {
-		if sv, ok := seriesVersions[s]; ok {
-			if version == sv {
-				return s, nil
-			}
-		}
+
+	// Reverse seriesVersion map:
+	// instead of keys being series and values -version;
+	// have map where keys are versions and values are series.
+	versionSeries := make(map[string]string, len(seriesVersions))
+
+	for k, v := range seriesVersions {
+		versionSeries[v] = k
+	}
+	if s, ok := versionSeries[version]; ok {
+		return s, nil
 	}
 	return "", errors.Trace(unknownVersionSeriesError(version))
 }

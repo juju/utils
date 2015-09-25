@@ -75,14 +75,8 @@ var seriesVersions = map[string]string{
 	"arch":        "rolling",
 }
 
-// versionSeries is reverse seriesVersion map:
-// instead of keys being series and values -version;
-// have map where keys are versions and values are series.
+// versionSeries provides a mapping between versions and series names.
 var versionSeries = reverseSeriesVersion()
-
-var updateVersionSeries = func() {
-	versionSeries = reverseSeriesVersion()
-}
 
 var centosSeries = map[string]string{
 	"centos7": "centos7",
@@ -202,8 +196,12 @@ func VersionSeries(version string) (string, error) {
 	return "", errors.Trace(unknownVersionSeriesError(version))
 }
 
+func updateVersionSeries() {
+	versionSeries = reverseSeriesVersion()
+}
+
 // reverseSeriesVersion returns reverse of seriesVersion map,
-// keyed on versions with series are values.
+// keyed on versions with series as values.
 func reverseSeriesVersion() map[string]string {
 	reverse := make(map[string]string, len(seriesVersions))
 	for k, v := range seriesVersions {

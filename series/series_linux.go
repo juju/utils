@@ -110,7 +110,6 @@ func updateDistroInfo() error {
 		// the numeric version may contain a LTS moniker so strip that out.
 		seriesInfo := strings.Split(parts[0], " ")
 		seriesVersions[series] = seriesInfo[0]
-		reverseSeriesVersion()
 		ubuntuSeries[series] = seriesInfo[0]
 	}
 	return nil

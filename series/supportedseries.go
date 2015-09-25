@@ -75,11 +75,6 @@ var seriesVersions = map[string]string{
 	"arch":        "rolling",
 }
 
-// versionSeries is reverse seriesVersion map:
-// instead of keys being series and values -version;
-// have map where keys are versions and values are series.
-var versionSeries = make(map[string]string, len(seriesVersions))
-
 var centosSeries = map[string]string{
 	"centos7": "centos7",
 }
@@ -161,7 +156,6 @@ func GetOSFromSeries(series string) (os.OSType, error) {
 
 var (
 	seriesVersionsMutex sync.Mutex
-	versionsSeriesMutex sync.Mutex
 )
 
 // SeriesVersion returns the version for the specified series.
@@ -187,18 +181,25 @@ func VersionSeries(version string) (string, error) {
 	if version == "" {
 		panic("cannot pass empty version to VersionSeries()")
 	}
-	versionsSeriesMutex.Lock()
-	defer versionsSeriesMutex.Unlock()
+	seriesVersionsMutex.Lock()
+	defer seriesVersionsMutex.Unlock()
+	versionSeries := reverseSeriesVersion()
 	if s, ok := versionSeries[version]; ok {
 		return s, nil
 	}
 	return "", errors.Trace(unknownVersionSeriesError(version))
 }
 
-func reverseSeriesVersion() {
+// versionSeries is reverse seriesVersion map:
+// instead of keys being series and values -version;
+// have map where keys are versions and values are series.
+func reverseSeriesVersion() map[string]string {
+	updateSeriesVersions()
+	versionSeries := make(map[string]string, len(seriesVersions))
 	for k, v := range seriesVersions {
 		versionSeries[v] = k
 	}
+	return versionSeries
 }
 
 // SupportedSeries returns the series on which we can run Juju workloads.

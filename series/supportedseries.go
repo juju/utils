@@ -34,6 +34,18 @@ func IsUnknownSeriesVersionError(err error) bool {
 	return ok
 }
 
+type unknownVersionSeriesError string
+
+func (e unknownVersionSeriesError) Error() string {
+	return `unknown series for version: "` + string(e) + `"`
+}
+
+// IsUnknownVersionSeriesError returns true if err is of type unknownVersionSeriesError.
+func IsUnknownVersionSeriesError(err error) bool {
+	_, ok := errors.Cause(err).(unknownVersionSeriesError)
+	return ok
+}
+
 var defaultVersionIDs = map[string]string{
 	"arch": "rolling",
 }
@@ -162,6 +174,23 @@ func SeriesVersion(series string) (string, error) {
 	}
 
 	return "", errors.Trace(unknownSeriesVersionError(series))
+}
+
+func VersionSeries(version string) (string, error) {
+	if version == "" {
+		panic("cannot pass empty version to VersionSeries()")
+	}
+	supportedSeries := SupportedSeries()
+	seriesVersionsMutex.Lock()
+	defer seriesVersionsMutex.Unlock()
+	for _, s := range supportedSeries {
+		if sv, ok := seriesVersions[s]; ok {
+			if version == sv {
+				return s, nil
+			}
+		}
+	}
+	return "", errors.Trace(unknownVersionSeriesError(version))
 }
 
 // SupportedSeries returns the series on which we can run Juju workloads.

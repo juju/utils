@@ -67,7 +67,7 @@ func (s *supportedSeriesSuite) TestUnknownOSFromSeries(c *gc.C) {
 	c.Assert(err, gc.ErrorMatches, `unknown OS for series: "Xuanhuaceratops"`)
 }
 
-func (s *supportedSeriesSuite) TestOSSupportedSeries(c *gc.C) {
+func setSeriesTestData() {
 	series.SetSeriesVersions(map[string]string{
 		"trusty":  "14.04",
 		"utopic":  "14.10",
@@ -76,6 +76,10 @@ func (s *supportedSeriesSuite) TestOSSupportedSeries(c *gc.C) {
 		"centos7": "centos7",
 		"arch":    "rolling",
 	})
+}
+
+func (s *supportedSeriesSuite) TestOSSupportedSeries(c *gc.C) {
+	setSeriesTestData()
 	supported := series.OSSupportedSeries(os.Ubuntu)
 	c.Assert(supported, jc.SameContents, []string{"trusty", "utopic"})
 	supported = series.OSSupportedSeries(os.Windows)
@@ -84,4 +88,23 @@ func (s *supportedSeriesSuite) TestOSSupportedSeries(c *gc.C) {
 	c.Assert(supported, jc.SameContents, []string{"centos7"})
 	supported = series.OSSupportedSeries(os.Arch)
 	c.Assert(supported, jc.SameContents, []string{"arch"})
+}
+
+func (s *supportedSeriesSuite) TestVersionSeriesValid(c *gc.C) {
+	setSeriesTestData()
+	seriesResult, err := series.VersionSeries("14.04")
+	c.Assert(err, jc.ErrorIsNil)
+	c.Assert("trusty", gc.DeepEquals, seriesResult)
+}
+
+func (s *supportedSeriesSuite) TestVersionSeriesEmpty(c *gc.C) {
+	setSeriesTestData()
+	panicFunc := func() { series.VersionSeries("") }
+	c.Assert(panicFunc, gc.PanicMatches, ".*cannot pass empty version to VersionSeries.*")
+}
+
+func (s *supportedSeriesSuite) TestVersionSeriesInvalid(c *gc.C) {
+	setSeriesTestData()
+	_, err := series.VersionSeries("73655")
+	c.Assert(err, gc.ErrorMatches, `.*unknown series for version: "73655".*`)
 }

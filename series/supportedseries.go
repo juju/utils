@@ -75,6 +75,15 @@ var seriesVersions = map[string]string{
 	"arch":        "rolling",
 }
 
+// versionSeries is reverse seriesVersion map:
+// instead of keys being series and values -version;
+// have map where keys are versions and values are series.
+var versionSeries = reverseSeriesVersion()
+
+var updateVersionSeries = func() {
+	versionSeries = reverseSeriesVersion()
+}
+
 var centosSeries = map[string]string{
 	"centos7": "centos7",
 }
@@ -183,23 +192,24 @@ func VersionSeries(version string) (string, error) {
 	}
 	seriesVersionsMutex.Lock()
 	defer seriesVersionsMutex.Unlock()
-	versionSeries := reverseSeriesVersion()
-	if s, ok := versionSeries[version]; ok {
-		return s, nil
+	if series, ok := versionSeries[version]; ok {
+		return series, nil
+	}
+	updateSeriesVersions()
+	if series, ok := versionSeries[version]; ok {
+		return series, nil
 	}
 	return "", errors.Trace(unknownVersionSeriesError(version))
 }
 
-// versionSeries is reverse seriesVersion map:
-// instead of keys being series and values -version;
-// have map where keys are versions and values are series.
+// reverseSeriesVersion returns reverse of seriesVersion map,
+// keyed on versions with series are values.
 func reverseSeriesVersion() map[string]string {
-	updateSeriesVersions()
-	versionSeries := make(map[string]string, len(seriesVersions))
+	reverse := make(map[string]string, len(seriesVersions))
 	for k, v := range seriesVersions {
-		versionSeries[v] = k
+		reverse[v] = k
 	}
-	return versionSeries
+	return reverse
 }
 
 // SupportedSeries returns the series on which we can run Juju workloads.

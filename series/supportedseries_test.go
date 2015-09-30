@@ -99,12 +99,18 @@ func (s *supportedSeriesSuite) TestVersionSeriesValid(c *gc.C) {
 
 func (s *supportedSeriesSuite) TestVersionSeriesEmpty(c *gc.C) {
 	setSeriesTestData()
-	panicFunc := func() { series.VersionSeries("") }
-	c.Assert(panicFunc, gc.PanicMatches, ".*cannot pass empty version to VersionSeries.*")
+	_, err := series.VersionSeries("")
+	c.Assert(err, gc.ErrorMatches, `.*unknown series for version: "".*`)
 }
 
 func (s *supportedSeriesSuite) TestVersionSeriesInvalid(c *gc.C) {
 	setSeriesTestData()
 	_, err := series.VersionSeries("73655")
 	c.Assert(err, gc.ErrorMatches, `.*unknown series for version: "73655".*`)
+}
+
+func (s *supportedSeriesSuite) TestSeriesVersionEmpty(c *gc.C) {
+	setSeriesTestData()
+	_, err := series.SeriesVersion("")
+	c.Assert(err, gc.ErrorMatches, `.*unknown version for series: "".*`)
 }

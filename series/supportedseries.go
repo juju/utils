@@ -164,7 +164,7 @@ var (
 // SeriesVersion returns the version for the specified series.
 func SeriesVersion(series string) (string, error) {
 	if series == "" {
-		panic("cannot pass empty series to SeriesVersion()")
+		return "", errors.Trace(unknownSeriesVersionError(""))
 	}
 	seriesVersionsMutex.Lock()
 	defer seriesVersionsMutex.Unlock()
@@ -182,7 +182,7 @@ func SeriesVersion(series string) (string, error) {
 // VersionSeries returns the series (e.g.trusty) for the specified version (e.g. 14.04).
 func VersionSeries(version string) (string, error) {
 	if version == "" {
-		panic("cannot pass empty version to VersionSeries()")
+		return "", errors.Trace(unknownVersionSeriesError(""))
 	}
 	seriesVersionsMutex.Lock()
 	defer seriesVersionsMutex.Unlock()

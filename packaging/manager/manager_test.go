@@ -193,16 +193,6 @@ var simpleTestCases = []*simpleTestCase{
 		},
 	},
 	&simpleTestCase{
-		"Test repository addition.",
-		"add-apt-repository --yes some-repo",
-		nil,
-		"yum-config-manager --add-repo some-repo",
-		nil,
-		func(pacman manager.PackageManager) (interface{}, error) {
-			return nil, pacman.AddRepository(testedRepoName)
-		},
-	},
-	&simpleTestCase{
 		"Test repository removal.",
 		aptCmder.RemoveRepositoryCmd(testedRepoName),
 		nil,

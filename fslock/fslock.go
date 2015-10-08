@@ -1,7 +1,7 @@
 // Copyright 2013 Canonical Ltd.
 // Licensed under the LGPLv3, see LICENCE file for details.
 
-// On-disk mutex protecting a resource
+// Package fslock is an on-disk mutex protecting a resource
 //
 // A lock is represented on disk by a directory of a particular name,
 // containing an information file.  Taking a lock is done by renaming a
@@ -17,12 +17,13 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"path/filepath"
 	"regexp"
 	"time"
 
 	"github.com/juju/loggo"
-
 	"github.com/juju/utils"
+	"gopkg.in/mgo.v2/bson"
 )
 
 const (
@@ -48,6 +49,12 @@ type Lock struct {
 	nonce  []byte
 }
 
+// Nonce holds data that is unique to this lock
+type Nonce struct {
+	PID  int
+	UUID []byte
+}
+
 // NewLock returns a new lock with the given name within the given lock
 // directory, without acquiring it. The lock name must match the regular
 // expression defined by NameRegexp.
@@ -55,7 +62,15 @@ func NewLock(lockDir, name string) (*Lock, error) {
 	if !validName.MatchString(name) {
 		return nil, fmt.Errorf("Invalid lock name %q.  Names must match %q", name, NameRegexp)
 	}
-	nonce, err := utils.NewUUID()
+	uuid, err := utils.NewUUID()
+	if err != nil {
+		return nil, err
+	}
+	nonceParts := Nonce{
+		PID:  os.Getpid(),
+		UUID: uuid[:],
+	}
+	nonce, err := bson.Marshal(nonceParts)
 	if err != nil {
 		return nil, err
 	}
@@ -150,12 +165,75 @@ func (lock *Lock) lockLoop(message string, continueFunc func() error) error {
 	}
 }
 
+// clean reads the lock and checks that it is valid. If the lock points to a running
+// juju process that is older than the lock file, the lock is left in place, else
+// the lock is removed.
+func (lock *Lock) clean() error {
+	// If a lock exists, see if it is stale
+	heldNonce, err := ioutil.ReadFile(lock.heldFile())
+	if err != nil {
+		// No lock or we can't read it, so nothing to do/that we can do
+		logger.Debugf("No lock to clean")
+		return nil
+	}
+
+	// There is a lock...
+	var nonce Nonce
+	err = bson.Unmarshal(heldNonce, &nonce)
+	if err != nil {
+		// The lock should contain a BSON encoded Nonce object. If we can't decode
+		// it then we consider it garbage and just delete the lock.
+		logger.Debugf("Can't decode lock %s (%s): %s", lock.name, lock.Message(), err)
+		return lock.BreakLock()
+	}
+
+	procExeLink := fmt.Sprintf("/proc/%d/exe", nonce.PID)
+	path, err := filepath.EvalSymlinks(procExeLink)
+	if err != nil {
+		// If we can't read the symlink, it can't be a Juju process started by
+		// the same user (or something really bad is going on)
+		logger.Debugf("Lock is stale (can't read exe symlink) %s (%s): %s", lock.name, lock.Message(), err)
+		return lock.BreakLock()
+	}
+
+	exe := filepath.Base(path)
+	if exe != "juju" && exe != "fslock.test" {
+		// If the process isn't Juju (or the test process), the lock is stale and we can break it safely.
+		logger.Debugf("Lock is stale (exe isn't juju) %s (%s): %s", lock.name, lock.Message(), exe)
+		return lock.BreakLock()
+	}
+
+	// Lock is current and points to a running instance of Juju
+	procFileInfo, err := os.Lstat(procExeLink)
+	if err != nil {
+		logger.Debugf("Lock cleaner error -- can't os.Lstat(procExeLink) %s (%s): %s", lock.name, lock.Message(), err)
+		return err
+	}
+
+	lockFileInfo, err := os.Lstat(lock.heldFile())
+	if err != nil {
+		logger.Debugf("Lock cleaner error -- can't os.Lstat(lock.heldFile()) %s (%s): %s", lock.name, lock.Message(), err)
+		return err
+	}
+
+	if procFileInfo.ModTime().After(lockFileInfo.ModTime()) {
+		// If the process is newer than the lock, the lock is stale
+		logger.Debugf("Lock is stale (older then juju process) %s (%s)", lock.name, lock.Message())
+		return lock.BreakLock()
+	}
+
+	logger.Debugf("Lock is current %s (%s)", lock.name, lock.Message())
+	// lock is current. Do nothing.
+	return nil
+}
+
 // Lock blocks until it is able to acquire the lock.  Since we are dealing
 // with sharing and locking using the filesystem, it is good behaviour to
 // provide a message that is saved with the lock.  This is output in debugging
 // information, and can be queried by any other Lock dealing with the same
 // lock name and lock directory.
 func (lock *Lock) Lock(message string) error {
+	lock.clean()
 	// The continueFunc is effectively a no-op, causing continual looping
 	// until the lock is acquired.
 	continueFunc := func() error { return nil }

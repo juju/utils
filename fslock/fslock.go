@@ -19,6 +19,7 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/juju/loggo"
@@ -173,7 +174,7 @@ func (lock *Lock) clean() error {
 	heldNonce, err := ioutil.ReadFile(lock.heldFile())
 	if err != nil {
 		// No lock or we can't read it, so nothing to do/that we can do
-		logger.Debugf("No lock to clean")
+		logger.Tracef("No lock to clean")
 		return nil
 	}
 
@@ -197,7 +198,7 @@ func (lock *Lock) clean() error {
 	}
 
 	exe := filepath.Base(path)
-	if exe != "juju" && exe != "fslock.test" {
+	if exe != "juju" && !strings.HasSuffix(exe, ".test") {
 		// If the process isn't Juju (or the test process), the lock is stale and we can break it safely.
 		logger.Debugf("Lock is stale (exe isn't juju) %s (%s): %s", lock.name, lock.Message(), exe)
 		return lock.BreakLock()
@@ -216,13 +217,16 @@ func (lock *Lock) clean() error {
 		return err
 	}
 
-	if procFileInfo.ModTime().After(lockFileInfo.ModTime()) {
-		// If the process is newer than the lock, the lock is stale
+	if procFileInfo.ModTime().After(lockFileInfo.ModTime().Add(time.Second)) {
+		// If the process is newer than the lock, the lock is stale. The 1s fiddle is much more than is needed
+		// to prevent errant test failures (on dooferlad's dev box 50ms is plenty). It is fine to have this much
+		// margin for error though because this branch should only be taken when a PID has been recycled and that
+		// only happens when all 32k (/proc/sys/kernel/pid_max) have been used or the machine reboots.
 		logger.Debugf("Lock is stale (older then juju process) %s (%s)", lock.name, lock.Message())
 		return lock.BreakLock()
 	}
 
-	logger.Debugf("Lock is current %s (%s)", lock.name, lock.Message())
+	logger.Tracef("Lock is current %s (%s)", lock.name, lock.Message())
 	// lock is current. Do nothing.
 	return nil
 }

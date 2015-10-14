@@ -12,7 +12,6 @@ package fslock
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -20,9 +19,11 @@ import (
 	"regexp"
 	"time"
 
+	"github.com/juju/errors"
 	"github.com/juju/loggo"
 
 	"github.com/juju/utils"
+	"github.com/juju/utils/clock"
 )
 
 const (
@@ -33,7 +34,8 @@ const (
 )
 
 var (
-	logger         = loggo.GetLogger("juju.utils.fslock")
+	logger = loggo.GetLogger("juju.utils.fslock")
+
 	ErrLockNotHeld = errors.New("lock not held")
 	ErrTimeout     = errors.New("lock timeout exceeded")
 
@@ -46,12 +48,13 @@ type Lock struct {
 	name   string
 	parent string
 	nonce  []byte
+	clock  clock.Clock
 }
 
 // NewLock returns a new lock with the given name within the given lock
 // directory, without acquiring it. The lock name must match the regular
 // expression defined by NameRegexp.
-func NewLock(lockDir, name string) (*Lock, error) {
+func NewLock(lockDir, name string, clock clock.Clock) (*Lock, error) {
 	if !validName.MatchString(name) {
 		return nil, fmt.Errorf("Invalid lock name %q.  Names must match %q", name, NameRegexp)
 	}
@@ -63,6 +66,7 @@ func NewLock(lockDir, name string) (*Lock, error) {
 		name:   name,
 		parent: lockDir,
 		nonce:  nonce[:],
+		clock:  clock,
 	}
 	// Ensure the parent exists.
 	if err := os.MkdirAll(lock.parent, 0755); err != nil {
@@ -146,7 +150,7 @@ func (lock *Lock) lockLoop(message string, continueFunc func() error) error {
 			logger.Infof("attempted lock failed %q, %s, currently held: %s", lock.name, message, currMessage)
 			heldMessage = currMessage
 		}
-		time.Sleep(LockWaitDelay)
+		<-lock.clock.After(LockWaitDelay)
 	}
 }
 
@@ -166,9 +170,9 @@ func (lock *Lock) Lock(message string) error {
 // within the given duration, it returns ErrTimeout.  See `Lock` for
 // information about the message.
 func (lock *Lock) LockWithTimeout(duration time.Duration, message string) error {
-	deadline := time.Now().Add(duration)
+	deadline := lock.clock.Now().Add(duration)
 	continueFunc := func() error {
-		if time.Now().After(deadline) {
+		if lock.clock.Now().After(deadline) {
 			return ErrTimeout
 		}
 		return nil

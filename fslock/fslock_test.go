@@ -9,6 +9,7 @@ import (
 	"os"
 	"path"
 	"runtime"
+	"strings"
 	"sync/atomic"
 	"time"
 
@@ -98,9 +99,11 @@ func (s *fslockSuite) TestNewLockWithExistingFileInPlace(c *gc.C) {
 	path := path.Join(dir, "locks")
 	err = ioutil.WriteFile(path, []byte("foo"), 0644)
 	c.Assert(err, gc.IsNil)
-
-	_, err = fslock.NewLockWithClock(path, "special", &fastclock{c})
-	c.Assert(err, gc.ErrorMatches, `.* not a directory`)
+	_, err = fslock.NewLock(path, "special", &fastclock{c})
+		c.Assert(err, gc.ErrorMatches, `.*The system cannot find the path specified\.`)
+	} else {
+		c.Assert(err, gc.ErrorMatches, `.* not a directory`)
+	}
 }
 
 func (s *fslockSuite) TestIsLockHeldBasics(c *gc.C) {
@@ -363,15 +366,11 @@ func (s *fslockSuite) TestTomb(c *gc.C) {
 }
 
 func changeNoncePID(c *gc.C, lockFile string, PID int) {
-	var nonce fslock.Nonce
 	heldNonce, err := ioutil.ReadFile(lockFile)
 	c.Assert(err, gc.IsNil)
-	err = bson.Unmarshal(heldNonce, &nonce)
-	c.Assert(err, gc.IsNil)
-	nonce.PID = PID
-	nonceBytes, err := bson.Marshal(nonce)
-	c.Assert(err, gc.IsNil)
-	err = ioutil.WriteFile(lockFile, nonceBytes, 0755)
+	fields := strings.Fields(string(heldNonce))
+	nonce := fmt.Sprintf("%d %s", PID, fields[1])
+	err = ioutil.WriteFile(lockFile, []byte(nonce), 0755)
 	c.Assert(err, gc.IsNil)
 }
 

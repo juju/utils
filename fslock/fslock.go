@@ -19,6 +19,7 @@ import (
 	"path"
 	"regexp"
 	"runtime"
+	"strings"
 	"time"
 
 	"github.com/juju/errors"
@@ -49,8 +50,8 @@ var (
 type Lock struct {
 	name   string
 	parent string
-	nonce  []byte
 	clock  clock.Clock
+	nonce  string
 }
 
 // NewLockWithClock is like NewLock but uses the given clock
@@ -59,15 +60,18 @@ func NewLockWithClock(lockDir, name string, clock clock.Clock) (*Lock, error) {
 	if !validName.MatchString(name) {
 		return nil, fmt.Errorf("Invalid lock name %q.  Names must match %q", name, NameRegexp)
 	}
-	nonce, err := utils.NewUUID()
+	uuid, err := utils.NewUUID()
+	if err != nil {
+		return nil, err
+	}
 	if err != nil {
 		return nil, err
 	}
 	lock := &Lock{
 		name:   name,
 		parent: lockDir,
-		nonce:  nonce[:],
 		clock:  clock,
+		nonce:  fmt.Sprintf("%d %s", os.Getpid(), uuid),
 	}
 	// Ensure the parent exists.
 	if err := os.MkdirAll(lock.parent, 0755); err != nil {
@@ -110,18 +114,18 @@ func (lock *Lock) acquire(message string) (bool, error) {
 	// the right name.  Using the same directory to make sure the directories
 	// are on the same filesystem.  Use a directory name starting with "." as
 	// it isn't a valid lock name.
-	tempLockName := fmt.Sprintf(".%x", lock.nonce)
+	tempLockName := lock.nonce
 	tempDirName, err := ioutil.TempDir(lock.parent, tempLockName)
 	if err != nil {
 		return false, err // this shouldn't really fail...
 	}
 	// write nonce into the temp dir
-	err = ioutil.WriteFile(path.Join(tempDirName, heldFilename), lock.nonce, 0755)
+	err = ioutil.WriteFile(path.Join(tempDirName, heldFilename), []byte(lock.nonce), 0664)
 	if err != nil {
 		return false, err
 	}
 	if message != "" {
-		err = ioutil.WriteFile(path.Join(tempDirName, messageFilename), []byte(message), 0755)
+		err = ioutil.WriteFile(path.Join(tempDirName, messageFilename), []byte(message), 0664)
 		if err != nil {
 			return false, err
 		}
@@ -175,31 +179,39 @@ func (lock *Lock) clean() error {
 	}
 
 	// There is a lock...
-	var nonce Nonce
-	err = bson.Unmarshal(heldNonce, &nonce)
-	if err != nil {
-		// The lock should contain a BSON encoded Nonce object. If we can't decode
-		// it then we consider it garbage and just delete the lock.
-		logger.Debugf("Can't decode lock %s (%s): %s", lock.name, lock.Message(), err)
-		return lock.BreakLock()
-	}
-
+	PID := strings.Fields(string(heldNonce))[0]
 	var processStartTime time.Time
 
 	if runtime.GOOS == "windows" {
-		cmd := fmt.Sprintf("powershell \"'{0:O}' -f (Get-Process -Id %d).StartTime\"", nonce.PID)
-		out, err := exec.Command(cmd).Output()
+		cmd := fmt.Sprintf("'{0:O}' -f (Get-Process -Id %s).StartTime", PID)
+		out, err := exec.Command("powershell.exe", cmd).CombinedOutput()
 		if err != nil {
-			logger.Debugf("Lock is stale (can't find process) %s (%s): %s", lock.name, lock.Message(), err)
+			logger.Debugf("Powershell Get-Process -Id %s failed %s (%s)", PID, lock.name, lock.Message())
 			return lock.BreakLock()
 		}
-		processStartTime, err = time.Parse(time.RFC3339Nano, string(out))
+		matched, err := regexp.MatchString("ObjectNotFound", string(out))
 		if err != nil {
-			logger.Errorf("Unable to parse time string: %s", out)
+			logger.Errorf("Error searching for lock status")
+		}
+		if matched {
+			logger.Debugf("Lock is stale (can't find process) %s (%s)", lock.name, lock.Message())
+			return lock.BreakLock()
+		}
+		matched, err = regexp.MatchString(`^\s*$`, string(out))
+		if err != nil {
+			logger.Errorf("Error searching for lock status")
+		}
+		if matched {
+			logger.Debugf("Lock is stale (can't find process (2)) %s (%s)", lock.name, lock.Message())
+			return lock.BreakLock()
+		}
+		processStartTime, err = time.Parse(time.RFC3339Nano, strings.TrimSpace(string(out)))
+		if err != nil {
+			logger.Errorf("Unable to parse time string: >%s<", strings.TrimSpace(string(out)))
 		}
 	} else {
 		// Find if the lock points to a running process...
-		procExeLink := fmt.Sprintf("/proc/%d/exe", nonce.PID)
+		procExeLink := fmt.Sprintf("/proc/%s/exe", PID)
 		_, err = filepath.EvalSymlinks(procExeLink)
 		if err != nil {
 			// If we can't read the symlink, it can't be a Juju process started by
@@ -276,7 +288,7 @@ func (lock *Lock) IsLockHeld() bool {
 	if err != nil {
 		return false
 	}
-	return bytes.Equal(heldNonce, lock.nonce)
+	return bytes.Equal(heldNonce, []byte(lock.nonce))
 }
 
 // Unlock releases a held lock.  If the lock is not held ErrLockNotHeld is
@@ -286,14 +298,27 @@ func (lock *Lock) Unlock() error {
 		return ErrLockNotHeld
 	}
 	// To ensure reasonable unlocking, we should rename to a temp name, and delete that.
-	tempLockName := fmt.Sprintf(".%s.%x", lock.name, lock.nonce)
+	tempLockName := fmt.Sprintf(".%s.%s", lock.name, lock.nonce)
 	tempDirName := path.Join(lock.parent, tempLockName)
 	// Now move the lock directory to the temp directory to release the lock.
-	if err := utils.ReplaceFile(lock.lockDir(), tempDirName); err != nil {
-		return err
+	for i := 0; ; i++ {
+		err := utils.ReplaceFile(lock.lockDir(), tempDirName)
+		if err == nil {
+			break
+		}
+		if i == 100 {
+			logger.Debugf("Failed to replace lock, giving up: (%s)", err)
+			return err
+		}
+		logger.Debugf("Failed to replace lock, retrying: (%s)", err)
+		runtime.Gosched()
 	}
 	// And now cleanup.
-	return os.RemoveAll(tempDirName)
+	if err := os.RemoveAll(tempDirName); err != nil {
+		logger.Debugf("Failed to remove lock: %s", err)
+		return err
+	}
+	return nil
 }
 
 // IsLocked returns true if the lock is currently held by anyone.

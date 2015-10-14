@@ -15,8 +15,10 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"path"
 	"regexp"
+	"runtime"
 	"time"
 
 	"github.com/juju/errors"
@@ -158,6 +160,81 @@ func (lock *Lock) lockLoop(message string, continueFunc func() error) error {
 		}
 		<-lock.clock.After(LockWaitDelay)
 	}
+}
+
+// clean reads the lock and checks that it is valid. If the lock points to a running
+// juju process that is older than the lock file, the lock is left in place, else
+// the lock is removed.
+func (lock *Lock) clean() error {
+	// If a lock exists, see if it is stale
+	heldNonce, err := ioutil.ReadFile(lock.heldFile())
+	if err != nil {
+		// No lock or we can't read it, so nothing to do/that we can do
+		logger.Tracef("No lock to clean")
+		return nil
+	}
+
+	// There is a lock...
+	var nonce Nonce
+	err = bson.Unmarshal(heldNonce, &nonce)
+	if err != nil {
+		// The lock should contain a BSON encoded Nonce object. If we can't decode
+		// it then we consider it garbage and just delete the lock.
+		logger.Debugf("Can't decode lock %s (%s): %s", lock.name, lock.Message(), err)
+		return lock.BreakLock()
+	}
+
+	var processStartTime time.Time
+
+	if runtime.GOOS == "windows" {
+		cmd := fmt.Sprintf("powershell \"'{0:O}' -f (Get-Process -Id %d).StartTime\"", nonce.PID)
+		out, err := exec.Command(cmd).Output()
+		if err != nil {
+			logger.Debugf("Lock is stale (can't find process) %s (%s): %s", lock.name, lock.Message(), err)
+			return lock.BreakLock()
+		}
+		processStartTime, err = time.Parse(time.RFC3339Nano, string(out))
+		if err != nil {
+			logger.Errorf("Unable to parse time string: %s", out)
+		}
+	} else {
+		// Find if the lock points to a running process...
+		procExeLink := fmt.Sprintf("/proc/%d/exe", nonce.PID)
+		_, err = filepath.EvalSymlinks(procExeLink)
+		if err != nil {
+			// If we can't read the symlink, it can't be a Juju process started by
+			// the same user (or something really bad is going on)
+			logger.Debugf("Lock is stale (can't read exe symlink) %s (%s): %s", lock.name, lock.Message(), err)
+			return lock.BreakLock()
+		}
+
+		// Lock is current and points to a running process
+		procFileInfo, err := os.Lstat(procExeLink)
+		if err != nil {
+			logger.Debugf("Lock cleaner error -- can't os.Lstat(procExeLink) %s (%s): %s", lock.name, lock.Message(), err)
+			return err
+		}
+		processStartTime = procFileInfo.ModTime()
+	}
+
+	lockFileInfo, err := os.Lstat(lock.heldFile())
+	if err != nil {
+		logger.Debugf("Lock cleaner error -- can't os.Lstat(lock.heldFile()) %s (%s): %s", lock.name, lock.Message(), err)
+		return err
+	}
+
+	if processStartTime.After(lockFileInfo.ModTime().Add(time.Second)) {
+		// If the process is newer than the lock, the lock is stale. The 1s fiddle is much more than is needed
+		// to prevent errant test failures (on dooferlad's dev box 50ms is plenty). It is fine to have this much
+		// margin for error though because this branch should only be taken when a PID has been recycled and that
+		// only happens when all 32k (/proc/sys/kernel/pid_max) have been used or the machine reboots.
+		logger.Debugf("Lock is stale (older then juju process) %s (%s)", lock.name, lock.Message())
+		return lock.BreakLock()
+	}
+
+	logger.Tracef("Lock is current %s (%s)", lock.name, lock.Message())
+	// lock is current. Do nothing.
+	return nil
 }
 
 // Lock blocks until it is able to acquire the lock.  Since we are dealing

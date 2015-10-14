@@ -14,7 +14,6 @@ import (
 
 	"github.com/juju/testing"
 	gc "gopkg.in/check.v1"
-	"gopkg.in/mgo.v2/bson"
 	"launchpad.net/tomb"
 
 	"github.com/juju/utils/fslock"
@@ -347,68 +346,4 @@ func (s *fslockSuite) TestTomb(c *gc.C) {
 	c.Assert(err, gc.Equals, tomb.ErrDying)
 	c.Assert(lock.Message(), gc.Equals, "very busy")
 
-}
-
-func changeNoncePID(c *gc.C, lockFile string, PID int) {
-	var nonce fslock.Nonce
-	heldNonce, err := ioutil.ReadFile(lockFile)
-	c.Assert(err, gc.IsNil)
-	err = bson.Unmarshal(heldNonce, &nonce)
-	c.Assert(err, gc.IsNil)
-	nonce.PID = PID
-	nonceBytes, err := bson.Marshal(nonce)
-	c.Assert(err, gc.IsNil)
-	err = ioutil.WriteFile(lockFile, nonceBytes, 0755)
-	c.Assert(err, gc.IsNil)
-}
-
-func assertCanLock(c *gc.C, lock *fslock.Lock) {
-	err := lock.Lock("")
-	c.Assert(err, gc.IsNil)
-	c.Assert(lock.IsLocked(), gc.Equals, true)
-}
-
-func newLockedLock(c *gc.C) (lock *fslock.Lock, lockFile string) {
-	dir := c.MkDir()
-	lock, err := fslock.NewLock(dir, "testing")
-	c.Assert(err, gc.IsNil)
-	assertCanLock(c, lock)
-	lockFile = path.Join(dir, "testing", "held")
-	return lock, lockFile
-}
-
-func (s *fslockSuite) TestCleanStaleLock(c *gc.C) {
-	lock, lockFile := newLockedLock(c)
-
-	// Make the lock stale by making it an hour older
-	lockInfo, err := os.Lstat(lockFile)
-	c.Assert(err, gc.IsNil)
-	os.Chtimes(lockFile, lockInfo.ModTime().Add(-time.Hour), lockInfo.ModTime().Add(-time.Hour))
-	assertCanLock(c, lock)
-}
-
-func (s *fslockSuite) TestCleanNoMatchingProcess(c *gc.C) {
-	lock, lockFile := newLockedLock(c)
-
-	// Change the PID to a process that doesn't exist.
-	changeNoncePID(c, lockFile, 0)
-	assertCanLock(c, lock)
-}
-
-func (s *fslockSuite) TestCleanCannotReadProcess(c *gc.C) {
-	lock, lockFile := newLockedLock(c)
-
-	// Change the PID to a process we can't look at the details of.
-	changeNoncePID(c, lockFile, 1)
-	assertCanLock(c, lock)
-}
-
-func (s *fslockSuite) TestCleanNotJuju(c *gc.C) {
-	lock, lockFile := newLockedLock(c)
-
-	// Change the PID to an existing, non-Juju process. Should lock.
-	sleep, err := os.StartProcess("/bin/sleep", []string{"3"}, &os.ProcAttr{})
-	c.Assert(err, gc.IsNil)
-	changeNoncePID(c, lockFile, sleep.Pid)
-	assertCanLock(c, lock)
 }

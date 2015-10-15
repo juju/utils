@@ -12,4 +12,5 @@ package utils
 const (
 	NoSuchUserErrRegexp = `user: unknown user [a-z0-9_-]*`
 	NoSuchFileErrRegexp = `no such file or directory`
+	MkdirFailErrRegexp  = `.* not a directory`
 )

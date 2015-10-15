@@ -206,6 +206,7 @@ func (lock *Lock) clean() error {
 		matched, err := regexp.MatchString("ObjectNotFound", string(out))
 		if err != nil {
 			logger.Errorf("Error searching for lock status")
+			return nil // We don't do anything in this case since the safe thing to do is nothing
 		}
 		if matched {
 			logger.Debugf("Lock is stale (can't find process) %s (%s)", lock.name, lock.Message())
@@ -214,6 +215,7 @@ func (lock *Lock) clean() error {
 		matched, err = regexp.MatchString(`^\s*$`, string(out))
 		if err != nil {
 			logger.Errorf("Error searching for lock status")
+			return nil // We don't do anything in this case since the safe thing to do is nothing
 		}
 		if matched {
 			logger.Debugf("Lock is stale (can't find process (2)) %s (%s)", lock.name, lock.Message())
@@ -222,6 +224,7 @@ func (lock *Lock) clean() error {
 		processStartTime, err = time.Parse(time.RFC3339Nano, strings.TrimSpace(string(out)))
 		if err != nil {
 			logger.Errorf("Unable to parse time string: >%s<", strings.TrimSpace(string(out)))
+			return nil // We don't do anything in this case since the safe thing to do is nothing
 		}
 	} else {
 		// Find if the lock points to a running process...

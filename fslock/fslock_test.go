@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/juju/testing"
+	"github.com/juju/utils"
 	gc "gopkg.in/check.v1"
 	"launchpad.net/tomb"
 
@@ -94,11 +95,7 @@ func (s *fslockSuite) TestNewLockWithExistingFileInPlace(c *gc.C) {
 	err = ioutil.WriteFile(path, []byte("foo"), 0644)
 	c.Assert(err, gc.IsNil)
 	_, err = fslock.NewLockNeedsClock(path, "special", &fastclock{c})
-	if runtime.GOOS == "windows" {
-		c.Assert(err, gc.ErrorMatches, `.*The system cannot find the path specified\.`)
-	} else {
-		c.Assert(err, gc.ErrorMatches, `.* not a directory`)
-	}
+	c.Assert(err, gc.ErrorMatches, utils.MkdirFailErrRegexp)
 }
 
 func (s *fslockSuite) TestIsLockHeldBasics(c *gc.C) {

@@ -17,7 +17,6 @@ import (
 	gc "gopkg.in/check.v1"
 	"launchpad.net/tomb"
 
-	"github.com/juju/utils/clock"
 	"github.com/juju/utils/fslock"
 )
 
@@ -46,11 +45,6 @@ func (f *fastclock) After(duration time.Duration) <-chan time.Time {
 	return time.After(time.Millisecond)
 }
 
-func (f *fastclock) AfterFunc(duration time.Duration, function func()) clock.Timer {
-	f.c.Check(duration, gc.Equals, fslock.LockWaitDelay)
-	return time.AfterFunc(time.Millisecond, function)
-}
-
 // This test also happens to test that locks can get created when the parent
 // lock directory doesn't exist.
 func (s *fslockSuite) TestValidNamesLockDir(c *gc.C) {
@@ -61,7 +55,7 @@ func (s *fslockSuite) TestValidNamesLockDir(c *gc.C) {
 		"longer-with.special-characters",
 	} {
 		dir := c.MkDir()
-		_, err := fslock.NewLockWithClock(dir, name, &fastclock{c})
+		_, err := fslock.NewLockNeedsClock(dir, name, &fastclock{c})
 		c.Assert(err, gc.IsNil)
 	}
 }
@@ -79,7 +73,7 @@ func (s *fslockSuite) TestInvalidNames(c *gc.C) {
 		"no:colon",
 	} {
 		dir := c.MkDir()
-		_, err := fslock.NewLockWithClock(dir, name, &fastclock{c})
+		_, err := fslock.NewLockNeedsClock(dir, name, &fastclock{c})
 		c.Assert(err, gc.ErrorMatches, "Invalid lock name .*")
 	}
 }
@@ -88,7 +82,7 @@ func (s *fslockSuite) TestNewLockWithExistingDir(c *gc.C) {
 	dir := c.MkDir()
 	err := os.MkdirAll(dir, 0755)
 	c.Assert(err, gc.IsNil)
-	_, err = fslock.NewLockWithClock(dir, "special", &fastclock{c})
+	_, err = fslock.NewLockNeedsClock(dir, "special", &fastclock{c})
 	c.Assert(err, gc.IsNil)
 }
 
@@ -99,7 +93,8 @@ func (s *fslockSuite) TestNewLockWithExistingFileInPlace(c *gc.C) {
 	path := path.Join(dir, "locks")
 	err = ioutil.WriteFile(path, []byte("foo"), 0644)
 	c.Assert(err, gc.IsNil)
-	_, err = fslock.NewLock(path, "special", &fastclock{c})
+	_, err = fslock.NewLockNeedsClock(path, "special", &fastclock{c})
+	if runtime.GOOS == "windows" {
 		c.Assert(err, gc.ErrorMatches, `.*The system cannot find the path specified\.`)
 	} else {
 		c.Assert(err, gc.ErrorMatches, `.* not a directory`)
@@ -108,7 +103,7 @@ func (s *fslockSuite) TestNewLockWithExistingFileInPlace(c *gc.C) {
 
 func (s *fslockSuite) TestIsLockHeldBasics(c *gc.C) {
 	dir := c.MkDir()
-	lock, err := fslock.NewLockWithClock(dir, "testing", &fastclock{c})
+	lock, err := fslock.NewLockNeedsClock(dir, "testing", &fastclock{c})
 	c.Assert(err, gc.IsNil)
 	c.Assert(lock.IsLockHeld(), gc.Equals, false)
 
@@ -123,9 +118,9 @@ func (s *fslockSuite) TestIsLockHeldBasics(c *gc.C) {
 
 func (s *fslockSuite) TestIsLockHeldTwoLocks(c *gc.C) {
 	dir := c.MkDir()
-	lock1, err := fslock.NewLockWithClock(dir, "testing", &fastclock{c})
+	lock1, err := fslock.NewLockNeedsClock(dir, "testing", &fastclock{c})
 	c.Assert(err, gc.IsNil)
-	lock2, err := fslock.NewLockWithClock(dir, "testing", &fastclock{c})
+	lock2, err := fslock.NewLockNeedsClock(dir, "testing", &fastclock{c})
 	c.Assert(err, gc.IsNil)
 
 	err = lock1.Lock("")
@@ -136,9 +131,9 @@ func (s *fslockSuite) TestIsLockHeldTwoLocks(c *gc.C) {
 func (s *fslockSuite) TestLockBlocks(c *gc.C) {
 
 	dir := c.MkDir()
-	lock1, err := fslock.NewLockWithClock(dir, "testing", &fastclock{c})
+	lock1, err := fslock.NewLockNeedsClock(dir, "testing", &fastclock{c})
 	c.Assert(err, gc.IsNil)
-	lock2, err := fslock.NewLockWithClock(dir, "testing", &fastclock{c})
+	lock2, err := fslock.NewLockNeedsClock(dir, "testing", &fastclock{c})
 	c.Assert(err, gc.IsNil)
 
 	acquired := make(chan struct{})
@@ -174,7 +169,7 @@ func (s *fslockSuite) TestLockBlocks(c *gc.C) {
 
 func (s *fslockSuite) TestLockWithTimeoutUnlocked(c *gc.C) {
 	dir := c.MkDir()
-	lock, err := fslock.NewLockWithClock(dir, "testing", &fastclock{c})
+	lock, err := fslock.NewLockNeedsClock(dir, "testing", &fastclock{c})
 	c.Assert(err, gc.IsNil)
 
 	err = lock.LockWithTimeout(shortWait, "")
@@ -183,9 +178,9 @@ func (s *fslockSuite) TestLockWithTimeoutUnlocked(c *gc.C) {
 
 func (s *fslockSuite) TestLockWithTimeoutLocked(c *gc.C) {
 	dir := c.MkDir()
-	lock1, err := fslock.NewLockWithClock(dir, "testing", &fastclock{c})
+	lock1, err := fslock.NewLockNeedsClock(dir, "testing", &fastclock{c})
 	c.Assert(err, gc.IsNil)
-	lock2, err := fslock.NewLockWithClock(dir, "testing", &fastclock{c})
+	lock2, err := fslock.NewLockNeedsClock(dir, "testing", &fastclock{c})
 	c.Assert(err, gc.IsNil)
 
 	err = lock1.Lock("")
@@ -197,7 +192,7 @@ func (s *fslockSuite) TestLockWithTimeoutLocked(c *gc.C) {
 
 func (s *fslockSuite) TestUnlock(c *gc.C) {
 	dir := c.MkDir()
-	lock, err := fslock.NewLockWithClock(dir, "testing", &fastclock{c})
+	lock, err := fslock.NewLockNeedsClock(dir, "testing", &fastclock{c})
 	c.Assert(err, gc.IsNil)
 
 	err = lock.Unlock()
@@ -206,9 +201,9 @@ func (s *fslockSuite) TestUnlock(c *gc.C) {
 
 func (s *fslockSuite) TestIsLocked(c *gc.C) {
 	dir := c.MkDir()
-	lock1, err := fslock.NewLockWithClock(dir, "testing", &fastclock{c})
+	lock1, err := fslock.NewLockNeedsClock(dir, "testing", &fastclock{c})
 	c.Assert(err, gc.IsNil)
-	lock2, err := fslock.NewLockWithClock(dir, "testing", &fastclock{c})
+	lock2, err := fslock.NewLockNeedsClock(dir, "testing", &fastclock{c})
 	c.Assert(err, gc.IsNil)
 
 	err = lock1.Lock("")
@@ -220,9 +215,9 @@ func (s *fslockSuite) TestIsLocked(c *gc.C) {
 
 func (s *fslockSuite) TestBreakLock(c *gc.C) {
 	dir := c.MkDir()
-	lock1, err := fslock.NewLockWithClock(dir, "testing", &fastclock{c})
+	lock1, err := fslock.NewLockNeedsClock(dir, "testing", &fastclock{c})
 	c.Assert(err, gc.IsNil)
-	lock2, err := fslock.NewLockWithClock(dir, "testing", &fastclock{c})
+	lock2, err := fslock.NewLockNeedsClock(dir, "testing", &fastclock{c})
 	c.Assert(err, gc.IsNil)
 
 	err = lock1.Lock("")
@@ -243,7 +238,7 @@ func (s *fslockSuite) TestBreakLock(c *gc.C) {
 
 func (s *fslockSuite) TestMessage(c *gc.C) {
 	dir := c.MkDir()
-	lock, err := fslock.NewLockWithClock(dir, "testing", &fastclock{c})
+	lock, err := fslock.NewLockNeedsClock(dir, "testing", &fastclock{c})
 	c.Assert(err, gc.IsNil)
 	c.Assert(lock.Message(), gc.Equals, "")
 
@@ -259,9 +254,9 @@ func (s *fslockSuite) TestMessage(c *gc.C) {
 
 func (s *fslockSuite) TestMessageAcrossLocks(c *gc.C) {
 	dir := c.MkDir()
-	lock1, err := fslock.NewLockWithClock(dir, "testing", &fastclock{c})
+	lock1, err := fslock.NewLockNeedsClock(dir, "testing", &fastclock{c})
 	c.Assert(err, gc.IsNil)
-	lock2, err := fslock.NewLockWithClock(dir, "testing", &fastclock{c})
+	lock2, err := fslock.NewLockNeedsClock(dir, "testing", &fastclock{c})
 	c.Assert(err, gc.IsNil)
 
 	err = lock1.Lock("very busy")
@@ -271,7 +266,7 @@ func (s *fslockSuite) TestMessageAcrossLocks(c *gc.C) {
 
 func (s *fslockSuite) TestInitialMessageWhenLocking(c *gc.C) {
 	dir := c.MkDir()
-	lock, err := fslock.NewLockWithClock(dir, "testing", &fastclock{c})
+	lock, err := fslock.NewLockNeedsClock(dir, "testing", &fastclock{c})
 	c.Assert(err, gc.IsNil)
 
 	err = lock.Lock("initial message")
@@ -301,7 +296,7 @@ func (s *fslockSuite) TestStress(c *gc.C) {
 
 	var stress = func(name string) {
 		defer func() { done <- struct{}{} }()
-		lock, err := fslock.NewLockWithClock(dir, "testing", &fastclock{c})
+		lock, err := fslock.NewLockNeedsClock(dir, "testing", &fastclock{c})
 		if err != nil {
 			c.Errorf("Failed to create a new lock")
 			return
@@ -338,7 +333,7 @@ func (s *fslockSuite) TestTomb(c *gc.C) {
 	die := tomb.Tomb{}
 
 	dir := c.MkDir()
-	lock, err := fslock.NewLockWithClock(dir, "testing", &fastclock{c})
+	lock, err := fslock.NewLockNeedsClock(dir, "testing", &fastclock{c})
 	c.Assert(err, gc.IsNil)
 	// Just use one lock, and try to lock it twice.
 	err = lock.Lock("very busy")
@@ -382,7 +377,7 @@ func assertCanLock(c *gc.C, lock *fslock.Lock) {
 
 func newLockedLock(c *gc.C) (lock *fslock.Lock, lockFile string) {
 	dir := c.MkDir()
-	lock, err := fslock.NewLock(dir, "testing")
+	lock, err := fslock.NewLockNeedsClock(dir, "testing", &fastclock{c})
 	c.Assert(err, gc.IsNil)
 	assertCanLock(c, lock)
 	lockFile = path.Join(dir, "testing", "held")

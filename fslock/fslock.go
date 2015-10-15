@@ -1,7 +1,7 @@
 // Copyright 2013 Canonical Ltd.
 // Licensed under the LGPLv3, see LICENCE file for details.
 
-// On-disk mutex protecting a resource
+// Package fslock provides an on-disk mutex protecting a resource
 //
 // A lock is represented on disk by a directory of a particular name,
 // containing an information file.  Taking a lock is done by renaming a
@@ -17,6 +17,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"path/filepath"
 	"regexp"
 	"runtime"
 	"strings"
@@ -39,14 +40,16 @@ const (
 var (
 	logger = loggo.GetLogger("juju.utils.fslock")
 
+	// ErrLockNotHeld is returned by Unlock if the lock file is not held by this lock
 	ErrLockNotHeld = errors.New("lock not held")
-	ErrTimeout     = errors.New("lock timeout exceeded")
+	// ErrTimeout is returned by LockWithTimeout if the lock could not be obtained before the given deadline
+	ErrTimeout = errors.New("lock timeout exceeded")
 
-	validName = regexp.MustCompile(NameRegexp)
-
-	LockWaitDelay = 1 * time.Second
+	validName     = regexp.MustCompile(NameRegexp)
+	lockWaitDelay = 1 * time.Second
 )
 
+// Lock is a file system lock
 type Lock struct {
 	name   string
 	parent string
@@ -54,9 +57,27 @@ type Lock struct {
 	nonce  string
 }
 
-// NewLockWithClock is like NewLock but uses the given clock
-// to enable faking time passing.
-func NewLockWithClock(lockDir, name string, clock clock.Clock) (*Lock, error) {
+type defaultClock struct{}
+
+func (*defaultClock) Now() time.Time {
+	return time.Now()
+}
+
+func (f *defaultClock) After(duration time.Duration) <-chan time.Time {
+	return time.After(duration)
+}
+
+// NewLock returns a new lock with the given name within the given lock
+// directory, without acquiring it. The lock name must match the regular
+// expression defined by NameRegexp.
+func NewLock(lockDir, name string) (*Lock, error) {
+	c := &defaultClock{}
+	return NewLockNeedsClock(lockDir, name, c)
+}
+
+// NewLockNeedsClock returns a new lock that uses the provided clock rather than
+// the default clock.
+func NewLockNeedsClock(lockDir, name string, clock clock.Clock) (*Lock, error) {
 	if !validName.MatchString(name) {
 		return nil, fmt.Errorf("Invalid lock name %q.  Names must match %q", name, NameRegexp)
 	}
@@ -78,13 +99,6 @@ func NewLockWithClock(lockDir, name string, clock clock.Clock) (*Lock, error) {
 		return nil, err
 	}
 	return lock, nil
-}
-
-// NewLock returns a new lock with the given name within the given lock
-// directory, without acquiring it. The lock name must match the regular
-// expression defined by NameRegexp.
-func NewLock(lockDir, name string) (*Lock, error) {
-	return NewLockWithClock(lockDir, name, clock.WallClock)
 }
 
 func (lock *Lock) lockDir() string {
@@ -162,7 +176,7 @@ func (lock *Lock) lockLoop(message string, continueFunc func() error) error {
 			logger.Infof("attempted lock failed %q, %s, currently held: %s", lock.name, message, currMessage)
 			heldMessage = currMessage
 		}
-		<-lock.clock.After(LockWaitDelay)
+		<-lock.clock.After(lockWaitDelay)
 	}
 }
 
@@ -255,6 +269,7 @@ func (lock *Lock) clean() error {
 // information, and can be queried by any other Lock dealing with the same
 // lock name and lock directory.
 func (lock *Lock) Lock(message string) error {
+	lock.clean()
 	// The continueFunc is effectively a no-op, causing continual looping
 	// until the lock is acquired.
 	continueFunc := func() error { return nil }

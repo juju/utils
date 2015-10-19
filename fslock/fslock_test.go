@@ -9,7 +9,6 @@ import (
 	"os"
 	"path"
 	"runtime"
-	"strings"
 	"sync/atomic"
 	"time"
 
@@ -19,6 +18,7 @@ import (
 	"launchpad.net/tomb"
 
 	"github.com/juju/utils/fslock"
+	goyaml "gopkg.in/yaml.v2"
 )
 
 const (
@@ -358,11 +358,15 @@ func (s *fslockSuite) TestTomb(c *gc.C) {
 }
 
 func changeNoncePID(c *gc.C, lockFile string, PID int) {
-	heldNonce, err := ioutil.ReadFile(lockFile)
+	var l fslock.OnDisk
+	heldLock, err := ioutil.ReadFile(lockFile)
 	c.Assert(err, gc.IsNil)
-	fields := strings.Fields(string(heldNonce))
-	nonce := fmt.Sprintf("%d %s", PID, fields[1])
-	err = ioutil.WriteFile(lockFile, []byte(nonce), 0755)
+	err = goyaml.Unmarshal(heldLock, &l)
+	c.Assert(err, gc.IsNil)
+	l.PID = PID
+	heldLock, err = goyaml.Marshal(l)
+	c.Assert(err, gc.IsNil)
+	err = ioutil.WriteFile(lockFile, heldLock, 644)
 	c.Assert(err, gc.IsNil)
 }
 

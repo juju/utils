@@ -11,7 +11,6 @@
 package fslock
 
 import (
-	"bytes"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -28,13 +27,13 @@ import (
 
 	"github.com/juju/utils"
 	"github.com/juju/utils/clock"
+	goyaml "gopkg.in/yaml.v2"
 )
 
 const (
 	// NameRegexp specifies the regular expression used to identify valid lock names.
-	NameRegexp      = "^[a-z]+[a-z0-9.-]*$"
-	heldFilename    = "held"
-	messageFilename = "message"
+	NameRegexp   = "^[a-z]+[a-z0-9.-]*$"
+	heldFilename = "held"
 )
 
 var (
@@ -55,6 +54,13 @@ type Lock struct {
 	parent string
 	clock  clock.Clock
 	nonce  string
+	PID    int
+}
+
+type onDisk struct {
+	Nonce   string
+	PID     int
+	Message string
 }
 
 type defaultClock struct{}
@@ -92,7 +98,8 @@ func NewLockNeedsClock(lockDir, name string, clock clock.Clock) (*Lock, error) {
 		name:   name,
 		parent: lockDir,
 		clock:  clock,
-		nonce:  fmt.Sprintf("%d %s", os.Getpid(), uuid),
+		nonce:  uuid.String(),
+		PID:    os.Getpid(),
 	}
 	// Ensure the parent exists.
 	if err := os.MkdirAll(lock.parent, 0755); err != nil {
@@ -107,10 +114,6 @@ func (lock *Lock) lockDir() string {
 
 func (lock *Lock) heldFile() string {
 	return path.Join(lock.lockDir(), "held")
-}
-
-func (lock *Lock) messageFile() string {
-	return path.Join(lock.lockDir(), "message")
 }
 
 // If message is set, it will write the message to the lock directory as the
@@ -128,21 +131,24 @@ func (lock *Lock) acquire(message string) (bool, error) {
 	// the right name.  Using the same directory to make sure the directories
 	// are on the same filesystem.  Use a directory name starting with "." as
 	// it isn't a valid lock name.
-	tempLockName := lock.nonce
+	tempLockName := fmt.Sprintf(".%s", lock.nonce)
 	tempDirName, err := ioutil.TempDir(lock.parent, tempLockName)
 	if err != nil {
 		return false, err // this shouldn't really fail...
 	}
-	// write nonce into the temp dir
-	err = ioutil.WriteFile(path.Join(tempDirName, heldFilename), []byte(lock.nonce), 0664)
+	// write lock into the temp dir
+	l := onDisk{
+		PID:     lock.PID,
+		Nonce:   lock.nonce,
+		Message: message,
+	}
+	lockInfo, err := goyaml.Marshal(&l)
+	if err != nil {
+		return false, err // this shouldn't fail either...
+	}
+	err = ioutil.WriteFile(path.Join(tempDirName, heldFilename), lockInfo, 0664)
 	if err != nil {
 		return false, err
-	}
-	if message != "" {
-		err = ioutil.WriteFile(path.Join(tempDirName, messageFilename), []byte(message), 0664)
-		if err != nil {
-			return false, err
-		}
 	}
 	// Now move the temp directory to the lock directory.
 	err = utils.ReplaceFile(tempDirName, lock.lockDir())
@@ -185,23 +191,18 @@ func (lock *Lock) lockLoop(message string, continueFunc func() error) error {
 // the lock is removed.
 func (lock *Lock) clean() error {
 	// If a lock exists, see if it is stale
-	heldNonce, err := ioutil.ReadFile(lock.heldFile())
+	lockInfo, err := lock.readLock()
 	if err != nil {
-		// No lock or we can't read it, so nothing to do/that we can do
-		logger.Tracef("No lock to clean")
 		return nil
 	}
 
-	// There is a lock...
-	PID := strings.Fields(string(heldNonce))[0]
 	var processStartTime time.Time
 
 	if runtime.GOOS == "windows" {
-		cmd := fmt.Sprintf("'{0:O}' -f (Get-Process -Id %s).StartTime", PID)
+		cmd := fmt.Sprintf("'{0:O}' -f (Get-Process -Id %s).StartTime", lockInfo.PID)
 		out, err := exec.Command("powershell.exe", cmd).CombinedOutput()
 		if err != nil {
-			logger.Debugf("Powershell Get-Process -Id %s failed %s (%s)", PID, lock.name, lock.Message())
-			return lock.BreakLock()
+			logger.Debugf("Powershell Get-Process -Id %s failed %s (%s)", lockInfo.PID, lock.name, lockInfo.Message)
 		}
 		matched, err := regexp.MatchString("ObjectNotFound", string(out))
 		if err != nil {
@@ -209,7 +210,7 @@ func (lock *Lock) clean() error {
 			return nil // We don't do anything in this case since the safe thing to do is nothing
 		}
 		if matched {
-			logger.Debugf("Lock is stale (can't find process) %s (%s)", lock.name, lock.Message())
+			logger.Debugf("Lock is stale (can't find process) %s (%s)", lock.name, lockInfo.Message)
 			return lock.BreakLock()
 		}
 		matched, err = regexp.MatchString(`^\s*$`, string(out))
@@ -218,7 +219,7 @@ func (lock *Lock) clean() error {
 			return nil // We don't do anything in this case since the safe thing to do is nothing
 		}
 		if matched {
-			logger.Debugf("Lock is stale (can't find process (2)) %s (%s)", lock.name, lock.Message())
+			logger.Debugf("Lock is stale (can't find process (2)) %s (%s)", lock.name, lockInfo.Message)
 			return lock.BreakLock()
 		}
 		processStartTime, err = time.Parse(time.RFC3339Nano, strings.TrimSpace(string(out)))
@@ -228,19 +229,19 @@ func (lock *Lock) clean() error {
 		}
 	} else {
 		// Find if the lock points to a running process...
-		procExeLink := fmt.Sprintf("/proc/%s/exe", PID)
+		procExeLink := fmt.Sprintf("/proc/%d/exe", lockInfo.PID)
 		_, err = filepath.EvalSymlinks(procExeLink)
 		if err != nil {
 			// If we can't read the symlink, it can't be a Juju process started by
 			// the same user (or something really bad is going on)
-			logger.Debugf("Lock is stale (can't read exe symlink) %s (%s): %s", lock.name, lock.Message(), err)
+			logger.Debugf("Lock is stale (can't read exe symlink) %s (%s): %s", lock.name, lockInfo.Message, err)
 			return lock.BreakLock()
 		}
 
 		// Lock is current and points to a running process
 		procFileInfo, err := os.Lstat(procExeLink)
 		if err != nil {
-			logger.Debugf("Lock cleaner error -- can't os.Lstat(procExeLink) %s (%s): %s", lock.name, lock.Message(), err)
+			logger.Debugf("Lock cleaner error -- can't os.Lstat(procExeLink) %s (%s): %s", lock.name, lockInfo.Message, err)
 			return err
 		}
 		processStartTime = procFileInfo.ModTime()
@@ -248,20 +249,22 @@ func (lock *Lock) clean() error {
 
 	lockFileInfo, err := os.Lstat(lock.heldFile())
 	if err != nil {
-		logger.Debugf("Lock cleaner error -- can't os.Lstat(lock.heldFile()) %s (%s): %s", lock.name, lock.Message(), err)
+		logger.Debugf("Lock cleaner error -- can't os.Lstat(lock.heldFile()) %s (%s): %s", lock.name, lockInfo.Message, err)
 		return err
 	}
 
 	if processStartTime.After(lockFileInfo.ModTime().Add(time.Second)) {
 		// If the process is newer than the lock, the lock is stale. The 1s fiddle is much more than is needed
-		// to prevent errant test failures (on dooferlad's dev box 50ms is plenty). It is fine to have this much
-		// margin for error though because this branch should only be taken when a PID has been recycled and that
-		// only happens when all 32k (/proc/sys/kernel/pid_max) have been used or the machine reboots.
-		logger.Debugf("Lock is stale (older then juju process) %s (%s)", lock.name, lock.Message())
+		// to prevent errant test failures where a file appears to be older than the process that created it
+		// (on dooferlad's dev box 50ms is plenty). It is fine to have this much margin for error though because
+		// this branch should only be taken when a PID has been recycled and that only happens when all 32k
+		// (/proc/sys/kernel/pid_max) have been used or the machine reboots. If we get through 32k PIDs in a
+		// second we probably have other problems.
+		logger.Debugf("Lock is stale (older then juju process) %s (%s)", lock.name, lockInfo.Message)
 		return lock.BreakLock()
 	}
 
-	logger.Tracef("Lock is current %s (%s)", lock.name, lock.Message())
+	logger.Tracef("Lock is current %s (%s)", lock.name, lockInfo.Message)
 	// lock is current. Do nothing.
 	return nil
 }
@@ -300,13 +303,23 @@ func (lock *Lock) LockWithFunc(message string, continueFunc func() error) error 
 	return lock.lockLoop(message, continueFunc)
 }
 
+func (lock *Lock) readLock() (lockInfo onDisk, err error) {
+	lockFile, err := ioutil.ReadFile(lock.heldFile())
+	if err != nil {
+		return lockInfo, err
+	}
+
+	err = goyaml.Unmarshal(lockFile, &lockInfo)
+	return lockInfo, err
+}
+
 // IsLockHeld returns whether the lock is currently held by the receiver.
 func (lock *Lock) IsLockHeld() bool {
-	heldNonce, err := ioutil.ReadFile(lock.heldFile())
+	lockInfo, err := lock.readLock()
 	if err != nil {
 		return false
 	}
-	return bytes.Equal(heldNonce, []byte(lock.nonce))
+	return lockInfo.Nonce == lock.nonce
 }
 
 // Unlock releases a held lock.  If the lock is not held ErrLockNotHeld is
@@ -353,9 +366,9 @@ func (lock *Lock) BreakLock() error {
 // Message returns the saved message, or the empty string if there is no
 // saved message.
 func (lock *Lock) Message() string {
-	message, err := ioutil.ReadFile(lock.messageFile())
+	lockInfo, err := lock.readLock()
 	if err != nil {
 		return ""
 	}
-	return string(message)
+	return lockInfo.Message
 }

@@ -6,3 +6,5 @@ package fslock
 var (
 	LockWaitDelay = lockWaitDelay
 )
+
+type OnDisk onDisk

@@ -1,6 +1,8 @@
 // Copyright 2014 Canonical Ltd.
 // Licensed under the LGPLv3, see LICENCE file for details.
 
+// Package debugstatus provides facilities for inspecting information
+// about a running HTTP service.
 package debugstatus
 
 import (

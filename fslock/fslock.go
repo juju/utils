@@ -51,10 +51,9 @@ type Lock struct {
 	clock  clock.Clock
 }
 
-// NewLock returns a new lock with the given name within the given lock
-// directory, without acquiring it. The lock name must match the regular
-// expression defined by NameRegexp.
-func NewLock(lockDir, name string, clock clock.Clock) (*Lock, error) {
+// NewLockWithClock is like NewLock but uses the given clock
+// to enable faking time passing.
+func NewLockWithClock(lockDir, name string, clock clock.Clock) (*Lock, error) {
 	if !validName.MatchString(name) {
 		return nil, fmt.Errorf("Invalid lock name %q.  Names must match %q", name, NameRegexp)
 	}
@@ -73,6 +72,13 @@ func NewLock(lockDir, name string, clock clock.Clock) (*Lock, error) {
 		return nil, err
 	}
 	return lock, nil
+}
+
+// NewLock returns a new lock with the given name within the given lock
+// directory, without acquiring it. The lock name must match the regular
+// expression defined by NameRegexp.
+func NewLock(lockDir, name string) (*Lock, error) {
+	return NewLockWithClock(lockDir, name, clock.WallClock)
 }
 
 func (lock *Lock) lockDir() string {

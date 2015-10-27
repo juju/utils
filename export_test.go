@@ -9,4 +9,5 @@ var (
 	Dial              = dial
 	NetDial           = &netDial
 	ResolveSudoByFunc = resolveSudo
+	AfterFunc         = &afterFunc
 )

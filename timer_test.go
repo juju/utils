@@ -61,35 +61,34 @@ func (s *timerSuite) SetUpTest(c *gc.C) {
 			Factor:    s.factor,
 			AfterFunc: afterFuncMock,
 		},
-		Chan:            make(chan struct{}, 1),
 		CurrentDuration: s.min,
 	}
 }
 
-func (s *timerSuite) TestSignal(c *gc.C) {
-	s.timer.Signal()
-	s.testSignal(c, 1, 1)
+func (s *timerSuite) TestStart(c *gc.C) {
+	s.timer.Start()
+	s.testStart(c, 1, 1)
 }
 
-func (s *timerSuite) TestMultipleSignals(c *gc.C) {
-	s.timer.Signal()
-	s.testSignal(c, 1, 1)
+func (s *timerSuite) TestMultipleStarts(c *gc.C) {
+	s.timer.Start()
+	s.testStart(c, 1, 1)
 
-	s.timer.Signal()
+	s.timer.Start()
 	s.checkStopCalls(c, 1)
-	s.testSignal(c, 2, 2)
+	s.testStart(c, 2, 2)
 
-	s.timer.Signal()
+	s.timer.Start()
 	s.checkStopCalls(c, 2)
-	s.testSignal(c, 3, 3)
+	s.testStart(c, 3, 3)
 }
 
-func (s *timerSuite) TestResetNoSignal(c *gc.C) {
+func (s *timerSuite) TestResetNoStart(c *gc.C) {
 	s.timer.Reset()
 	c.Assert(s.timer.CurrentDuration, gc.Equals, s.min)
 }
 
-func (s *timerSuite) TestResetAndSignal(c *gc.C) {
+func (s *timerSuite) TestResetAndStart(c *gc.C) {
 	s.timer.Reset()
 	c.Assert(s.timer.CurrentDuration, gc.Equals, s.min)
 
@@ -100,8 +99,8 @@ func (s *timerSuite) TestResetAndSignal(c *gc.C) {
 	signalCallsNo := 0
 
 	signalCallsNo++
-	s.timer.Signal()
-	s.testSignal(c, 1, 1)
+	s.timer.Start()
+	s.testStart(c, 1, 1)
 
 	resetStopCallsNo++
 	s.timer.Reset()
@@ -110,8 +109,8 @@ func (s *timerSuite) TestResetAndSignal(c *gc.C) {
 
 	for i := 1; i < 200; i++ {
 		signalCallsNo++
-		s.timer.Signal()
-		s.testSignal(c, int64(signalCallsNo), int64(i))
+		s.timer.Start()
+		s.testStart(c, int64(signalCallsNo), int64(i))
 		s.checkStopCalls(c, resetStopCallsNo+signalCallsNo-1)
 	}
 
@@ -121,8 +120,8 @@ func (s *timerSuite) TestResetAndSignal(c *gc.C) {
 
 	for i := 1; i < 100; i++ {
 		signalCallsNo++
-		s.timer.Signal()
-		s.testSignal(c, int64(signalCallsNo), int64(i))
+		s.timer.Start()
+		s.testStart(c, int64(signalCallsNo), int64(i))
 		s.checkStopCalls(c, resetStopCallsNo+signalCallsNo-1)
 	}
 
@@ -131,7 +130,7 @@ func (s *timerSuite) TestResetAndSignal(c *gc.C) {
 	s.checkStopCalls(c, signalCallsNo+resetStopCallsNo-1)
 }
 
-func (s *timerSuite) testSignal(c *gc.C, afterFuncCalls int64, durationFactor int64) {
+func (s *timerSuite) testStart(c *gc.C, afterFuncCalls int64, durationFactor int64) {
 	c.Assert(s.afterFuncCalls, gc.Equals, afterFuncCalls)
 	c.Logf("iteration %d", afterFuncCalls)
 	expectedDuration := time.Duration(math.Pow(float64(s.factor), float64(durationFactor))) * s.min

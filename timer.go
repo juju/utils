@@ -14,19 +14,14 @@ import (
 // durations are declared upon initialization and depend on
 // the particular implementation.
 type Countdown interface {
-	// ElapsedChan returns a simple channel to which the timer
-	// will send a signal once the duration runs down to 0.
-	ElapsedChan() <-chan struct{}
-
 	// Reset stops the timer and resets it's duration to the minimum one.
 	// Signal must be called to start the timer again.
 	Reset()
 
-	// Signal will send a signal on the channel returned by Channel
-	// after a internally stored duration and increase the duration
-	// for the next call. Only one signal can be pending to be sent
-	// at a time.
-	Signal()
+	// Start starts the internal timer.
+	// At the end of the timer, if Reset hasn't been called in the mean time
+	// Func will be called and the duration is increased for the next call.
+	Start()
 }
 
 // NewBackoffTimer creates and initializer a new BackoffTimer
@@ -35,11 +30,7 @@ type Countdown interface {
 // randomization is added to the duration.
 // The caller is responsible for using the returned cleanup function
 // that will close the channel
-func NewBackoffTimer(info BackoffTimerInfo) (t *BackoffTimer, closeFunc func()) {
-	channel := make(chan struct{}, 1)
-	closer := func() {
-		close(channel)
-	}
+func NewBackoffTimer(info BackoffTimerInfo) *BackoffTimer {
 	if info.AfterFunc == nil {
 		info.AfterFunc = func(d time.Duration, f func()) StoppableTimer {
 			return time.AfterFunc(d, f)
@@ -47,9 +38,8 @@ func NewBackoffTimer(info BackoffTimerInfo) (t *BackoffTimer, closeFunc func()) 
 	}
 	return &BackoffTimer{
 		Info:            info,
-		Chan:            channel,
 		CurrentDuration: info.Min,
-	}, closer
+	}
 }
 
 // BackoffTimer creates and initializer a new BackoffTimer
@@ -61,7 +51,6 @@ type BackoffTimer struct {
 	Info BackoffTimerInfo
 
 	Timer           StoppableTimer
-	Chan            chan struct{}
 	CurrentDuration time.Duration
 }
 
@@ -73,6 +62,9 @@ type BackoffTimerInfo struct {
 	Jitter bool
 	Factor int64
 
+	// Func is the function that will be called when the countdown reaches 0.
+	Func func()
+
 	// AfterFunc exists here for easier mocking
 	// It is a function that will execute the function f
 	// after duration d and return a timer object that will let
@@ -80,21 +72,15 @@ type BackoffTimerInfo struct {
 	AfterFunc func(d time.Duration, f func()) StoppableTimer
 }
 
-// Channel implements the Timer interface
-func (t *BackoffTimer) ElapsedChan() <-chan struct{} {
-	return t.Chan
-}
-
 // Signal implements the Timer interface
 // Any existing timer execution is stopped before
 // a new one is created.
-func (t *BackoffTimer) Signal() {
+func (t *BackoffTimer) Start() {
 	if t.Timer != nil {
 		t.Timer.Stop()
 	}
-	t.Timer = t.Info.AfterFunc(t.CurrentDuration, func() {
-		t.Chan <- struct{}{}
-	})
+	t.Timer = t.Info.AfterFunc(t.CurrentDuration, t.Info.Func)
+
 	// Since it's a backoff timer we will increase
 	// the duration after each signal.
 	t.increaseDuration()

@@ -45,19 +45,22 @@ func (s *timerSuite) SetUpTest(c *gc.C) {
 	s.baseSuite.SetUpTest(c)
 	s.afterFuncCalls = 0
 	s.stub = &testing.Stub{}
-	s.baseSuite.PatchValue(utils.AfterFunc, func(d time.Duration, f func()) utils.StdTimer {
+	afterFuncMock := func(d time.Duration, f func()) utils.StoppableTimer {
 		s.afterFuncCalls++
 		return &TestStdTimer{s.stub}
-	})
+	}
 
 	s.min = 2 * time.Second
 	s.max = 16 * time.Second
 	s.factor = 2
 	s.timer = utils.BackoffTimer{
-		Min:             s.min,
-		Max:             s.max,
-		Jitter:          false,
-		Factor:          s.factor,
+		Info: utils.BackoffTimerInfo{
+			Min:       s.min,
+			Max:       s.max,
+			Jitter:    false,
+			Factor:    s.factor,
+			AfterFunc: afterFuncMock,
+		},
 		Chan:            make(chan struct{}, 1),
 		CurrentDuration: s.min,
 	}

@@ -9,16 +9,17 @@ import (
 	"time"
 )
 
-// Timer implements a timer that will signal after a
-// internally stored duration. The steps as well as min and max
+// Countdown implements a timer that will signal on the provided channel
+// after a internally stored duration. The steps as well as min and max
 // durations are declared upon initialization and depend on
-// the particular implementation
-type Timer interface {
-	// Channel returns the channel that can be listened for events.
-	Channel() <-chan struct{}
+// the particular implementation.
+type Countdown interface {
+	// ElapsedChan returns a simple channel to which the timer
+	// will send a signal once the duration runs down to 0.
+	ElapsedChan() <-chan struct{}
 
-	// Reset will reset the timer to it's minimum value
-	// and stop any existing timer.
+	// Reset stops the timer and resets it's duration to the minimum one.
+	// Signal must be called to start the timer again.
 	Reset()
 
 	// Signal will send a signal on the channel returned by Channel
@@ -32,15 +33,23 @@ type Timer interface {
 // A backoff timer starts at min and gets multiplied by factor
 // until it reaches max. Jitter determines whether a small
 // randomization is added to the duration.
-func NewBackoffTimer(min, max time.Duration, jitter bool, factor int64) Timer {
-	return &BackoffTimer{
-		Min:             min,
-		Max:             max,
-		Jitter:          jitter,
-		Factor:          factor,
-		Chan:            make(chan struct{}, 1),
-		CurrentDuration: min,
+// The caller is responsible for using the returned cleanup function
+// that will close the channel
+func NewBackoffTimer(info BackoffTimerInfo) (t *BackoffTimer, closeFunc func()) {
+	channel := make(chan struct{}, 1)
+	closer := func() {
+		close(channel)
 	}
+	if info.AfterFunc == nil {
+		info.AfterFunc = func(d time.Duration, f func()) StoppableTimer {
+			return time.AfterFunc(d, f)
+		}
+	}
+	return &BackoffTimer{
+		Info:            info,
+		Chan:            channel,
+		CurrentDuration: info.Min,
+	}, closer
 }
 
 // BackoffTimer creates and initializer a new BackoffTimer
@@ -49,20 +58,30 @@ func NewBackoffTimer(min, max time.Duration, jitter bool, factor int64) Timer {
 // randomization is added to the duration.
 // The struct is mainly exposed for testing purposes.
 type BackoffTimer struct {
-	Timer StdTimer
+	Info BackoffTimerInfo
 
+	Timer           StoppableTimer
+	Chan            chan struct{}
+	CurrentDuration time.Duration
+}
+
+// BackoffTimerInfo is a helper struct for backoff timer
+// that encapsulates config information.
+type BackoffTimerInfo struct {
 	Min    time.Duration
 	Max    time.Duration
 	Jitter bool
 	Factor int64
 
-	Chan chan struct{}
-
-	CurrentDuration time.Duration
+	// AfterFunc exists here for easier mocking
+	// It is a function that will execute the function f
+	// after duration d and return a timer object that will let
+	// us stop the existing timer.
+	AfterFunc func(d time.Duration, f func()) StoppableTimer
 }
 
 // Channel implements the Timer interface
-func (t *BackoffTimer) Channel() <-chan struct{} {
+func (t *BackoffTimer) ElapsedChan() <-chan struct{} {
 	return t.Chan
 }
 
@@ -73,7 +92,7 @@ func (t *BackoffTimer) Signal() {
 	if t.Timer != nil {
 		t.Timer.Stop()
 	}
-	t.Timer = afterFunc(t.CurrentDuration, func() {
+	t.Timer = t.Info.AfterFunc(t.CurrentDuration, func() {
 		t.Chan <- struct{}{}
 	})
 	// Since it's a backoff timer we will increase
@@ -86,15 +105,15 @@ func (t *BackoffTimer) Signal() {
 // it will add a 0.3% jitter to the final value.
 func (t *BackoffTimer) increaseDuration() {
 	current := int64(t.CurrentDuration)
-	nextDuration := time.Duration(current * t.Factor)
-	if t.Jitter {
+	nextDuration := time.Duration(current * t.Info.Factor)
+	if t.Info.Jitter {
 		// Get a factor in [-1; 1]
 		randFactor := (rand.Float64() * 2) - 1
 		jitter := float64(nextDuration) * randFactor * 0.03
 		nextDuration = nextDuration + time.Duration(jitter)
 	}
-	if nextDuration > t.Max {
-		nextDuration = t.Max
+	if nextDuration > t.Info.Max {
+		nextDuration = t.Info.Max
 	}
 	t.CurrentDuration = nextDuration
 }
@@ -104,24 +123,17 @@ func (t *BackoffTimer) Reset() {
 	if t.Timer != nil {
 		t.Timer.Stop()
 	}
-	if t.CurrentDuration > t.Min {
-		t.CurrentDuration = t.Min
+	if t.CurrentDuration > t.Info.Min {
+		t.CurrentDuration = t.Info.Min
 	}
 }
 
-// StdTimer defines a interface for time.Timer
-// so it's easier to mock it in tests
-type StdTimer interface {
-	// Reset changes the timer to expire after duration d. It returns true
-	// if the timer had been active, false if the timer had expired or been stopped.
-	Reset(time.Duration) bool
-
+// StoppableTimer defines a interface for a time.Timer
+// usually returned by AfterFunc so it's easier to mock it
+// in tests. We only use Stop from that interface.
+type StoppableTimer interface {
 	// Stop prevents the Timer from firing. It returns true if the call stops the timer,
 	// false if the timer has already expired or been stopped. Stop does not close the
 	// channel, to prevent a read from the channel succeeding incorrectly.
 	Stop() bool
-}
-
-var afterFunc = func(d time.Duration, f func()) StdTimer {
-	return time.AfterFunc(d, f)
 }

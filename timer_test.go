@@ -11,6 +11,7 @@ import (
 	gc "gopkg.in/check.v1"
 
 	"github.com/juju/testing"
+	jc "github.com/juju/testing/checkers"
 	"github.com/juju/utils"
 )
 
@@ -23,16 +24,12 @@ func (t *TestStdTimer) Stop() bool {
 	return true
 }
 
-func (t *TestStdTimer) Reset(d time.Duration) bool {
-	t.stdStub.AddCall("Reset", d)
-	return true
-}
-
 type timerSuite struct {
-	baseSuite      testing.CleanupSuite
-	timer          utils.BackoffTimer
-	afterFuncCalls int64
-	stub           *testing.Stub
+	baseSuite        testing.CleanupSuite
+	timer            *utils.BackoffTimer
+	afterFuncCalls   int64
+	properFuncCalled bool
+	stub             *testing.Stub
 
 	min    time.Duration
 	max    time.Duration
@@ -45,24 +42,32 @@ func (s *timerSuite) SetUpTest(c *gc.C) {
 	s.baseSuite.SetUpTest(c)
 	s.afterFuncCalls = 0
 	s.stub = &testing.Stub{}
+
+	// This along with the checks in afterFuncMock below assert
+	// that mockFunc is indeed passed as the argument to afterFuncMock
+	// to be executed.
+	mockFunc := func() { s.properFuncCalled = true }
 	afterFuncMock := func(d time.Duration, f func()) utils.StoppableTimer {
 		s.afterFuncCalls++
+		f()
+		c.Assert(s.properFuncCalled, jc.IsTrue)
+		s.properFuncCalled = false
 		return &TestStdTimer{s.stub}
 	}
 
 	s.min = 2 * time.Second
 	s.max = 16 * time.Second
 	s.factor = 2
-	s.timer = utils.BackoffTimer{
-		Info: utils.BackoffTimerInfo{
-			Min:       s.min,
-			Max:       s.max,
-			Jitter:    false,
-			Factor:    s.factor,
-			AfterFunc: afterFuncMock,
+	s.timer = utils.NewTestBackoffTimer(
+		utils.BackoffTimerInfo{
+			Min:    s.min,
+			Max:    s.max,
+			Jitter: false,
+			Factor: s.factor,
+			Func:   mockFunc,
 		},
-		CurrentDuration: s.min,
-	}
+		afterFuncMock,
+	)
 }
 
 func (s *timerSuite) TestStart(c *gc.C) {
@@ -85,12 +90,14 @@ func (s *timerSuite) TestMultipleStarts(c *gc.C) {
 
 func (s *timerSuite) TestResetNoStart(c *gc.C) {
 	s.timer.Reset()
-	c.Assert(s.timer.CurrentDuration, gc.Equals, s.min)
+	currentDuration := utils.ExposeBackoffTimerDuration(s.timer)
+	c.Assert(currentDuration, gc.Equals, s.min)
 }
 
 func (s *timerSuite) TestResetAndStart(c *gc.C) {
 	s.timer.Reset()
-	c.Assert(s.timer.CurrentDuration, gc.Equals, s.min)
+	currentDuration := utils.ExposeBackoffTimerDuration(s.timer)
+	c.Assert(currentDuration, gc.Equals, s.min)
 
 	// These variables are used to track the number
 	// of afterFuncCalls(signalCallsNo) and the number
@@ -105,7 +112,8 @@ func (s *timerSuite) TestResetAndStart(c *gc.C) {
 	resetStopCallsNo++
 	s.timer.Reset()
 	s.checkStopCalls(c, resetStopCallsNo+signalCallsNo-1)
-	c.Assert(s.timer.CurrentDuration, gc.Equals, s.min)
+	currentDuration = utils.ExposeBackoffTimerDuration(s.timer)
+	c.Assert(currentDuration, gc.Equals, s.min)
 
 	for i := 1; i < 200; i++ {
 		signalCallsNo++
@@ -137,7 +145,8 @@ func (s *timerSuite) testStart(c *gc.C, afterFuncCalls int64, durationFactor int
 	if expectedDuration > s.max || expectedDuration <= 0 {
 		expectedDuration = s.max
 	}
-	c.Assert(s.timer.CurrentDuration, gc.Equals, expectedDuration)
+	currentDuration := utils.ExposeBackoffTimerDuration(s.timer)
+	c.Assert(currentDuration, gc.Equals, expectedDuration)
 }
 
 func (s *timerSuite) checkStopCalls(c *gc.C, number int) {

@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-// Countdown implements a timer that will signal on the provided channel
+// Countdown implements a timer that will call a provided function.
 // after a internally stored duration. The steps as well as min and max
 // durations are declared upon initialization and depend on
 // the particular implementation.
@@ -28,17 +28,13 @@ type Countdown interface {
 // A backoff timer starts at min and gets multiplied by factor
 // until it reaches max. Jitter determines whether a small
 // randomization is added to the duration.
-// The caller is responsible for using the returned cleanup function
-// that will close the channel
 func NewBackoffTimer(info BackoffTimerInfo) *BackoffTimer {
-	if info.AfterFunc == nil {
-		info.AfterFunc = func(d time.Duration, f func()) StoppableTimer {
-			return time.AfterFunc(d, f)
-		}
-	}
 	return &BackoffTimer{
-		Info:            info,
-		CurrentDuration: info.Min,
+		info:            info,
+		currentDuration: info.Min,
+		afterFunc: func(d time.Duration, f func()) StoppableTimer {
+			return time.AfterFunc(d, f)
+		},
 	}
 }
 
@@ -46,72 +42,75 @@ func NewBackoffTimer(info BackoffTimerInfo) *BackoffTimer {
 // A backoff timer starts at min and gets multiplied by factor
 // until it reaches max. Jitter determines whether a small
 // randomization is added to the duration.
-// The struct is mainly exposed for testing purposes.
 type BackoffTimer struct {
-	Info BackoffTimerInfo
+	info BackoffTimerInfo
 
-	Timer           StoppableTimer
-	CurrentDuration time.Duration
+	timer           StoppableTimer
+	currentDuration time.Duration
+	afterFunc       func(d time.Duration, f func()) StoppableTimer
 }
 
 // BackoffTimerInfo is a helper struct for backoff timer
 // that encapsulates config information.
 type BackoffTimerInfo struct {
-	Min    time.Duration
-	Max    time.Duration
+	// The minimum duration after which Func is called.
+	Min time.Duration
+
+	// The maximum duration after which Func is called.
+	Max time.Duration
+
+	// Determines whether a small randomization is applied to
+	// the duration.
 	Jitter bool
+
+	// The factor by which you want the duration to increase
+	// every time.
 	Factor int64
 
 	// Func is the function that will be called when the countdown reaches 0.
 	Func func()
-
-	// AfterFunc exists here for easier mocking
-	// It is a function that will execute the function f
-	// after duration d and return a timer object that will let
-	// us stop the existing timer.
-	AfterFunc func(d time.Duration, f func()) StoppableTimer
 }
 
 // Signal implements the Timer interface
 // Any existing timer execution is stopped before
 // a new one is created.
 func (t *BackoffTimer) Start() {
-	if t.Timer != nil {
-		t.Timer.Stop()
+	if t.timer != nil {
+		t.timer.Stop()
 	}
-	t.Timer = t.Info.AfterFunc(t.CurrentDuration, t.Info.Func)
+	t.timer = t.afterFunc(t.currentDuration, t.info.Func)
 
 	// Since it's a backoff timer we will increase
 	// the duration after each signal.
 	t.increaseDuration()
 }
 
+// Reset implements the Timer interface
+func (t *BackoffTimer) Reset() {
+	if t.timer != nil {
+		t.timer.Stop()
+	}
+	if t.currentDuration > t.info.Min {
+		t.currentDuration = t.info.Min
+	}
+}
+
 // increaseDuration will increase the duration based on
 // the current value and the factor. If jitter is true
 // it will add a 0.3% jitter to the final value.
 func (t *BackoffTimer) increaseDuration() {
-	current := int64(t.CurrentDuration)
-	nextDuration := time.Duration(current * t.Info.Factor)
-	if t.Info.Jitter {
+	current := int64(t.currentDuration)
+	nextDuration := time.Duration(current * t.info.Factor)
+	if t.info.Jitter {
 		// Get a factor in [-1; 1]
 		randFactor := (rand.Float64() * 2) - 1
 		jitter := float64(nextDuration) * randFactor * 0.03
 		nextDuration = nextDuration + time.Duration(jitter)
 	}
-	if nextDuration > t.Info.Max {
-		nextDuration = t.Info.Max
+	if nextDuration > t.info.Max {
+		nextDuration = t.info.Max
 	}
-	t.CurrentDuration = nextDuration
-}
-
-// Reset implements the Timer interface
-func (t *BackoffTimer) Reset() {
-	if t.Timer != nil {
-		t.Timer.Stop()
-	}
-	if t.CurrentDuration > t.Info.Min {
-		t.CurrentDuration = t.Info.Min
-	}
+	t.currentDuration = nextDuration
 }
 
 // StoppableTimer defines a interface for a time.Timer

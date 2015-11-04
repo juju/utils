@@ -14,7 +14,7 @@ import (
 	"strings"
 	"unicode"
 
-	goyaml "gopkg.in/yaml.v2"
+	goyaml "gopkg.in/yaml.v1"
 )
 
 // WriteYaml marshals obj as yaml and then writes it to a file, atomically,

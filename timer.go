@@ -24,7 +24,7 @@ type Countdown interface {
 	Start()
 }
 
-// NewBackoffTimer creates and initializer a new BackoffTimer
+// NewBackoffTimer creates and initializes a new BackoffTimer
 // A backoff timer starts at min and gets multiplied by factor
 // until it reaches max. Jitter determines whether a small
 // randomization is added to the duration.
@@ -38,7 +38,7 @@ func NewBackoffTimer(info BackoffTimerInfo) *BackoffTimer {
 	}
 }
 
-// BackoffTimer creates and initializer a new BackoffTimer
+// BackoffTimer implements Countdown.
 // A backoff timer starts at min and gets multiplied by factor
 // until it reaches max. Jitter determines whether a small
 // randomization is added to the duration.
@@ -71,7 +71,7 @@ type BackoffTimerInfo struct {
 	Func func()
 }
 
-// Signal implements the Timer interface
+// Signal implements the Timer interface.
 // Any existing timer execution is stopped before
 // a new one is created.
 func (t *BackoffTimer) Start() {
@@ -85,7 +85,7 @@ func (t *BackoffTimer) Start() {
 	t.increaseDuration()
 }
 
-// Reset implements the Timer interface
+// Reset implements the Timer interface.
 func (t *BackoffTimer) Reset() {
 	if t.timer != nil {
 		t.timer.Stop()
@@ -102,7 +102,7 @@ func (t *BackoffTimer) increaseDuration() {
 	current := int64(t.currentDuration)
 	nextDuration := time.Duration(current * t.info.Factor)
 	if t.info.Jitter {
-		// Get a factor in [-1; 1]
+		// Get a factor in [-1; 1].
 		randFactor := (rand.Float64() * 2) - 1
 		jitter := float64(nextDuration) * randFactor * 0.03
 		nextDuration = nextDuration + time.Duration(jitter)

@@ -78,12 +78,16 @@ var versionTests = []struct {
 
 func (s *windowsSeriesSuite) SetUpTest(c *gc.C) {
 	s.CleanupSuite.SetUpTest(c)
+	s.createRegKey(c, series.CurrentVersionKey)
+}
+
+func (s *windowsSeriesSuite) createRegKey(c *gc.C, key *string) {
 	salt, err := utils.RandomPassword()
 	c.Assert(err, jc.ErrorIsNil)
 	regKey := fmt.Sprintf(`SOFTWARE\JUJU\%s`, salt)
-	s.PatchValue(series.CurrentVersionKey, regKey)
+	s.PatchValue(key, regKey)
 
-	k, _, err := registry.CreateKey(registry.LOCAL_MACHINE, *series.CurrentVersionKey, registry.ALL_ACCESS)
+	k, _, err := registry.CreateKey(registry.LOCAL_MACHINE, *key, registry.ALL_ACCESS)
 	c.Assert(err, jc.ErrorIsNil)
 
 	err = k.Close()
@@ -96,6 +100,51 @@ func (s *windowsSeriesSuite) SetUpTest(c *gc.C) {
 
 func (s *windowsSeriesSuite) TestReadSeries(c *gc.C) {
 	for _, value := range versionTests {
+		k, err := registry.OpenKey(registry.LOCAL_MACHINE, *series.CurrentVersionKey, registry.ALL_ACCESS)
+		c.Assert(err, jc.ErrorIsNil)
+
+		err = k.SetStringValue("ProductName", value.version)
+		c.Assert(err, jc.ErrorIsNil)
+
+		err = k.Close()
+		c.Assert(err, jc.ErrorIsNil)
+
+		ver, err := series.ReadSeries()
+		c.Assert(err, jc.ErrorIsNil)
+		c.Assert(ver, gc.Equals, value.want)
+	}
+}
+
+type windowsNanoSeriesSuite struct {
+	windowsSeriesSuite
+}
+
+var _ = gc.Suite(&windowsNanoSeriesSuite{})
+
+func (s *windowsNanoSeriesSuite) SetUpTest(c *gc.C) {
+	s.windowsSeriesSuite.SetUpTest(c)
+	s.createRegKey(c, series.IsNanoKey)
+
+	k, err := registry.OpenKey(registry.LOCAL_MACHINE, *series.IsNanoKey, registry.ALL_ACCESS)
+	c.Assert(err, jc.ErrorIsNil)
+
+	err = k.SetDWordValue("NanoServer", 1)
+	c.Assert(err, jc.ErrorIsNil)
+
+	err = k.Close()
+	c.Assert(err, jc.ErrorIsNil)
+}
+
+var nanoVersionTests = []struct {
+	version string
+	want    string
+}{{
+	"Windows Server 2016",
+	"win2016nano",
+}}
+
+func (s *windowsNanoSeriesSuite) TestReadSeries(c *gc.C) {
+	for _, value := range nanoVersionTests {
 		k, err := registry.OpenKey(registry.LOCAL_MACHINE, *series.CurrentVersionKey, registry.ALL_ACCESS)
 		c.Assert(err, jc.ErrorIsNil)
 

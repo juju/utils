@@ -35,6 +35,9 @@ var getOSFromSeriesTests = []struct {
 	series: "win2012r2",
 	want:   os.Windows,
 }, {
+	series: "win2016nano",
+	want:   os.Windows,
+}, {
 	series: "mountainlion",
 	want:   os.OSX,
 }, {
@@ -69,12 +72,13 @@ func (s *supportedSeriesSuite) TestUnknownOSFromSeries(c *gc.C) {
 
 func setSeriesTestData() {
 	series.SetSeriesVersions(map[string]string{
-		"trusty":  "14.04",
-		"utopic":  "14.10",
-		"win7":    "win7",
-		"win81":   "win81",
-		"centos7": "centos7",
-		"arch":    "rolling",
+		"trusty":      "14.04",
+		"utopic":      "14.10",
+		"win7":        "win7",
+		"win81":       "win81",
+		"win2016nano": "win2016nano",
+		"centos7":     "centos7",
+		"arch":        "rolling",
 	})
 }
 
@@ -83,7 +87,7 @@ func (s *supportedSeriesSuite) TestOSSupportedSeries(c *gc.C) {
 	supported := series.OSSupportedSeries(os.Ubuntu)
 	c.Assert(supported, jc.SameContents, []string{"trusty", "utopic"})
 	supported = series.OSSupportedSeries(os.Windows)
-	c.Assert(supported, jc.SameContents, []string{"win7", "win81"})
+	c.Assert(supported, jc.SameContents, []string{"win7", "win81", "win2016nano"})
 	supported = series.OSSupportedSeries(os.CentOS)
 	c.Assert(supported, jc.SameContents, []string{"centos7"})
 	supported = series.OSSupportedSeries(os.Arch)

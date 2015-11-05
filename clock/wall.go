@@ -23,3 +23,7 @@ func (wallClock) Now() time.Time {
 func (wallClock) After(d time.Duration) <-chan time.Time {
 	return time.After(d)
 }
+
+func (wallClock) AfterFunc(d time.Duration, f func()) Timer {
+	return time.AfterFunc(d, f)
+}

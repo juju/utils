@@ -7,6 +7,8 @@ package utils
 import (
 	"math/rand"
 	"time"
+
+	"github.com/juju/utils/clock"
 )
 
 // Countdown implements a timer that will call a provided function.
@@ -14,8 +16,8 @@ import (
 // durations are declared upon initialization and depend on
 // the particular implementation.
 type Countdown interface {
-	// Reset stops the timer and resets it's duration to the minimum one.
-	// Signal must be called to start the timer again.
+	// Reset stops the timer and resets its duration to the minimum one.
+	// Start must be called to start the timer again.
 	Reset()
 
 	// Start starts the internal timer.
@@ -28,13 +30,10 @@ type Countdown interface {
 // A backoff timer starts at min and gets multiplied by factor
 // until it reaches max. Jitter determines whether a small
 // randomization is added to the duration.
-func NewBackoffTimer(info BackoffTimerInfo) *BackoffTimer {
+func NewBackoffTimer(config BackoffTimerConfig) *BackoffTimer {
 	return &BackoffTimer{
-		info:            info,
-		currentDuration: info.Min,
-		afterFunc: func(d time.Duration, f func()) StoppableTimer {
-			return time.AfterFunc(d, f)
-		},
+		config:          config,
+		currentDuration: config.Min,
 	}
 }
 
@@ -43,16 +42,15 @@ func NewBackoffTimer(info BackoffTimerInfo) *BackoffTimer {
 // until it reaches max. Jitter determines whether a small
 // randomization is added to the duration.
 type BackoffTimer struct {
-	info BackoffTimerInfo
+	config BackoffTimerConfig
 
-	timer           StoppableTimer
+	timer           clock.Timer
 	currentDuration time.Duration
-	afterFunc       func(d time.Duration, f func()) StoppableTimer
 }
 
-// BackoffTimerInfo is a helper struct for backoff timer
+// BackoffTimerConfig is a helper struct for backoff timer
 // that encapsulates config information.
-type BackoffTimerInfo struct {
+type BackoffTimerConfig struct {
 	// The minimum duration after which Func is called.
 	Min time.Duration
 
@@ -69,16 +67,20 @@ type BackoffTimerInfo struct {
 
 	// Func is the function that will be called when the countdown reaches 0.
 	Func func()
+
+	// Clock provides the AfterFunc function used to call func.
+	// It is exposed here so it's easier to mock it in tests.
+	Clock clock.Clock
 }
 
-// Signal implements the Timer interface.
+// Start implements the Timer interface.
 // Any existing timer execution is stopped before
 // a new one is created.
 func (t *BackoffTimer) Start() {
 	if t.timer != nil {
 		t.timer.Stop()
 	}
-	t.timer = t.afterFunc(t.currentDuration, t.info.Func)
+	t.timer = t.config.Clock.AfterFunc(t.currentDuration, t.config.Func)
 
 	// Since it's a backoff timer we will increase
 	// the duration after each signal.
@@ -90,8 +92,8 @@ func (t *BackoffTimer) Reset() {
 	if t.timer != nil {
 		t.timer.Stop()
 	}
-	if t.currentDuration > t.info.Min {
-		t.currentDuration = t.info.Min
+	if t.currentDuration > t.config.Min {
+		t.currentDuration = t.config.Min
 	}
 }
 
@@ -100,25 +102,15 @@ func (t *BackoffTimer) Reset() {
 // it will add a 0.3% jitter to the final value.
 func (t *BackoffTimer) increaseDuration() {
 	current := int64(t.currentDuration)
-	nextDuration := time.Duration(current * t.info.Factor)
-	if t.info.Jitter {
+	nextDuration := time.Duration(current * t.config.Factor)
+	if t.config.Jitter {
 		// Get a factor in [-1; 1].
 		randFactor := (rand.Float64() * 2) - 1
 		jitter := float64(nextDuration) * randFactor * 0.03
 		nextDuration = nextDuration + time.Duration(jitter)
 	}
-	if nextDuration > t.info.Max {
-		nextDuration = t.info.Max
+	if nextDuration > t.config.Max {
+		nextDuration = t.config.Max
 	}
 	t.currentDuration = nextDuration
-}
-
-// StoppableTimer defines a interface for a time.Timer
-// usually returned by AfterFunc so it's easier to mock it
-// in tests. We only use Stop from that interface.
-type StoppableTimer interface {
-	// Stop prevents the Timer from firing. It returns true if the call stops the timer,
-	// false if the timer has already expired or been stopped. Stop does not close the
-	// channel, to prevent a read from the channel succeeding incorrectly.
-	Stop() bool
 }

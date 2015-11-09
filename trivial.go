@@ -13,42 +13,7 @@ import (
 	"os"
 	"strings"
 	"unicode"
-
-	goyaml "gopkg.in/yaml.v2"
 )
-
-// WriteYaml marshals obj as yaml and then writes it to a file, atomically,
-// by first writing a sibling with the suffix ".preparing" and then moving
-// the sibling to the real path.
-func WriteYaml(path string, obj interface{}) error {
-	data, err := goyaml.Marshal(obj)
-	if err != nil {
-		return err
-	}
-	prep := path + ".preparing"
-	f, err := os.OpenFile(prep, os.O_WRONLY|os.O_CREATE|os.O_SYNC, 0644)
-	if err != nil {
-		return err
-	}
-	_, err = f.Write(data)
-	// Explicitly close the file before moving it. This is needed on Windows
-	// where the OS will not allow us to move a file that still has an open file handle
-	f.Close()
-	if err != nil {
-		return err
-	}
-	return ReplaceFile(prep, path)
-}
-
-// ReadYaml unmarshals the yaml contained in the file at path into obj. See
-// goyaml.Unmarshal.
-func ReadYaml(path string, obj interface{}) error {
-	data, err := ioutil.ReadFile(path)
-	if err != nil {
-		return err
-	}
-	return goyaml.Unmarshal(data, obj)
-}
 
 // TODO(ericsnow) Move the quoting helpers into the shell package?
 

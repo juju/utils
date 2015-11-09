@@ -16,6 +16,7 @@ import (
 	gc "gopkg.in/check.v1"
 	"launchpad.net/tomb"
 
+	"github.com/juju/utils/clock"
 	"github.com/juju/utils/fslock"
 )
 
@@ -42,6 +43,11 @@ func (*fastclock) Now() time.Time {
 func (f *fastclock) After(duration time.Duration) <-chan time.Time {
 	f.c.Check(duration, gc.Equals, fslock.LockWaitDelay)
 	return time.After(time.Millisecond)
+}
+
+func (f *fastclock) AfterFunc(duration time.Duration, function func()) clock.Timer {
+	f.c.Check(duration, gc.Equals, fslock.LockWaitDelay)
+	return time.AfterFunc(time.Millisecond, function)
 }
 
 // This test also happens to test that locks can get created when the parent

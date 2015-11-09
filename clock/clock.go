@@ -28,9 +28,8 @@ func Alarm(c Clock, t time.Time) <-chan time.Time {
 	return c.After(t.Sub(c.Now()))
 }
 
-// The Timer type represents a single event. When the Timer expires,
-// the current time will be sent on C, unless the Timer was created by AfterFunc.
-// A Timer must be created with NewTimer or AfterFunc.
+// The Timer type represents a single event.
+// A Timer must be created with AfterFunc.
 // This interface follows time.Timer's methods but provides easier mocking.
 type Timer interface {
 

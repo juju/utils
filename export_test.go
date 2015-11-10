@@ -15,12 +15,6 @@ var (
 	ResolveSudoByFunc = resolveSudo
 )
 
-func NewTestBackoffTimer(info BackoffTimerInfo, mockAfterFunc func(d time.Duration, f func()) StoppableTimer) *BackoffTimer {
-	timer := NewBackoffTimer(info)
-	timer.afterFunc = mockAfterFunc
-	return timer
-}
-
 func ExposeBackoffTimerDuration(bot *BackoffTimer) time.Duration {
 	return bot.currentDuration
 }

@@ -13,6 +13,7 @@ import (
 	"github.com/juju/testing"
 	jc "github.com/juju/testing/checkers"
 	"github.com/juju/utils"
+    "github.com/juju/utils/clock"
 )
 
 type TestStdTimer struct {
@@ -22,6 +23,11 @@ type TestStdTimer struct {
 func (t *TestStdTimer) Stop() bool {
 	t.stdStub.AddCall("Stop")
 	return true
+}
+
+func (t *TestStdTimer) Reset(d time.Duration) bool {
+    t.stdStub.AddCall("Reset", d)
+    return true
 }
 
 type timerSuite struct {
@@ -38,6 +44,25 @@ type timerSuite struct {
 
 var _ = gc.Suite(&timerSuite{})
 
+type mockClock struct {
+    stub             *testing.Stub
+    c                *gc.C
+    afterFuncCalls   *int64
+    properFuncCalled bool
+}
+
+// These 2 methods are not used here but are needed to satisfy the intergface
+func (c *mockClock) Now() time.Time                         { return time.Now() }
+func (c *mockClock) After(d time.Duration) <-chan time.Time { return time.After(d) }
+
+func (c *mockClock) AfterFunc(d time.Duration, f func()) clock.Timer {
+    *c.afterFuncCalls++
+    f()
+    c.c.Assert(c.properFuncCalled, jc.IsTrue)
+    c.properFuncCalled = false
+    return &TestStdTimer{c.stub}
+}
+
 func (s *timerSuite) SetUpTest(c *gc.C) {
 	s.baseSuite.SetUpTest(c)
 	s.afterFuncCalls = 0
@@ -47,27 +72,26 @@ func (s *timerSuite) SetUpTest(c *gc.C) {
 	// that mockFunc is indeed passed as the argument to afterFuncMock
 	// to be executed.
 	mockFunc := func() { s.properFuncCalled = true }
-	afterFuncMock := func(d time.Duration, f func()) utils.StoppableTimer {
-		s.afterFuncCalls++
-		f()
-		c.Assert(s.properFuncCalled, jc.IsTrue)
-		s.properFuncCalled = false
-		return &TestStdTimer{s.stub}
-	}
+    mockClock := &mockClock{
+        stub:             s.stub,
+        c:                c,
+        afterFuncCalls:   &s.afterFuncCalls,
+        properFuncCalled: s.properFuncCalled,
+    }
 
 	s.min = 2 * time.Second
 	s.max = 16 * time.Second
 	s.factor = 2
-	s.timer = utils.NewTestBackoffTimer(
-		utils.BackoffTimerInfo{
-			Min:    s.min,
-			Max:    s.max,
-			Jitter: false,
-			Factor: s.factor,
-			Func:   mockFunc,
-		},
-		afterFuncMock,
-	)
+    s.timer = utils.NewBackoffTimer(
+        utils.BackoffTimerConfig{
+            Min:    s.min,
+            Max:    s.max,
+            Jitter: false,
+            Factor: s.factor,
+            Func:   mockFunc,
+            Clock:  mockClock,
+        },
+    )
 }
 
 func (s *timerSuite) TestStart(c *gc.C) {

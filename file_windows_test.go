@@ -40,3 +40,11 @@ func (s *windowsFileSuite) TestMakeFileURL(c *gc.C) {
 		c.Assert(utils.MakeFileURL(t.in), gc.Equals, t.expected)
 	}
 }
+
+func (s *windowsFileSuite) TestEnsureBaseDir(c *gc.C) {
+	c.Assert(utils.EnsureBaseDir(`C:\r`, `C:\a\b`), gc.Equals, `C:\r\a\b`)
+	c.Assert(utils.EnsureBaseDir(`C:\r`, `D:\a\b`), gc.Equals, `C:\r\a\b`)
+	c.Assert(utils.EnsureBaseDir(`C:`, `D:\a\b`), gc.Equals, `C:\a\b`)
+	c.Assert(utils.EnsureBaseDir(`C:`, `\a\b`), gc.Equals, `C:\a\b`)
+	c.Assert(utils.EnsureBaseDir(``, `C:\a\b`), gc.Equals, `C:\a\b`)
+}

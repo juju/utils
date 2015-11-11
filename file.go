@@ -51,6 +51,17 @@ func NormalizePath(dir string) (string, error) {
 	return filepath.Clean(dir), nil
 }
 
+// EnsureBaseDir ensures that path is always prefixed by baseDir,
+// allowing for the fact that path might have a Window drive letter in
+// it.
+func EnsureBaseDir(baseDir, path string) string {
+	if baseDir == "" {
+		return path
+	}
+	volume := filepath.VolumeName(path)
+	return filepath.Join(baseDir, path[len(volume):])
+}
+
 // JoinServerPath joins any number of path elements into a single path, adding
 // a path separator (based on the current juju server OS) if necessary. The
 // result is Cleaned; in particular, all empty strings are ignored.

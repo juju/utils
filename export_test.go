@@ -3,6 +3,10 @@
 
 package utils
 
+import (
+	"time"
+)
+
 var (
 	GOMAXPROCS        = &gomaxprocs
 	NumCPU            = &numCPU
@@ -10,3 +14,7 @@ var (
 	NetDial           = &netDial
 	ResolveSudoByFunc = resolveSudo
 )
+
+func ExposeBackoffTimerDuration(bot *BackoffTimer) time.Duration {
+	return bot.currentDuration
+}

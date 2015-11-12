@@ -3,8 +3,12 @@
 
 package fslock
 
-var (
-	LockWaitDelay = lockWaitDelay
-)
-
 type OnDisk onDisk
+
+func IsAlive(lock *Lock, PID int) bool {
+	return lock.isAlive(PID)
+}
+
+func DeclareDead(lock *Lock) {
+	lock.declareDead()
+}

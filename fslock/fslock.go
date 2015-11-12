@@ -14,12 +14,9 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"os/exec"
 	"path"
-	"path/filepath"
 	"regexp"
 	"runtime"
-	"strings"
 	"time"
 
 	"github.com/juju/errors"
@@ -27,7 +24,7 @@ import (
 
 	"github.com/juju/utils"
 	"github.com/juju/utils/clock"
-	goyaml "gopkg.in/yaml.v2"
+	goyaml "gopkg.in/yaml.v1"
 )
 
 const (
@@ -44,17 +41,45 @@ var (
 	// ErrTimeout is returned by LockWithTimeout if the lock could not be obtained before the given deadline
 	ErrTimeout = errors.New("lock timeout exceeded")
 
-	validName     = regexp.MustCompile(NameRegexp)
-	lockWaitDelay = 1 * time.Second
+	validName = regexp.MustCompile(NameRegexp)
 )
+
+// LockConfig defines the configuration of the new lock. Sensible defaults can be
+// obtained from Defaults().
+type LockConfig struct {
+	// Clock is used to generate delays
+	Clock clock.Clock
+	// WaitDelay is how long to wait after trying to aquire a lock before trying again
+	WaitDelay time.Duration
+	// LividityTimeout is how old a lock can be without us considering its
+	// parent process dead.
+	LividityTimeout time.Duration
+	// ReadRetryTimeout is how long to wait after trying to examine a lock
+	// and not finding it before trying again.
+	ReadRetryTimeout time.Duration
+}
+
+// Defaults generates a LockConfig pre-filled with sensible defaults.
+func Defaults() LockConfig {
+	return LockConfig{
+		Clock:            clock.WallClock,
+		WaitDelay:        1 * time.Second,
+		LividityTimeout:  30 * time.Second,
+		ReadRetryTimeout: time.Millisecond * 10,
+	}
+}
 
 // Lock is a file system lock
 type Lock struct {
-	name   string
-	parent string
-	clock  clock.Clock
-	nonce  string
-	PID    int
+	name                 string
+	parent               string
+	clock                clock.Clock
+	nonce                string
+	PID                  int
+	stopWritingAliveFile chan struct{}
+	waitDelay            time.Duration
+	lividityTimeout      time.Duration
+	readRetryTimeout     time.Duration
 }
 
 type onDisk struct {
@@ -63,27 +88,10 @@ type onDisk struct {
 	Message string
 }
 
-type defaultClock struct{}
-
-func (*defaultClock) Now() time.Time {
-	return time.Now()
-}
-
-func (f *defaultClock) After(duration time.Duration) <-chan time.Time {
-	return time.After(duration)
-}
-
 // NewLock returns a new lock with the given name within the given lock
 // directory, without acquiring it. The lock name must match the regular
 // expression defined by NameRegexp.
-func NewLock(lockDir, name string) (*Lock, error) {
-	c := &defaultClock{}
-	return NewLockNeedsClock(lockDir, name, c)
-}
-
-// NewLockNeedsClock returns a new lock that uses the provided clock rather than
-// the default clock.
-func NewLockNeedsClock(lockDir, name string, clock clock.Clock) (*Lock, error) {
+func NewLock(lockDir, name string, cfg LockConfig) (*Lock, error) {
 	if !validName.MatchString(name) {
 		return nil, fmt.Errorf("Invalid lock name %q.  Names must match %q", name, NameRegexp)
 	}
@@ -95,14 +103,23 @@ func NewLockNeedsClock(lockDir, name string, clock clock.Clock) (*Lock, error) {
 		return nil, err
 	}
 	lock := &Lock{
-		name:   name,
-		parent: lockDir,
-		clock:  clock,
-		nonce:  uuid.String(),
-		PID:    os.Getpid(),
+		name:                 name,
+		parent:               lockDir,
+		clock:                cfg.Clock,
+		nonce:                uuid.String(),
+		PID:                  os.Getpid(),
+		stopWritingAliveFile: make(chan struct{}),
+		waitDelay:            cfg.WaitDelay,
+		lividityTimeout:      cfg.LividityTimeout,
+		readRetryTimeout:     cfg.ReadRetryTimeout,
 	}
 	// Ensure the parent exists.
 	if err := os.MkdirAll(lock.parent, 0755); err != nil {
+		return nil, err
+	}
+	// Ensure that an old alive file doesn't exist. RemoveAll doesn't raise
+	// an error if the target doesn't exist, so we don't expect any errors.
+	if err := os.RemoveAll(lock.aliveFile(lock.PID)); err != nil {
 		return nil, err
 	}
 	return lock, nil
@@ -114,6 +131,97 @@ func (lock *Lock) lockDir() string {
 
 func (lock *Lock) heldFile() string {
 	return path.Join(lock.lockDir(), "held")
+}
+
+func (lock *Lock) aliveFile(PID int) string {
+	return path.Join(lock.lockDir(), fmt.Sprintf("alive.%d", PID))
+}
+
+// isAlive checks that the PID given is alive by looking to see if it is the
+// current process's PID or, if it isn't, for a file named alive.<PID>, which
+// has been updated in the last 30 seconds.
+func (lock *Lock) isAlive(PID int) bool {
+	if PID == lock.PID {
+		return true
+	}
+	for misses := 0; misses < 0; misses++ {
+		aliveInfo, err := os.Lstat(lock.aliveFile(PID))
+		if err == nil {
+			return time.Now().Before(aliveInfo.ModTime().Add(lock.lividityTimeout))
+		}
+		time.Sleep(lock.readRetryTimeout)
+	}
+	return false
+}
+
+// createAliveFile kicks off a gorouteine that creates a proof of life file
+// and keeps its timestamp current.
+func (lock *Lock) createAliveFile(dir string) {
+	lock.stopWritingAliveFile = make(chan struct{})
+
+	go func() {
+		aliveFile := lock.aliveFile(lock.PID)
+		for {
+			select {
+			case <-time.After(5 * lock.waitDelay):
+				if lock.IsLockHeld() {
+					if _, err := os.Stat(aliveFile); os.IsNotExist(err) {
+						ioutil.WriteFile(aliveFile, []byte{}, 644)
+					} else {
+						now := time.Now()
+						os.Chtimes(aliveFile, now, now)
+					}
+				}
+			case <-lock.stopWritingAliveFile:
+				return
+			}
+		}
+	}()
+}
+
+func (lock *Lock) declareDead() {
+	select {
+	case <-lock.stopWritingAliveFile:
+	// Channel is closed, unless our logic went really wrong
+	default:
+		// Close the channel to indicate that we should stop writing the alive file
+		close(lock.stopWritingAliveFile)
+	}
+}
+
+func (lock *Lock) updateProcessAliveFile() {
+	ioutil.WriteFile(lock.aliveFile(lock.PID), []byte{}, 644)
+	for {
+		select {
+		case <-time.After(5 * time.Second):
+			if lock.IsLockHeld() {
+				ioutil.WriteFile(lock.aliveFile(lock.PID), []byte{}, 644)
+			}
+		case <-lock.stopWritingAliveFile:
+			return
+		}
+	}
+}
+
+// clean reads the lock and checks that it is valid. If the lock points to a running
+// juju process that is older than the lock file, the lock is left in place, else
+// the lock is removed.
+func (lock *Lock) clean() error {
+	// If a lock exists, see if it is stale
+	lockInfo, err := lock.readLock()
+	if err != nil {
+		return nil
+	}
+
+	alive := lock.isAlive(lockInfo.PID)
+	if alive == false {
+		logger.Debugf("Lock dead")
+		return lock.BreakLock()
+	}
+	logger.Debugf("Lock alive")
+
+	// lock is current. Do nothing.
+	return nil
 }
 
 // If message is set, it will write the message to the lock directory as the
@@ -136,6 +244,8 @@ func (lock *Lock) acquire(message string) (bool, error) {
 	if err != nil {
 		return false, err // this shouldn't really fail...
 	}
+	lock.createAliveFile(tempDirName)
+
 	// write lock into the temp dir
 	l := onDisk{
 		PID:     lock.PID,
@@ -182,91 +292,8 @@ func (lock *Lock) lockLoop(message string, continueFunc func() error) error {
 			logger.Infof("attempted lock failed %q, %s, currently held: %s", lock.name, message, currMessage)
 			heldMessage = currMessage
 		}
-		<-lock.clock.After(lockWaitDelay)
+		<-lock.clock.After(lock.waitDelay)
 	}
-}
-
-// clean reads the lock and checks that it is valid. If the lock points to a running
-// juju process that is older than the lock file, the lock is left in place, else
-// the lock is removed.
-func (lock *Lock) clean() error {
-	// If a lock exists, see if it is stale
-	lockInfo, err := lock.readLock()
-	if err != nil {
-		return nil
-	}
-
-	var processStartTime time.Time
-
-	if runtime.GOOS == "windows" {
-		cmd := fmt.Sprintf("'{0:O}' -f (Get-Process -Id %s).StartTime", lockInfo.PID)
-		out, err := exec.Command("powershell.exe", cmd).CombinedOutput()
-		if err != nil {
-			logger.Debugf("Powershell Get-Process -Id %s failed %s (%s)", lockInfo.PID, lock.name, lockInfo.Message)
-		}
-		matched, err := regexp.MatchString("ObjectNotFound", string(out))
-		if err != nil {
-			logger.Errorf("Error searching for lock status")
-			return nil // We don't do anything in this case since the safe thing to do is nothing
-		}
-		if matched {
-			logger.Debugf("Lock is stale (can't find process) %s (%s)", lock.name, lockInfo.Message)
-			return lock.BreakLock()
-		}
-		matched, err = regexp.MatchString(`^\s*$`, string(out))
-		if err != nil {
-			logger.Errorf("Error searching for lock status")
-			return nil // We don't do anything in this case since the safe thing to do is nothing
-		}
-		if matched {
-			logger.Debugf("Lock is stale (can't find process (2)) %s (%s)", lock.name, lockInfo.Message)
-			return lock.BreakLock()
-		}
-		processStartTime, err = time.Parse(time.RFC3339Nano, strings.TrimSpace(string(out)))
-		if err != nil {
-			logger.Errorf("Unable to parse time string: >%s<", strings.TrimSpace(string(out)))
-			return nil // We don't do anything in this case since the safe thing to do is nothing
-		}
-	} else {
-		// Find if the lock points to a running process...
-		procExeLink := fmt.Sprintf("/proc/%d/exe", lockInfo.PID)
-		_, err = filepath.EvalSymlinks(procExeLink)
-		if err != nil {
-			// If we can't read the symlink, it can't be a Juju process started by
-			// the same user (or something really bad is going on)
-			logger.Debugf("Lock is stale (can't read exe symlink) %s (%s): %s", lock.name, lockInfo.Message, err)
-			return lock.BreakLock()
-		}
-
-		// Lock is current and points to a running process
-		procFileInfo, err := os.Lstat(procExeLink)
-		if err != nil {
-			logger.Debugf("Lock cleaner error -- can't os.Lstat(procExeLink) %s (%s): %s", lock.name, lockInfo.Message, err)
-			return err
-		}
-		processStartTime = procFileInfo.ModTime()
-	}
-
-	lockFileInfo, err := os.Lstat(lock.heldFile())
-	if err != nil {
-		logger.Debugf("Lock cleaner error -- can't os.Lstat(lock.heldFile()) %s (%s): %s", lock.name, lockInfo.Message, err)
-		return err
-	}
-
-	if processStartTime.After(lockFileInfo.ModTime().Add(time.Second)) {
-		// If the process is newer than the lock, the lock is stale. The 1s fiddle is much more than is needed
-		// to prevent errant test failures where a file appears to be older than the process that created it
-		// (on dooferlad's dev box 50ms is plenty). It is fine to have this much margin for error though because
-		// this branch should only be taken when a PID has been recycled and that only happens when all 32k
-		// (/proc/sys/kernel/pid_max) have been used or the machine reboots. If we get through 32k PIDs in a
-		// second we probably have other problems.
-		logger.Debugf("Lock is stale (older then juju process) %s (%s)", lock.name, lockInfo.Message)
-		return lock.BreakLock()
-	}
-
-	logger.Tracef("Lock is current %s (%s)", lock.name, lockInfo.Message)
-	// lock is current. Do nothing.
-	return nil
 }
 
 // Lock blocks until it is able to acquire the lock.  Since we are dealing
@@ -329,6 +356,7 @@ func (lock *Lock) Unlock() error {
 		return ErrLockNotHeld
 	}
 	// To ensure reasonable unlocking, we should rename to a temp name, and delete that.
+	lock.declareDead()
 	tempLockName := fmt.Sprintf(".%s.%s", lock.name, lock.nonce)
 	tempDirName := path.Join(lock.parent, tempLockName)
 	// Now move the lock directory to the temp directory to release the lock.
@@ -358,8 +386,9 @@ func (lock *Lock) IsLocked() bool {
 	return err == nil
 }
 
-// BreakLock forcably breaks the lock that is currently being held.
+// BreakLock forcibly breaks the lock that is currently being held.
 func (lock *Lock) BreakLock() error {
+	lock.declareDead()
 	return os.RemoveAll(lock.lockDir())
 }
 

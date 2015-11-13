@@ -7,12 +7,63 @@ import (
 	"bytes"
 	"io/ioutil"
 	"os"
-	"os/exec"
+	osexec "os/exec"
 	"runtime"
 	"syscall"
 
 	"github.com/juju/errors"
 )
+
+// Run starts the provided command and waits for it to complete.
+func Run(cmd Starter) (ProcessState, error) {
+	process, err := cmd.Start()
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+
+	state, err := process.Wait()
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+
+	return state, nil
+}
+
+// Output runs the command and returns its standard output.
+func Output(cmd Command) ([]byte, error) {
+	var buf bytes.Buffer
+	stdio := Stdio{
+		Out: &buf,
+	}
+	if err := cmd.SetStdio(stdio); err != nil {
+		return nil, errors.Trace(err)
+	}
+
+	if _, err := Run(cmd); err != nil {
+		return nil, errors.Trace(err)
+	}
+
+	return buf.Bytes(), nil
+}
+
+// CombinedOutput runs the command and returns its combined standard
+// output and standard error.
+func CombinedOutput(cmd Command) ([]byte, error) {
+	var buf bytes.Buffer
+	stdio := Stdio{
+		Out: &buf,
+		Err: &buf,
+	}
+	if err := cmd.SetStdio(stdio); err != nil {
+		return nil, errors.Trace(err)
+	}
+
+	if _, err := Run(cmd); err != nil {
+		return nil, errors.Trace(err)
+	}
+
+	return buf.Bytes(), nil
+}
 
 // RunCommands executes the Commands specified in the RunParams using
 // powershell on windows, and '/bin/bash -s' on everything else,
@@ -40,7 +91,7 @@ type RunParams struct {
 	tempDir string
 	stdout  *bytes.Buffer
 	stderr  *bytes.Buffer
-	ps      *exec.Cmd
+	ps      *osexec.Cmd
 }
 
 // Run sets up the command environment (environment variables, working dir)
@@ -64,7 +115,7 @@ func (r *RunParams) Run() error {
 		return err
 	}
 
-	r.ps = exec.Command(shell, args...)
+	r.ps = osexec.Command(shell, args...)
 	if r.Environment != nil {
 		r.ps.Env = r.Environment
 	}
@@ -111,7 +162,7 @@ func (r *RunParams) Wait() (*ExecResponse, error) {
 		Stderr: r.stderr.Bytes(),
 	}
 
-	if ee, ok := err.(*exec.ExitError); ok && err != nil {
+	if ee, ok := err.(*osexec.ExitError); ok && err != nil {
 		status := ee.ProcessState.Sys().(syscall.WaitStatus)
 		if status.Exited() {
 			// A non-zero return code isn't considered an error here.

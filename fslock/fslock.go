@@ -24,7 +24,7 @@ import (
 
 	"github.com/juju/utils"
 	"github.com/juju/utils/clock"
-	goyaml "gopkg.in/yaml.v1"
+	goyaml "gopkg.in/yaml.v2"
 )
 
 const (

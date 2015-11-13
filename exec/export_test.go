@@ -3,15 +3,17 @@
 
 package exec
 
-func TestingExposeExec(e Exec) []Process {
+type TestingExposer struct{}
+
+func (TestingExposer) SetExec(e Exec, processes ...Process) {
+	e.(*exec).processes = processes
+}
+
+func (TestingExposer) ExposeExec(e Exec) []Process {
 	return e.(*exec).processes
 }
 
-func TestingExposeExecCommand(cmd Command) (Command, []Process) {
+func (e TestingExposer) ExposeExecCommand(cmd Command) (Command, []Process) {
 	ecmd := cmd.(*execCommand)
-	return ecmd.Command, TestingExposeExec(ecmd.exec)
-}
-
-func TestingSetExec(e Exec, processes ...Process) {
-	e.(*exec).processes = processes
+	return ecmd.Command, e.ExposeExec(ecmd.exec)
 }

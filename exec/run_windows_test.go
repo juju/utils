@@ -15,11 +15,11 @@ import (
 	"github.com/juju/utils/exec"
 )
 
-type execSuite struct {
+type runCommandsSuite struct {
 	testing.IsolationSuite
 }
 
-var _ = gc.Suite(&execSuite{})
+var _ = gc.Suite(&runCommandsSuite{})
 
 // longPath is copied over from the symlink package. This should be removed
 // if we add it to gc or in some other convenience package
@@ -54,7 +54,7 @@ func longPathAsString(path string) (string, error) {
 	return syscall.UTF16ToString(longp), nil
 }
 
-func (*execSuite) TestRunCommands(c *gc.C) {
+func (*runCommandsSuite) TestRunCommands(c *gc.C) {
 	newDir, err := longPathAsString(c.MkDir())
 	c.Assert(err, gc.IsNil)
 	for i, test := range []struct {
@@ -116,7 +116,7 @@ func (*execSuite) TestRunCommands(c *gc.C) {
 	}
 }
 
-func (*execSuite) TestExecUnknownCommand(c *gc.C) {
+func (*runCommandsSuite) TestExecUnknownCommand(c *gc.C) {
 	result, err := exec.RunCommands(
 		exec.RunParams{
 			Commands: "unknown-command",

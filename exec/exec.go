@@ -30,6 +30,7 @@ type Exec interface {
 type exec struct {
 	command   func(CommandInfo) (Command, error)
 	processes []Process
+	// We don't worry about tracking commands.
 }
 
 // NewExec returns an Exec that uses the provided function to produce

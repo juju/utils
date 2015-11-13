@@ -30,12 +30,23 @@ func osExecCommand(info CommandInfo) (Command, error) {
 		Stdout: info.Stdout,
 		Stderr: info.Stderr,
 	}
-	return &OSCommand{raw}, nil
+	cmd := newOSCommand(raw)
+	return cmd, nil
 }
 
 // OSCommand is a Command implementation that wraps os/exec.Cmd.
 type OSCommand struct {
 	*osexec.Cmd
+	start func(*osexec.Cmd) error
+}
+
+func newOSCommand(raw *osexec.Cmd) *OSCommand {
+	return &OSCommand{
+		Cmd: raw,
+		start: func(cmd *osexec.Cmd) error {
+			return cmd.Start()
+		},
+	}
 }
 
 // Info implements Command.
@@ -46,21 +57,29 @@ func (o OSCommand) Info() CommandInfo {
 // SetStdio implements Command.
 func (o OSCommand) SetStdio(stdio Stdio) error {
 	if o.Cmd == nil {
-		return errors.New("command not initalized")
+		return errors.New("command not initialized")
 	}
 
+	// TODO(ericsnow) Do not fail if collision is with same pointer?
+
 	stdin := stdio.In
-	if stdin != nil && o.Cmd.Stdin != nil {
+	if stdin == nil {
+		stdin = o.Cmd.Stdin
+	} else if o.Cmd.Stdin != nil {
 		return errors.NewNotValid(nil, "stdin already set")
 	}
 
 	stdout := stdio.Out
-	if stdout != nil && o.Cmd.Stdout != nil {
+	if stdout == nil {
+		stdout = o.Cmd.Stdout
+	} else if o.Cmd.Stdout != nil {
 		return errors.NewNotValid(nil, "stdout already set")
 	}
 
 	stderr := stdio.Err
-	if stderr != nil && o.Cmd.Stderr != nil {
+	if stderr == nil {
+		stderr = o.Cmd.Stderr
+	} else if o.Cmd.Stderr != nil {
 		return errors.NewNotValid(nil, "stderr already set")
 	}
 
@@ -73,28 +92,38 @@ func (o OSCommand) SetStdio(stdio Stdio) error {
 // Start implements Command.
 func (o OSCommand) Start() (Process, error) {
 	if o.Cmd == nil {
-		return nil, errors.New("command not initalized")
+		return nil, errors.New("command not initialized")
 	}
 	raw := *o.Cmd // make a copy
 
-	if err := raw.Start(); err != nil {
+	if err := o.start(&raw); err != nil {
 		return nil, errors.Trace(err)
 	}
 
-	process := &OSProcess{
-		raw: &raw,
-	}
+	process := newOSProcess(&raw)
 	return process, nil
 }
 
 // OSProcess is a Process implementation that wraps os/exec.Cmd.
 type OSProcess struct {
-	raw *osexec.Cmd
+	info *osexec.Cmd
+	wait func() error
+	kill func() error
+}
+
+func newOSProcess(cmd *osexec.Cmd) *OSProcess {
+	return &OSProcess{
+		info: cmd,
+		wait: cmd.Wait,
+		kill: func() error {
+			return cmd.Process.Kill()
+		},
+	}
 }
 
 // Command implements Process.
 func (o OSProcess) Command() CommandInfo {
-	return osCommandInfo(o.raw)
+	return osCommandInfo(o.info)
 }
 
 func osCommandInfo(raw *osexec.Cmd) CommandInfo {
@@ -121,43 +150,45 @@ func osCommandInfo(raw *osexec.Cmd) CommandInfo {
 
 // State implements Process.
 func (o OSProcess) State() (ProcessState, error) {
-	if o.raw == nil {
+	if o.info == nil {
 		return nil, errors.New("process not initialized")
 	}
 
-	state := &OSProcessState{o.raw.ProcessState}
+	// TODO(ericsnow) Fail if o.info.ProcessState is nil?
+
+	state := &OSProcessState{o.info.ProcessState}
 	return state, nil
 }
 
 // PID implements Process.
 func (o OSProcess) PID() int {
-	if o.raw == nil {
+	if o.info == nil {
 		return 0
 	}
-	return o.raw.Process.Pid
+	return o.info.Process.Pid
 }
 
 // Wait implements Process.
 func (o OSProcess) Wait() (ProcessState, error) {
-	if o.raw == nil {
+	if o.info == nil {
 		return nil, errors.New("process not initialized")
 	}
 
-	err := o.raw.Wait()
+	err := o.wait()
 	if err != nil {
 		err = errors.Trace(err)
 	}
-	state := &OSProcessState{o.raw.ProcessState}
+	state := &OSProcessState{o.info.ProcessState}
 	return state, err
 }
 
 // Kill implements Process.
 func (o OSProcess) Kill() error {
-	if o.raw == nil {
+	if o.info == nil {
 		return errors.New("process not initialized")
 	}
 
-	if err := o.raw.Process.Kill(); err != nil {
+	if err := o.kill(); err != nil {
 		return errors.Trace(err)
 	}
 	return nil

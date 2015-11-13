@@ -10,4 +10,5 @@ package utils
 const (
 	NoSuchUserErrRegexp = `No mapping between account names and security IDs was done\.`
 	NoSuchFileErrRegexp = `The system cannot find the (file|path) specified\.`
+	MkdirFailErrRegexp  = `mkdir .*` + NoSuchFileErrRegexp
 )

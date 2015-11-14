@@ -4,8 +4,6 @@
 package testing
 
 import (
-	"time"
-
 	"github.com/juju/errors"
 	"github.com/juju/testing"
 
@@ -68,96 +66,26 @@ func (s *StubProcess) Kill() error {
 	return nil
 }
 
-type StubProcessState struct {
-	stub *testing.Stub
+type FakeProcess struct {
+	exec.Process
 
-	ReturnExited     bool
-	ReturnPid        int
-	ReturnSuccess    bool
-	ReturnSys        exec.WaitStatus
-	ReturnSysUsage   exec.Rusage
-	ReturnSystemTime time.Duration
-	ReturnUserTime   time.Duration
+	HandleWait func(exec.ProcessState) (exec.ProcessState, error)
 }
 
-func NewStubProcessState(stub *testing.Stub) *StubProcessState {
-	return &StubProcessState{
-		stub: stub,
+func NewFakeProcess(raw exec.Process) *FakeProcess {
+	return &FakeProcess{
+		Process: raw,
 	}
 }
 
-func (s *StubProcessState) Exited() bool {
-	s.stub.AddCall("Exited")
-	s.stub.NextErr() // pop one off
-
-	return s.ReturnExited
-}
-
-func (s *StubProcessState) Pid() int {
-	s.stub.AddCall("Pid")
-	s.stub.NextErr() // pop one off
-
-	return s.ReturnPid
-}
-
-func (s *StubProcessState) Success() bool {
-	s.stub.AddCall("Success")
-	s.stub.NextErr() // pop one off
-
-	return s.ReturnSuccess
-}
-
-func (s *StubProcessState) Sys() exec.WaitStatus {
-	s.stub.AddCall("Sys")
-	s.stub.NextErr() // pop one off
-
-	return s.ReturnSys
-}
-
-func (s *StubProcessState) SysUsage() exec.Rusage {
-	s.stub.AddCall("SysUsage")
-	s.stub.NextErr() // pop one off
-
-	return s.ReturnSysUsage
-}
-
-func (s *StubProcessState) SystemTime() time.Duration {
-	s.stub.AddCall("SystemTime")
-	s.stub.NextErr() // pop one off
-
-	return s.ReturnSystemTime
-}
-
-func (s *StubProcessState) UserTime() time.Duration {
-	s.stub.AddCall("UserTime")
-	s.stub.NextErr() // pop one off
-
-	return s.ReturnUserTime
-}
-
-type StubWaitStatus struct {
-	stub *testing.Stub
-
-	ReturnExitStatus int
-	ReturnExited     bool
-}
-
-func NewStubWaitStatus(stub *testing.Stub) *StubWaitStatus {
-	return &StubWaitStatus{
-		stub: stub,
+func (f *FakeProcess) Wait() (exec.ProcessState, error) {
+	state, err := f.Process.Wait()
+	if err != nil {
+		return state, err
 	}
-}
 
-func (s *StubWaitStatus) ExitStatus() int {
-	s.stub.AddCall("ExitStatus")
-	s.stub.NextErr() // pop one off
-
-	return s.ReturnExitStatus
-}
-
-func (s *StubWaitStatus) Exited() bool {
-	s.stub.AddCall("Exited")
-	s.stub.NextErr() // pop one off
-
-	return s.ReturnExited
+	if f.HandleWait != nil {
+		return f.HandleWait(state)
+	}
+	return state, nil
 }

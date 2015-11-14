@@ -79,3 +79,36 @@ func (s *StubCommand) Start() (exec.Process, error) {
 
 	return s.ReturnStart, nil
 }
+
+type FakeCommand struct {
+	exec.Command
+	std exec.Stdio
+
+	HandleStart func(exec.Stdio, exec.Process) (exec.Process, error)
+}
+
+func NewFakeCommand(raw exec.Command) *FakeCommand {
+	return &FakeCommand{
+		Command: raw,
+	}
+}
+
+func (f *FakeCommand) SetStdio(stdio exec.Stdio) error {
+	if err := f.Command.SetStdio(stdio); err != nil {
+		return err
+	}
+
+	f.std = stdio
+	return nil
+}
+
+func (f *FakeCommand) Start() (exec.Process, error) {
+	process, err := f.Command.Start()
+	if err != nil {
+		return nil, err
+	}
+	if f.HandleStart != nil {
+		return f.HandleStart(f.std, process)
+	}
+	return process, nil
+}

@@ -4,9 +4,13 @@
 package testing
 
 import (
+	"bytes"
+
 	"github.com/juju/errors"
 	"github.com/juju/testing"
 	gc "gopkg.in/check.v1"
+
+	"github.com/juju/utils/exec"
 )
 
 type StubSuite struct {
@@ -50,6 +54,45 @@ func (s *StubSuite) NewStubCommand() *StubCommand {
 	return NewStubCommand(s.Stub)
 }
 
+func (s *StubSuite) NewFakeCommand() (*FakeCommand, *StubCommand) {
+	stub := s.NewStubCommand()
+	fake := NewFakeCommand(stub)
+	return fake, stub
+}
+
+func (s *StubSuite) NewStdioCommand(handleStdio func(exec.Stdio) error) exec.Command {
+	cmd, stub := s.NewFakeCommand()
+	stub.ReturnStart = s.NewStubProcess()
+	cmd.HandleStart = func(stdio exec.Stdio, raw exec.Process) (exec.Process, error) {
+		process := NewFakeProcess(raw)
+		process.HandleWait = func(state exec.ProcessState) (exec.ProcessState, error) {
+			if stdio.In == nil {
+				stdio.In = &bytes.Buffer{}
+			}
+			if stdio.Out == nil {
+				stdio.Out = &bytes.Buffer{}
+			}
+			if stdio.Err == nil {
+				stdio.Err = &bytes.Buffer{}
+			}
+			err := handleStdio(stdio)
+			return state, err
+		}
+		return process, nil
+	}
+	return cmd
+}
+
 func (s *StubSuite) NewStubProcess() *StubProcess {
 	return NewStubProcess(s.Stub)
+}
+
+func (s *StubSuite) NewFakeProcess() (*FakeProcess, *StubProcess) {
+	stub := s.NewStubProcess()
+	fake := NewFakeProcess(stub)
+	return fake, stub
+}
+
+func (s *StubSuite) NewStubProcessState() *StubProcessState {
+	return NewStubProcessState(s.Stub)
 }

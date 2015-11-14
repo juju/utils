@@ -17,19 +17,16 @@ func NewOSExec() Exec {
 }
 
 func osExecCommand(info CommandInfo) (Command, error) {
-	args := make([]string, len(info.Args))
-	copy(args, info.Args)
 	env := make([]string, len(info.Env))
 	copy(env, info.Env)
-	raw := &osexec.Cmd{
-		Path:   info.Path,
-		Args:   info.Args,
-		Env:    env,
-		Dir:    info.Dir,
-		Stdin:  info.Stdin,
-		Stdout: info.Stdout,
-		Stderr: info.Stderr,
-	}
+
+	raw := osexec.Command(info.Args[0], info.Args[1:]...)
+	raw.Env = env
+	raw.Dir = info.Dir
+	raw.Stdin = info.Stdin
+	raw.Stdout = info.Stdout
+	raw.Stderr = info.Stderr
+
 	cmd := newOSCommand(raw)
 	return cmd, nil
 }

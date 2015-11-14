@@ -60,12 +60,15 @@ func (s *StubSuite) NewFakeCommand() (*FakeCommand, *StubCommand) {
 	return fake, stub
 }
 
-func (s *StubSuite) NewStdioCommand(handleStdio func(exec.Stdio) error) exec.Command {
+func (s *StubSuite) NewStdioCommand(handleStdio func(exec.Stdio, error) error) exec.Command {
 	cmd, stub := s.NewFakeCommand()
 	stub.ReturnStart = s.NewStubProcess()
-	cmd.HandleStart = func(stdio exec.Stdio, raw exec.Process) (exec.Process, error) {
+	cmd.HandleStart = func(stdio exec.Stdio, raw exec.Process, err error) (exec.Process, error) {
+		if err != nil {
+			return raw, err
+		}
 		process := NewFakeProcess(raw)
-		process.HandleWait = func(state exec.ProcessState) (exec.ProcessState, error) {
+		process.HandleWait = func(state exec.ProcessState, err error) (exec.ProcessState, error) {
 			if stdio.In == nil {
 				stdio.In = &bytes.Buffer{}
 			}
@@ -75,7 +78,7 @@ func (s *StubSuite) NewStdioCommand(handleStdio func(exec.Stdio) error) exec.Com
 			if stdio.Err == nil {
 				stdio.Err = &bytes.Buffer{}
 			}
-			err := handleStdio(stdio)
+			err = handleStdio(stdio, err)
 			return state, err
 		}
 		return process, nil

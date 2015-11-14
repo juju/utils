@@ -43,9 +43,9 @@ type Starter interface {
 }
 
 // NewCommand returns a new Command for the given Exec and command.
-func NewCommand(exec Exec, path string, args ...string) (Command, error) {
+func NewCommand(e Exec, path string, args ...string) (Command, error) {
 	info := NewCommandInfo(path, args...)
-	cmd, err := exec.Command(info)
+	cmd, err := e.Command(info)
 	if err != nil {
 		return nil, errors.Trace(err)
 	}

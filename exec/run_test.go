@@ -4,8 +4,6 @@
 package exec_test
 
 import (
-	"io/ioutil"
-
 	"github.com/juju/errors"
 	jc "github.com/juju/testing/checkers"
 	gc "gopkg.in/check.v1"
@@ -55,31 +53,16 @@ func (s *runSuite) TestRunErrorWait(c *gc.C) {
 
 func (s *runSuite) TestOutputOkay(c *gc.C) {
 	var input string
-	stdout := "abc"
-	stderr := "xyz"
-	cmd := s.NewStdioCommand(func(stdio exec.Stdio) error {
-		data, err := ioutil.ReadAll(stdio.In)
-		if err != nil {
-			return err
-		}
-		input = string(data)
-
-		if _, err := stdio.Out.Write([]byte(stdout)); err != nil {
-			return err
-		}
-
-		if _, err := stdio.Err.Write([]byte(stderr)); err != nil {
-			return err
-		}
-
-		return nil
-	})
+	cmd := s.newStdioCommand(&input,
+		"abc",
+		"!xyz",
+	)
 
 	data, err := exec.Output(cmd)
 	c.Assert(err, jc.ErrorIsNil)
 
 	c.Check(input, gc.Equals, "")
-	c.Check(string(data), gc.Equals, stdout)
+	c.Check(string(data), gc.Equals, "abc")
 	s.Stub.CheckCallNames(c, "SetStdio", "Start", "Wait")
 }
 
@@ -117,31 +100,16 @@ func (s *runSuite) TestOutputErrorWait(c *gc.C) {
 
 func (s *runSuite) TestCombinedOutputOkay(c *gc.C) {
 	var input string
-	stdout := "abc"
-	stderr := "xyz"
-	cmd := s.NewStdioCommand(func(stdio exec.Stdio) error {
-		data, err := ioutil.ReadAll(stdio.In)
-		if err != nil {
-			return err
-		}
-		input = string(data)
-
-		if _, err := stdio.Out.Write([]byte(stdout)); err != nil {
-			return err
-		}
-
-		if _, err := stdio.Err.Write([]byte(stderr)); err != nil {
-			return err
-		}
-
-		return nil
-	})
+	cmd := s.newStdioCommand(&input,
+		"abc",
+		"!xyz",
+	)
 
 	data, err := exec.CombinedOutput(cmd)
 	c.Assert(err, jc.ErrorIsNil)
 
 	c.Check(input, gc.Equals, "")
-	c.Check(string(data), gc.Equals, stdout+stderr)
+	c.Check(string(data), gc.Equals, "abcxyz")
 	s.Stub.CheckCallNames(c, "SetStdio", "Start", "Wait")
 }
 

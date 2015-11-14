@@ -84,7 +84,7 @@ type FakeCommand struct {
 	exec.Command
 	std exec.Stdio
 
-	HandleStart func(exec.Stdio, exec.Process) (exec.Process, error)
+	HandleStart func(exec.Stdio, exec.Process, error) (exec.Process, error)
 }
 
 func NewFakeCommand(raw exec.Command) *FakeCommand {
@@ -104,11 +104,8 @@ func (f *FakeCommand) SetStdio(stdio exec.Stdio) error {
 
 func (f *FakeCommand) Start() (exec.Process, error) {
 	process, err := f.Command.Start()
-	if err != nil {
-		return nil, err
-	}
 	if f.HandleStart != nil {
-		return f.HandleStart(f.std, process)
+		return f.HandleStart(f.std, process, err)
 	}
-	return process, nil
+	return process, err
 }

@@ -4,6 +4,9 @@
 package exec_test
 
 import (
+	"io/ioutil"
+	"strings"
+
 	"github.com/juju/testing"
 	gc "gopkg.in/check.v1"
 
@@ -30,4 +33,32 @@ func (s *BaseSuite) SetExecPIDs(e exec.Exec, pids ...int) {
 		processes = append(processes, process)
 	}
 	s.SetExec(e, processes...)
+}
+
+func (s *BaseSuite) newStdioCommand(input *string, output ...string) exec.Command {
+
+	return s.NewStdioCommand(func(stdio exec.Stdio, origErr error) error {
+		// TODO(ericsnow) Conditionally handle origErr?
+
+		data, err := ioutil.ReadAll(stdio.In)
+		if err != nil {
+			return err
+		}
+		*input = string(data)
+
+		for _, out := range output {
+			if strings.HasPrefix(out, "!") {
+				if _, err := stdio.Err.Write([]byte(out[1:])); err != nil {
+					return err
+				}
+			} else {
+				if _, err := stdio.Out.Write([]byte(out)); err != nil {
+					return err
+				}
+			}
+		}
+
+		return origErr
+	})
+
 }

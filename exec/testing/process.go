@@ -69,7 +69,7 @@ func (s *StubProcess) Kill() error {
 type FakeProcess struct {
 	exec.Process
 
-	HandleWait func(exec.ProcessState) (exec.ProcessState, error)
+	HandleWait func(exec.ProcessState, error) (exec.ProcessState, error)
 }
 
 func NewFakeProcess(raw exec.Process) *FakeProcess {
@@ -80,12 +80,8 @@ func NewFakeProcess(raw exec.Process) *FakeProcess {
 
 func (f *FakeProcess) Wait() (exec.ProcessState, error) {
 	state, err := f.Process.Wait()
-	if err != nil {
-		return state, err
-	}
-
 	if f.HandleWait != nil {
-		return f.HandleWait(state)
+		return f.HandleWait(state, err)
 	}
-	return state, nil
+	return state, err
 }

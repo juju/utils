@@ -86,10 +86,8 @@ type Context struct {
 	// then the current directory is used.
 	Dir string
 
-	// Stdin, Stdout, and Stderr are the 3 stdio streams for the command.
-	Stdin  io.Reader
-	Stdout io.Writer
-	Stderr io.Writer
+	// Stdio holds the stdio streams for the context.
+	Stdio Stdio
 }
 
 // Stdio holds the 3 stdio streams for an execution context.

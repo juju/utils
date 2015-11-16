@@ -31,9 +31,9 @@ func (e OSExec) Command(info CommandInfo) (Command, error) {
 	raw := osexec.Command(info.Args[0], info.Args[1:]...)
 	raw.Env = env
 	raw.Dir = info.Dir
-	raw.Stdin = info.Stdin
-	raw.Stdout = info.Stdout
-	raw.Stderr = info.Stderr
+	raw.Stdin = info.Stdio.In
+	raw.Stdout = info.Stdio.Out
+	raw.Stderr = info.Stdio.Err
 
 	cmd := newOSCommand(raw)
 	return cmd, nil
@@ -150,11 +150,13 @@ func osCommandInfo(raw *osexec.Cmd) CommandInfo {
 		Path: raw.Path,
 		Args: args,
 		Context: Context{
-			Env:    env,
-			Dir:    raw.Dir,
-			Stdin:  raw.Stdin,
-			Stdout: raw.Stdout,
-			Stderr: raw.Stderr,
+			Env: env,
+			Dir: raw.Dir,
+			Stdio: Stdio{
+				In:  raw.Stdin,
+				Out: raw.Stdout,
+				Err: raw.Stderr,
+			},
 		},
 	}
 }

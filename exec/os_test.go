@@ -65,11 +65,13 @@ func (s *osExecFunctionalSuite) TestCommandOkay(c *gc.C) {
 		Path: "ls",
 		Args: args,
 		Context: exec.Context{
-			Env:    env,
-			Dir:    dir,
-			Stdin:  &stdin,
-			Stdout: &stdout,
-			Stderr: &stderr,
+			Env: env,
+			Dir: dir,
+			Stdio: exec.Stdio{
+				In:  &stdin,
+				Out: &stdout,
+				Err: &stderr,
+			},
 		},
 	})
 	c.Assert(err, jc.ErrorIsNil)
@@ -131,11 +133,13 @@ func (s *osCommandSuite) newRaw(in io.Reader, out, err io.Writer) (*osexec.Cmd, 
 		Path: args[0],
 		Args: args,
 		Context: exec.Context{
-			Env:    env,
-			Dir:    dir,
-			Stdin:  in,
-			Stdout: out,
-			Stderr: err,
+			Env: env,
+			Dir: dir,
+			Stdio: exec.Stdio{
+				In:  in,
+				Out: out,
+				Err: err,
+			},
 		},
 	}
 	return raw, info
@@ -171,11 +175,13 @@ func (s *osCommandSuite) TestInfoBasic(c *gc.C) {
 		Path: "/bin/ls",
 		Args: []string{"ls"},
 		Context: exec.Context{
-			Env:    nil,
-			Dir:    "",
-			Stdin:  nil,
-			Stdout: nil,
-			Stderr: nil,
+			Env: nil,
+			Dir: "",
+			Stdio: exec.Stdio{
+				In:  nil,
+				Out: nil,
+				Err: nil,
+			},
 		},
 	})
 	c.Check(info.Env, gc.IsNil)
@@ -396,11 +402,13 @@ func (s *osProcessSuite) TestCommandOkay(c *gc.C) {
 		Path: "spam",
 		Args: []string{"spam", "eggs"},
 		Context: exec.Context{
-			Env:    []string{"X=y"},
-			Dir:    "/x/y/z",
-			Stdin:  &stdin,
-			Stdout: &stdout,
-			Stderr: &stderr,
+			Env: []string{"X=y"},
+			Dir: "/x/y/z",
+			Stdio: exec.Stdio{
+				In:  &stdin,
+				Out: &stdout,
+				Err: &stderr,
+			},
 		},
 	})
 	s.Stub.CheckNoCalls(c)

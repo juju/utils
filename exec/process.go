@@ -7,24 +7,47 @@ import (
 	"time"
 )
 
-// Process exposes the functionality of a running command.
+// Process supports interacting with a running command.
 //
 // See os.Process.
 type Process interface {
 	// Command returns the information used to start the command.
 	Command() CommandInfo
 
+	ProcessData
+	ProcessControl
+}
+
+// ProcessData provides a mechanism to get data about a process.
+type ProcessData interface {
 	// State returns the current state of the process.
 	State() (ProcessState, error)
 
 	// PID returns the PID of the process.
 	PID() int
+}
 
+// ProcessControl exposes functionality to control a running process.
+type ProcessControl interface {
 	// Wait waits for the command to exit.
 	Wait() (ProcessState, error)
 
 	// Kill causes the Process to exit immediately.
 	Kill() error
+}
+
+// Proc is a basic Process implementation.
+type Proc struct {
+	ProcessData
+	ProcessControl
+
+	// Info holds the process's original command info.
+	Info CommandInfo
+}
+
+// Command implements Process.
+func (p Proc) Command() CommandInfo {
+	return p.Info
 }
 
 // ProcessState describes the state of a started command.

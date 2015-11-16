@@ -9,30 +9,14 @@ import (
 	"github.com/juju/errors"
 )
 
-// Command expoes the functionality of a command.
+// Command exposes the functionality of a command.
 //
 // See os/exec.Cmd.
 type Command interface {
 	// Info returns the CommandInfo defining this Command.
 	Info() CommandInfo
 
-	// SetStdio sets the stdio this command will use. Nil values are
-	// ignored. Any non-nil value for which the corresponding current
-	// value is non-nil results in an error.
-	SetStdio(stdio Stdio) error
-
-	// StdinPipe returns a pipe that will be connected to the command's
-	// standard input when the command starts.
-	StdinPipe() (io.WriteCloser, error)
-
-	// StdoutPipe returns a pipe that will be connected to the command's
-	// standard output when the command starts.
-	StdoutPipe() (io.ReadCloser, error)
-
-	// StderrPipe returns a pipe that will be connected to the command's
-	// standard error when the command starts.
-	StderrPipe() (io.ReadCloser, error)
-
+	StdioSetter
 	Starter
 }
 
@@ -90,9 +74,15 @@ type Context struct {
 	Stdio Stdio
 }
 
-// Stdio holds the 3 stdio streams for an execution context.
-type Stdio struct {
-	In  io.Reader
-	Out io.Writer
-	Err io.Writer
+// SetStdio sets the stdio this command will use. Nil values are
+// ignored. Any non-nil value for which the corresponding current
+// value is non-nil results in an error.
+func (c Context) SetStdio(values Stdio) error {
+	stdio, err := c.Stdio.WithInitial(values)
+	if err != nil {
+		return errors.Trace(err)
+	}
+
+	c.Stdio = stdio
+	return nil
 }

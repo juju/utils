@@ -43,6 +43,8 @@ func (s Stdio) WithInitial(values Stdio) (Stdio, error) {
 	return values, nil
 }
 
+// TODO(ericsnow) Add CombineOutput()?
+
 // StdioSetter exposes the functionality for setting stdio streams.
 type StdioSetter interface {
 	// SetStdio sets the stdio this command will use. Nil values are

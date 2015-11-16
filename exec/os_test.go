@@ -87,7 +87,7 @@ func (s *osCommandSuite) TestInfo(c *gc.C) {
 	info := cmd.Info()
 
 	c.Check(info, jc.DeepEquals, expected)
-	s.CheckNoCalls(c)
+	s.Stub.CheckNoCalls(c)
 }
 
 func (s *osCommandSuite) TestSetStdioOkay(c *gc.C) {
@@ -106,7 +106,7 @@ func (s *osCommandSuite) TestSetStdioOkay(c *gc.C) {
 	c.Assert(err, jc.ErrorIsNil)
 
 	c.Check(raw, jc.DeepEquals, &expected)
-	s.CheckNoCalls(c)
+	s.Stub.CheckNoCalls(c)
 }
 
 func (s *osCommandSuite) TestSetStdioErrorAlreadyStdin(c *gc.C) {
@@ -124,7 +124,7 @@ func (s *osCommandSuite) TestSetStdioErrorAlreadyStdin(c *gc.C) {
 	c.Check(err, jc.Satisfies, errors.IsNotValid)
 	// Ensure raw did not get changed.
 	c.Check(raw, jc.DeepEquals, &orig)
-	s.CheckNoCalls(c)
+	s.Stub.CheckNoCalls(c)
 }
 
 func (s *osCommandSuite) TestSetStdioErrorAlreadyStdout(c *gc.C) {
@@ -142,7 +142,7 @@ func (s *osCommandSuite) TestSetStdioErrorAlreadyStdout(c *gc.C) {
 	c.Check(err, jc.Satisfies, errors.IsNotValid)
 	// Ensure raw did not get changed.
 	c.Check(raw, jc.DeepEquals, &orig)
-	s.CheckNoCalls(c)
+	s.Stub.CheckNoCalls(c)
 }
 
 func (s *osCommandSuite) TestSetStdioErrorAlreadyStderr(c *gc.C) {
@@ -160,7 +160,7 @@ func (s *osCommandSuite) TestSetStdioErrorAlreadyStderr(c *gc.C) {
 	c.Check(err, jc.Satisfies, errors.IsNotValid)
 	// Ensure raw did not get changed.
 	c.Check(raw, jc.DeepEquals, &orig)
-	s.CheckNoCalls(c)
+	s.Stub.CheckNoCalls(c)
 }
 
 func (s *osCommandSuite) TestSetStdioAlreadyStdinOkay(c *gc.C) {
@@ -178,7 +178,7 @@ func (s *osCommandSuite) TestSetStdioAlreadyStdinOkay(c *gc.C) {
 	c.Assert(err, jc.ErrorIsNil)
 
 	c.Check(raw, jc.DeepEquals, &expected)
-	s.CheckNoCalls(c)
+	s.Stub.CheckNoCalls(c)
 }
 
 func (s *osCommandSuite) TestSetStdioAlreadyStdoutOkay(c *gc.C) {
@@ -196,7 +196,7 @@ func (s *osCommandSuite) TestSetStdioAlreadyStdoutOkay(c *gc.C) {
 	c.Assert(err, jc.ErrorIsNil)
 
 	c.Check(raw, jc.DeepEquals, &expected)
-	s.CheckNoCalls(c)
+	s.Stub.CheckNoCalls(c)
 }
 
 func (s *osCommandSuite) TestSetStdioAlreadyStderrOkay(c *gc.C) {
@@ -214,7 +214,7 @@ func (s *osCommandSuite) TestSetStdioAlreadyStderrOkay(c *gc.C) {
 	c.Assert(err, jc.ErrorIsNil)
 
 	c.Check(raw, jc.DeepEquals, &expected)
-	s.CheckNoCalls(c)
+	s.Stub.CheckNoCalls(c)
 }
 
 func (s *osCommandSuite) TestSetStdioNil(c *gc.C) {
@@ -222,7 +222,7 @@ func (s *osCommandSuite) TestSetStdioNil(c *gc.C) {
 	err := cmd.SetStdio(exec.Stdio{})
 
 	c.Check(err, gc.ErrorMatches, `command not initialized`)
-	s.CheckNoCalls(c)
+	s.Stub.CheckNoCalls(c)
 }
 
 // TODO(ericsnow) Add tests for Std*Pipe()?
@@ -263,7 +263,7 @@ func (s *osCommandSuite) TestStartNil(c *gc.C) {
 	_, err := cmd.Start()
 
 	c.Check(err, gc.ErrorMatches, `command not initialized`)
-	s.CheckNoCalls(c)
+	s.Stub.CheckNoCalls(c)
 }
 
 type osCommandFunctionalSuite struct {
@@ -312,7 +312,7 @@ func (s *osProcessSuite) TestCommandOkay(c *gc.C) {
 			Stderr: &stderr,
 		},
 	})
-	s.CheckNoCalls(c)
+	s.Stub.CheckNoCalls(c)
 }
 
 func (s *osProcessSuite) TestCommandNil(c *gc.C) {
@@ -320,7 +320,7 @@ func (s *osProcessSuite) TestCommandNil(c *gc.C) {
 	info := process.Command()
 
 	c.Check(info, jc.DeepEquals, exec.CommandInfo{})
-	s.CheckNoCalls(c)
+	s.Stub.CheckNoCalls(c)
 }
 
 func (s *osProcessSuite) TestStateOkay(c *gc.C) {
@@ -333,7 +333,7 @@ func (s *osProcessSuite) TestStateOkay(c *gc.C) {
 	c.Assert(err, jc.ErrorIsNil)
 
 	c.Check(state, jc.DeepEquals, &exec.OSProcessState{raw})
-	s.CheckNoCalls(c)
+	s.Stub.CheckNoCalls(c)
 }
 
 func (s *osProcessSuite) TestStateNil(c *gc.C) {
@@ -341,7 +341,7 @@ func (s *osProcessSuite) TestStateNil(c *gc.C) {
 	_, err := process.State()
 
 	c.Check(err, gc.ErrorMatches, `process not initialized`)
-	s.CheckNoCalls(c)
+	s.Stub.CheckNoCalls(c)
 }
 
 func (s *osProcessSuite) TestPIDOkay(c *gc.C) {
@@ -354,7 +354,7 @@ func (s *osProcessSuite) TestPIDOkay(c *gc.C) {
 	pid := process.PID()
 
 	c.Check(pid, gc.Equals, 5)
-	s.CheckNoCalls(c)
+	s.Stub.CheckNoCalls(c)
 }
 
 func (s *osProcessSuite) TestPIDNil(c *gc.C) {
@@ -362,7 +362,7 @@ func (s *osProcessSuite) TestPIDNil(c *gc.C) {
 	pid := process.PID()
 
 	c.Check(pid, gc.Equals, 0)
-	s.CheckNoCalls(c)
+	s.Stub.CheckNoCalls(c)
 }
 
 func (s *osProcessSuite) TestWaitOkay(c *gc.C) {
@@ -405,7 +405,7 @@ func (s *osProcessSuite) TestWaitNil(c *gc.C) {
 	_, err := process.Wait()
 
 	c.Check(err, gc.ErrorMatches, `process not initialized`)
-	s.CheckNoCalls(c)
+	s.Stub.CheckNoCalls(c)
 }
 
 func (s *osProcessSuite) TestKillOkay(c *gc.C) {
@@ -440,7 +440,7 @@ func (s *osProcessSuite) TestKillNil(c *gc.C) {
 	err := process.Kill()
 
 	c.Check(err, gc.ErrorMatches, `process not initialized`)
-	s.CheckNoCalls(c)
+	s.Stub.CheckNoCalls(c)
 }
 
 type osProcessFunctionalSuite struct {

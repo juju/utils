@@ -25,7 +25,8 @@ func (s *commandSuite) TestNewCommandOkay(c *gc.C) {
 	c.Assert(err, jc.ErrorIsNil)
 
 	c.Check(cmd, gc.Equals, expected)
-	s.CheckCall(c, "Command",
+	s.Stub.CheckCallNames(c, "Command")
+	s.Stub.CheckCall(c, 0, "Command",
 		exec.CommandInfo{
 			Path: "/x/y/z/spam",
 			Args: []string{

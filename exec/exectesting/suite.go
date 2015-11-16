@@ -33,19 +33,6 @@ func (s *StubSuite) SetFailure() error {
 	return failure
 }
 
-// TODO(ericsnow) Add CheckNoCalls and CheckCall to testing.Stub?
-
-func (s *StubSuite) CheckNoCalls(c *gc.C) {
-	s.Stub.CheckCalls(c, nil)
-}
-
-func (s *StubSuite) CheckCall(c *gc.C, name string, args ...interface{}) {
-	s.Stub.CheckCalls(c, []testing.StubCall{{
-		FuncName: name,
-		Args:     args,
-	}})
-}
-
 func (s *StubSuite) NewStubExec() *StubExec {
 	return NewStubExec(s.Stub)
 }

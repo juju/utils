@@ -76,7 +76,8 @@ func (s *shellSuite) TestBashCommand(c *gc.C) {
 	c.Assert(err, jc.ErrorIsNil)
 
 	c.Check(cmd, gc.Equals, expected)
-	s.CheckCall(c, "Command", exec.CommandInfo{
+	s.Stub.CheckCallNames(c, "Command")
+	s.Stub.CheckCall(c, 0, "Command", exec.CommandInfo{
 		Path: "/bin/bash",
 		Args: []string{"/bin/bash"},
 	})

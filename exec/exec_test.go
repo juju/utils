@@ -85,7 +85,8 @@ func (s *execSuite) TestCommandOkay(c *gc.C) {
 
 	c.Check(raw, gc.Equals, expected)
 	c.Check(processes, gc.HasLen, 0)
-	s.CheckCall(c, "commandFn", info)
+	s.Stub.CheckCallNames(c, "commandFn")
+	s.Stub.CheckCall(c, 0, "commandFn", info)
 }
 
 func (s *execSuite) TestCommandNilCommand(c *gc.C) {
@@ -102,7 +103,8 @@ func (s *execSuite) TestCommandNilCommand(c *gc.C) {
 	raw, _ := s.ExposeExecCommand(cmd)
 
 	c.Check(raw, gc.IsNil)
-	s.CheckCall(c, "commandFn", info)
+	s.Stub.CheckCallNames(c, "commandFn")
+	s.Stub.CheckCall(c, 0, "commandFn", info)
 }
 
 func (s *execSuite) TestCommandError(c *gc.C) {
@@ -115,7 +117,8 @@ func (s *execSuite) TestCommandError(c *gc.C) {
 	_, err := e.Command(info)
 
 	c.Check(errors.Cause(err), gc.Equals, failure)
-	s.CheckCall(c, "commandFn", info)
+	s.Stub.CheckCallNames(c, "commandFn")
+	s.Stub.CheckCall(c, 0, "commandFn", info)
 }
 
 func (s *execSuite) TestListOkay(c *gc.C) {
@@ -131,7 +134,7 @@ func (s *execSuite) TestListOkay(c *gc.C) {
 		proc1,
 		proc2,
 	})
-	s.CheckNoCalls(c)
+	s.Stub.CheckNoCalls(c)
 }
 
 func (s *execSuite) TestListOne(c *gc.C) {
@@ -145,7 +148,7 @@ func (s *execSuite) TestListOne(c *gc.C) {
 	c.Check(processes, jc.DeepEquals, []exec.Process{
 		process,
 	})
-	s.CheckNoCalls(c)
+	s.Stub.CheckNoCalls(c)
 }
 
 func (s *execSuite) TestListNone(c *gc.C) {
@@ -155,7 +158,7 @@ func (s *execSuite) TestListNone(c *gc.C) {
 	c.Assert(err, jc.ErrorIsNil)
 
 	c.Check(processes, gc.HasLen, 0)
-	s.CheckNoCalls(c)
+	s.Stub.CheckNoCalls(c)
 }
 
 func (s *execSuite) TestGetOkay(c *gc.C) {

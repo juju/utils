@@ -10,9 +10,6 @@ import (
 
 var logger = loggo.GetLogger("juju.utils.exec")
 
-// Local is a shortcut for the Exec implementation that wraps os/exec.
-var Local = NewOSExec()
-
 // Exec exposes the functionality of a command execution system.
 type Exec interface {
 	// Command returns a Command related to the system for the given info.

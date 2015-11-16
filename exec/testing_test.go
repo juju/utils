@@ -11,7 +11,7 @@ import (
 	gc "gopkg.in/check.v1"
 
 	"github.com/juju/utils/exec"
-	exectesting "github.com/juju/utils/exec/testing"
+	"github.com/juju/utils/exec/exectesting"
 )
 
 type BaseSuite struct {

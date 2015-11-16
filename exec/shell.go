@@ -13,41 +13,42 @@ import (
 	"github.com/juju/errors"
 )
 
-// Run runs the provided script against the command and returns
-// its standard out.
-func RunScript(cmd Command, script string) ([]byte, error) {
+// Run runs the command with the provided string as stdin and returns
+// its standard out. If the command fails then stderr (if any) is added
+// to the error's message.
+func RunWithStdinString(cmd Command, input string) (string, error) {
 	var stdout, stderr bytes.Buffer
 
 	err := cmd.SetStdio(Stdio{
-		In:  strings.NewReader(script),
+		In:  strings.NewReader(input),
 		Out: &stdout,
 		Err: &stderr,
 	})
 	if err != nil {
-		return nil, errors.Trace(err)
+		return "", errors.Trace(err)
 	}
 
 	if _, err := Run(cmd); err != nil {
 		// TODO(ericsnow) Fold this into Output()?
 		if stderr.Len() == 0 {
-			return nil, errors.Trace(err)
+			return "", errors.Trace(err)
 		}
-		return nil, errors.Annotate(err, strings.TrimSpace(stderr.String()))
+		return "", errors.Annotate(err, strings.TrimSpace(stderr.String()))
 	}
 
-	return stdout.Bytes(), nil
+	return stdout.String(), nil
 }
 
 // RunBashScript runs the bash script within the provided execution system.
-func RunBashScript(exec Exec, script string) ([]byte, error) {
+func RunBashScript(exec Exec, script string) (string, error) {
 	cmd, err := BashCommand(exec)
 	if err != nil {
-		return nil, errors.Trace(err)
+		return "", errors.Trace(err)
 	}
 
-	output, err := RunScript(cmd, script)
+	output, err := RunWithStdinString(cmd, script)
 	if err != nil {
-		return nil, errors.Trace(err)
+		return "", errors.Trace(err)
 	}
 	return output, nil
 }

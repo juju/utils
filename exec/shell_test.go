@@ -17,7 +17,7 @@ type shellSuite struct {
 	BaseSuite
 }
 
-func (s *shellSuite) TestRunScriptOkay(c *gc.C) {
+func (s *shellSuite) TestRunWithStdinStringOkay(c *gc.C) {
 	var input string
 	cmd := s.newStdioCommand(&input,
 		"abc",
@@ -25,15 +25,15 @@ func (s *shellSuite) TestRunScriptOkay(c *gc.C) {
 	)
 	script := "do-something\ndo-more\ndone!"
 
-	data, err := exec.RunScript(cmd, script)
+	output, err := exec.RunWithStdinString(cmd, script)
 	c.Assert(err, jc.ErrorIsNil)
 
 	c.Check(input, gc.Equals, script)
-	c.Check(string(data), gc.Equals, "abc")
+	c.Check(output, gc.Equals, "abc")
 	s.Stub.CheckCallNames(c, "SetStdio", "Start", "Wait")
 }
 
-func (s *shellSuite) TestRunScriptError(c *gc.C) {
+func (s *shellSuite) TestRunWithStdinStringError(c *gc.C) {
 	var input string
 	cmd := s.newStdioCommand(&input,
 		"abc",
@@ -43,7 +43,7 @@ func (s *shellSuite) TestRunScriptError(c *gc.C) {
 	failure := s.SetFailure()
 	s.Stub.SetErrors(nil, nil, failure)
 
-	_, err := exec.RunScript(cmd, script)
+	_, err := exec.RunWithStdinString(cmd, script)
 
 	c.Check(input, gc.Equals, script)
 	c.Check(err, gc.ErrorMatches, ".*xyz.*")

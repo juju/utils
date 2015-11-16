@@ -65,6 +65,9 @@ func CombinedOutput(cmd Command) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+// TODO(ericsnow) Replace usage of RunCommands and RunParams with
+// something more closely tied to Exec.
+
 // RunCommands executes the Commands specified in the RunParams using
 // powershell on windows, and '/bin/bash -s' on everything else,
 // passing the commands through as stdin, and collecting

@@ -37,16 +37,6 @@ func (s *osExecFunctionalSuite) AddScript(c *gc.C, name, script string) string {
 	return filename
 }
 
-func (s *BaseSuite) SetExecPIDs(e exec.Exec, pids ...int) {
-	var processes []exec.Process
-	for _, pid := range pids {
-		process := s.NewStubProcess()
-		process.ReturnPID = pid
-		processes = append(processes, process)
-	}
-	s.SetExec(e, processes...)
-}
-
 func (s *BaseSuite) newStdioCommand(input *string, output ...string) exec.Command {
 
 	return s.NewStdioCommand(func(stdio exec.Stdio, origErr error) error {

@@ -9,19 +9,6 @@ import (
 
 type TestingExposer struct{}
 
-func (TestingExposer) SetExec(e Exec, processes ...Process) {
-	e.(*exec).processes = processes
-}
-
-func (TestingExposer) ExposeExec(e Exec) []Process {
-	return e.(*exec).processes
-}
-
-func (e TestingExposer) ExposeExecCommand(cmd Command) (Command, []Process) {
-	ecmd := cmd.(*execCommand)
-	return ecmd.Command, e.ExposeExec(ecmd.exec)
-}
-
 func (e TestingExposer) NewOSCommand(raw *osexec.Cmd, start func(*osexec.Cmd) error) *OSCommand {
 	if start == nil {
 		return newOSCommand(raw)

@@ -74,8 +74,7 @@ func (s *osExecFunctionalSuite) TestCommandOkay(c *gc.C) {
 	})
 	c.Assert(err, jc.ErrorIsNil)
 
-	wrapped, _ := s.ExposeExecCommand(cmd)
-	raw := wrapped.(*exec.OSCommand).Cmd
+	raw := cmd.(*exec.OSCommand).Cmd
 	c.Check(raw, jc.DeepEquals, &osexec.Cmd{
 		Path:   resolved,
 		Args:   args,
@@ -97,8 +96,7 @@ func (s *osExecFunctionalSuite) TestCommandBasic(c *gc.C) {
 	})
 	c.Assert(err, jc.ErrorIsNil)
 
-	wrapped, _ := s.ExposeExecCommand(cmd)
-	raw := wrapped.(*exec.OSCommand).Cmd
+	raw := cmd.(*exec.OSCommand).Cmd
 	expected := osexec.Command("ls") // sets expected.err
 	expected.Path = "ls"
 	expected.Args = args

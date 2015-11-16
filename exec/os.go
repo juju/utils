@@ -11,12 +11,15 @@ import (
 	"github.com/juju/errors"
 )
 
-// NewOSExec returns an Exec that wraps os/exec.
+// OSExec is an Exec implementation that wraps os/exec.
+type OSExec struct{}
+
+// NewOSExec returns a new OSExec.
 func NewOSExec() Exec {
-	return NewExec(osExecCommand)
+	return &OSExec{}
 }
 
-func osExecCommand(info CommandInfo) (Command, error) {
+func (e OSExec) Command(info CommandInfo) (Command, error) {
 	// TODO(ericsnow) Ensure that raw.Path and raw.Args are not empty?
 
 	env := info.Env

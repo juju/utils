@@ -155,7 +155,7 @@ func (s *osCommandSuite) TestInterface(c *gc.C) {
 func (s *osCommandSuite) TestInfoOkay(c *gc.C) {
 	var stdin, stdout, stderr bytes.Buffer
 	raw, expected := s.newRaw(&stdin, &stdout, &stderr)
-	cmd := s.NewOSCommand(raw, nil)
+	cmd := s.FakeOSCommand(raw, nil)
 	info := cmd.Info()
 
 	c.Check(info, jc.DeepEquals, expected)
@@ -194,7 +194,7 @@ func (s *osCommandSuite) TestSetStdioOkay(c *gc.C) {
 	expected.Stdin = &stdin
 	expected.Stdout = &stdout
 	expected.Stderr = &stderr
-	cmd := s.NewOSCommand(raw, nil)
+	cmd := s.FakeOSCommand(raw, nil)
 	err := cmd.SetStdio(exec.Stdio{
 		In:  &stdin,
 		Out: &stdout,
@@ -211,7 +211,7 @@ func (s *osCommandSuite) TestSetStdioErrorAlreadyStdin(c *gc.C) {
 	var existing bytes.Buffer
 	raw, _ := s.newRaw(&existing, nil, nil)
 	orig := *raw // copied
-	cmd := s.NewOSCommand(raw, nil)
+	cmd := s.FakeOSCommand(raw, nil)
 	err := cmd.SetStdio(exec.Stdio{
 		In:  &stdin,
 		Out: &stdout,
@@ -229,7 +229,7 @@ func (s *osCommandSuite) TestSetStdioErrorAlreadyStdout(c *gc.C) {
 	var existing bytes.Buffer
 	raw, _ := s.newRaw(nil, &existing, nil)
 	orig := *raw // copied
-	cmd := s.NewOSCommand(raw, nil)
+	cmd := s.FakeOSCommand(raw, nil)
 	err := cmd.SetStdio(exec.Stdio{
 		In:  &stdin,
 		Out: &stdout,
@@ -247,7 +247,7 @@ func (s *osCommandSuite) TestSetStdioErrorAlreadyStderr(c *gc.C) {
 	var existing bytes.Buffer
 	raw, _ := s.newRaw(nil, nil, &existing)
 	orig := *raw // copied
-	cmd := s.NewOSCommand(raw, nil)
+	cmd := s.FakeOSCommand(raw, nil)
 	err := cmd.SetStdio(exec.Stdio{
 		In:  &stdin,
 		Out: &stdout,
@@ -267,7 +267,7 @@ func (s *osCommandSuite) TestSetStdioAlreadyStdinOkay(c *gc.C) {
 	expected.Stdin = &stdin
 	expected.Stdout = &stdout
 	expected.Stderr = &stderr
-	cmd := s.NewOSCommand(raw, nil)
+	cmd := s.FakeOSCommand(raw, nil)
 	err := cmd.SetStdio(exec.Stdio{
 		Out: &stdout,
 		Err: &stderr,
@@ -285,7 +285,7 @@ func (s *osCommandSuite) TestSetStdioAlreadyStdoutOkay(c *gc.C) {
 	expected.Stdin = &stdin
 	expected.Stdout = &stdout
 	expected.Stderr = &stderr
-	cmd := s.NewOSCommand(raw, nil)
+	cmd := s.FakeOSCommand(raw, nil)
 	err := cmd.SetStdio(exec.Stdio{
 		In:  &stdin,
 		Err: &stderr,
@@ -303,7 +303,7 @@ func (s *osCommandSuite) TestSetStdioAlreadyStderrOkay(c *gc.C) {
 	expected.Stdin = &stdin
 	expected.Stdout = &stdout
 	expected.Stderr = &stderr
-	cmd := s.NewOSCommand(raw, nil)
+	cmd := s.FakeOSCommand(raw, nil)
 	err := cmd.SetStdio(exec.Stdio{
 		In:  &stdin,
 		Out: &stdout,
@@ -326,7 +326,7 @@ func (s *osCommandSuite) TestSetStdioNil(c *gc.C) {
 
 func (s *osCommandSuite) TestStartOkay(c *gc.C) {
 	var orig osexec.Cmd
-	cmd := s.NewOSCommand(&orig, func(*osexec.Cmd) error {
+	cmd := s.FakeOSCommand(&orig, func(*osexec.Cmd) error {
 		s.Stub.AddCall("Start")
 		return s.Stub.NextErr()
 	})
@@ -344,7 +344,7 @@ func (s *osCommandSuite) TestStartOkay(c *gc.C) {
 func (s *osCommandSuite) TestStartError(c *gc.C) {
 	var raw osexec.Cmd
 	failure := s.SetFailure()
-	cmd := s.NewOSCommand(&raw, func(*osexec.Cmd) error {
+	cmd := s.FakeOSCommand(&raw, func(*osexec.Cmd) error {
 		s.Stub.AddCall("Start")
 		return s.Stub.NextErr()
 	})
@@ -370,7 +370,7 @@ type osCommandFunctionalSuite struct {
 func (s *osCommandFunctionalSuite) TestStart(c *gc.C) {
 	c.Skip("not implemented")
 	// TODO(ericsnow) Finish!
-	// cmd := s.NewOSCommand(raw, nil)
+	// cmd := s.FakeOSCommand(raw, nil)
 }
 
 type osProcessSuite struct {
@@ -395,7 +395,7 @@ func (s *osProcessSuite) TestCommandOkay(c *gc.C) {
 		Stdout: &stdout,
 		Stderr: &stderr,
 	}
-	process := s.NewOSProcess(raw, nil, nil)
+	process := s.FakeOSProcess(raw, nil, nil)
 	info := process.Command()
 
 	c.Check(info, jc.DeepEquals, exec.CommandInfo{
@@ -427,7 +427,7 @@ func (s *osProcessSuite) TestStateOkay(c *gc.C) {
 	info := &osexec.Cmd{
 		ProcessState: raw,
 	}
-	process := s.NewOSProcess(info, nil, nil)
+	process := s.FakeOSProcess(info, nil, nil)
 	state, err := process.State()
 	c.Assert(err, jc.ErrorIsNil)
 
@@ -449,7 +449,7 @@ func (s *osProcessSuite) TestPIDOkay(c *gc.C) {
 			Pid: 5,
 		},
 	}
-	process := s.NewOSProcess(raw, nil, nil)
+	process := s.FakeOSProcess(raw, nil, nil)
 	pid := process.PID()
 
 	c.Check(pid, gc.Equals, 5)
@@ -473,7 +473,7 @@ func (s *osProcessSuite) TestWaitOkay(c *gc.C) {
 		s.Stub.AddCall("wait")
 		return s.Stub.NextErr()
 	}
-	process := s.NewOSProcess(info, wait, nil)
+	process := s.FakeOSProcess(info, wait, nil)
 	state, err := process.Wait()
 	c.Assert(err, jc.ErrorIsNil)
 
@@ -491,7 +491,7 @@ func (s *osProcessSuite) TestWaitError(c *gc.C) {
 		s.Stub.AddCall("wait")
 		return s.Stub.NextErr()
 	}
-	process := s.NewOSProcess(info, wait, nil)
+	process := s.FakeOSProcess(info, wait, nil)
 	state, err := process.Wait()
 
 	c.Check(state, jc.DeepEquals, &exec.OSProcessState{raw})
@@ -513,7 +513,7 @@ func (s *osProcessSuite) TestKillOkay(c *gc.C) {
 		s.Stub.AddCall("kill")
 		return s.Stub.NextErr()
 	}
-	process := s.NewOSProcess(&info, nil, kill)
+	process := s.FakeOSProcess(&info, nil, kill)
 	err := process.Kill()
 	c.Assert(err, jc.ErrorIsNil)
 
@@ -527,7 +527,7 @@ func (s *osProcessSuite) TestKillError(c *gc.C) {
 		s.Stub.AddCall("kill")
 		return s.Stub.NextErr()
 	}
-	process := s.NewOSProcess(&info, nil, kill)
+	process := s.FakeOSProcess(&info, nil, kill)
 	err := process.Kill()
 
 	c.Check(errors.Cause(err), gc.Equals, failure)
@@ -549,13 +549,13 @@ type osProcessFunctionalSuite struct {
 func (s *osProcessFunctionalSuite) TestWait(c *gc.C) {
 	c.Skip("not implemented")
 	// TODO(ericsnow) Finish!
-	//process := s.NewOSProcess(cmd, nil, nil)
+	//process := s.FakeOSProcess(cmd, nil, nil)
 }
 
 func (s *osProcessFunctionalSuite) TestKillOkay(c *gc.C) {
 	c.Skip("not implemented")
 	// TODO(ericsnow) Finish!
-	//process := s.NewOSProcess(cmd, nil, nil)
+	//process := s.FakeOSProcess(cmd, nil, nil)
 }
 
 type osProcessStateSuite struct {

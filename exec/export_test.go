@@ -9,7 +9,7 @@ import (
 
 type TestingExposer struct{}
 
-func (e TestingExposer) NewOSCommand(raw *osexec.Cmd, start func(*osexec.Cmd) error) *OSCommand {
+func (e TestingExposer) FakeOSCommand(raw *osexec.Cmd, start func(*osexec.Cmd) error) *OSCommand {
 	if start == nil {
 		return newOSCommand(raw)
 	}
@@ -19,7 +19,7 @@ func (e TestingExposer) NewOSCommand(raw *osexec.Cmd, start func(*osexec.Cmd) er
 	}
 }
 
-func (e TestingExposer) NewOSProcess(info *osexec.Cmd, wait func() error, kill func() error) *OSProcess {
+func (e TestingExposer) FakeOSProcess(info *osexec.Cmd, wait func() error, kill func() error) *OSProcess {
 	if wait == nil && kill == nil {
 		return newOSProcess(info)
 	}

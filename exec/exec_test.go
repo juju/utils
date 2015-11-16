@@ -17,18 +17,6 @@ type execSuite struct {
 	BaseSuite
 }
 
-/*
-func (s *execSuite) SetExecPIDs(e exec.Exec, pids ...int) {
-	var processes []exec.Process
-	for _, pid := range pids {
-		process := exectesting.NewStubProcess(s.Stub)
-		process.ReturnPID = pid
-        processes = append(processes, process)
-	}
-	s.SetExec(e, processes...)
-}
-*/
-
 func (s *execSuite) newCommandFn() (func(exec.CommandInfo) (exec.Command, error), exec.Command, exec.Process) {
 	cmd := s.NewStubCommand()
 	process := s.NewStubProcess()

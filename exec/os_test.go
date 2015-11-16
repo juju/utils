@@ -18,6 +18,7 @@ import (
 
 var (
 	_ = gc.Suite(&osExecSuite{})
+	_ = gc.Suite(&osExecFunctionalSuite{})
 	_ = gc.Suite(&osCommandSuite{})
 	_ = gc.Suite(&osCommandFunctionalSuite{})
 	_ = gc.Suite(&osProcessSuite{})
@@ -38,7 +39,76 @@ func (s *osExecSuite) TestInterface(c *gc.C) {
 }
 
 func (s *osExecSuite) TestNewOSExec(c *gc.C) {
-	exec.NewOSExec()
+	e := exec.NewOSExec()
+
+	c.Check(e, gc.NotNil)
+}
+
+func (s *osExecSuite) TestCommand(c *gc.C) {
+	c.Skip("not implemented")
+	// TODO(ericsnow) Finish!
+}
+
+type osExecFunctionalSuite struct {
+	BaseSuite
+}
+
+func (s *osExecFunctionalSuite) TestCommandOkay(c *gc.C) {
+	resolved := s.AddScript(c, "ls", "/bin/ls $@")
+	args := []string{"ls", "-la", "."}
+	env := []string{"X=y"}
+	dir := "/x/y/z"
+	var stdin, stdout, stderr bytes.Buffer
+	e := exec.NewOSExec()
+
+	cmd, err := e.Command(exec.CommandInfo{
+		Path: "ls",
+		Args: args,
+		Context: exec.Context{
+			Env:    env,
+			Dir:    dir,
+			Stdin:  &stdin,
+			Stdout: &stdout,
+			Stderr: &stderr,
+		},
+	})
+	c.Assert(err, jc.ErrorIsNil)
+
+	wrapped, _ := s.ExposeExecCommand(cmd)
+	raw := wrapped.(*exec.OSCommand).Cmd
+	c.Check(raw, jc.DeepEquals, &osexec.Cmd{
+		Path:   resolved,
+		Args:   args,
+		Env:    env,
+		Dir:    dir,
+		Stdin:  &stdin,
+		Stdout: &stdout,
+		Stderr: &stderr,
+	})
+}
+
+func (s *osExecFunctionalSuite) TestCommandBasic(c *gc.C) {
+	args := []string{"ls"}
+	e := exec.NewOSExec()
+
+	cmd, err := e.Command(exec.CommandInfo{
+		Path: "ls",
+		Args: args,
+	})
+	c.Assert(err, jc.ErrorIsNil)
+
+	wrapped, _ := s.ExposeExecCommand(cmd)
+	raw := wrapped.(*exec.OSCommand).Cmd
+	expected := osexec.Command("ls") // sets expected.err
+	expected.Path = "ls"
+	expected.Args = args
+	expected.Env = nil
+	expected.Dir = ""
+	expected.Stdin = nil
+	expected.Stdout = nil
+	expected.Stderr = nil
+	c.Check(raw, jc.DeepEquals, expected)
+	c.Check(raw.Env, gc.IsNil)
 }
 
 type osCommandSuite struct {
@@ -80,7 +150,7 @@ func (s *osCommandSuite) TestInterface(c *gc.C) {
 	c.Check(&cmd, gc.Implements, &t)
 }
 
-func (s *osCommandSuite) TestInfo(c *gc.C) {
+func (s *osCommandSuite) TestInfoOkay(c *gc.C) {
 	var stdin, stdout, stderr bytes.Buffer
 	raw, expected := s.newRaw(&stdin, &stdout, &stderr)
 	cmd := s.NewOSCommand(raw, nil)
@@ -88,6 +158,29 @@ func (s *osCommandSuite) TestInfo(c *gc.C) {
 
 	c.Check(info, jc.DeepEquals, expected)
 	s.Stub.CheckNoCalls(c)
+}
+
+func (s *osCommandSuite) TestInfoBasic(c *gc.C) {
+	cmd := exec.OSCommand{
+		Cmd: &osexec.Cmd{
+			Path: "/bin/ls",
+			Args: []string{"ls"},
+		},
+	}
+	info := cmd.Info()
+
+	c.Check(info, jc.DeepEquals, exec.CommandInfo{
+		Path: "/bin/ls",
+		Args: []string{"ls"},
+		Context: exec.Context{
+			Env:    nil,
+			Dir:    "",
+			Stdin:  nil,
+			Stdout: nil,
+			Stderr: nil,
+		},
+	})
+	c.Check(info.Env, gc.IsNil)
 }
 
 func (s *osCommandSuite) TestSetStdioOkay(c *gc.C) {

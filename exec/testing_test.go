@@ -5,9 +5,11 @@ package exec_test
 
 import (
 	"io/ioutil"
+	"path/filepath"
 	"strings"
 
 	"github.com/juju/testing"
+	jc "github.com/juju/testing/checkers"
 	gc "gopkg.in/check.v1"
 
 	"github.com/juju/utils/exec"
@@ -23,6 +25,16 @@ type BaseSuite struct {
 func (s *BaseSuite) SetUpTest(c *gc.C) {
 	s.IsolationSuite.SetUpTest(c)
 	s.StubSuite.SetUpTest(c)
+}
+
+func (s *osExecFunctionalSuite) AddScript(c *gc.C, name, script string) string {
+	binDir := c.MkDir()
+	s.PatchEnvPathPrepend(binDir)
+
+	filename := filepath.Join(binDir, name)
+	err := ioutil.WriteFile(filename, []byte(script), 0755)
+	c.Assert(err, jc.ErrorIsNil)
+	return filename
 }
 
 func (s *BaseSuite) SetExecPIDs(e exec.Exec, pids ...int) {

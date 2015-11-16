@@ -17,8 +17,13 @@ func NewOSExec() Exec {
 }
 
 func osExecCommand(info CommandInfo) (Command, error) {
-	env := make([]string, len(info.Env))
-	copy(env, info.Env)
+	// TODO(ericsnow) Ensure that raw.Path and raw.Args are not empty?
+
+	env := info.Env
+	if env != nil {
+		env = make([]string, len(info.Env))
+		copy(env, info.Env)
+	}
 
 	raw := osexec.Command(info.Args[0], info.Args[1:]...)
 	raw.Env = env
@@ -127,11 +132,17 @@ func osCommandInfo(raw *osexec.Cmd) CommandInfo {
 	if raw == nil {
 		return CommandInfo{}
 	}
+	// TODO(ericsnow) Ensure that raw.Path and raw.Args are not empty?
 
 	args := make([]string, len(raw.Args))
 	copy(args, raw.Args)
-	env := make([]string, len(raw.Env))
-	copy(env, raw.Env)
+
+	env := raw.Env
+	if env != nil {
+		env = make([]string, len(raw.Env))
+		copy(env, raw.Env)
+	}
+
 	return CommandInfo{
 		Path: raw.Path,
 		Args: args,

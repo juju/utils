@@ -77,8 +77,9 @@ func NewCommandInfo(path string, args ...string) CommandInfo {
 
 // Context describes the context in which a command will run.
 type Context struct {
-	// Env is the list of environment variables to use. If None are set
-	// then the current environment is used.
+	// Env is the list of environment variables to use. If Env is nil
+	// then the current environment is used. If it is empty then
+	// commands will run with no environment set.
 	Env []string
 
 	// Dir is the directory in which the command will be run. If omitted

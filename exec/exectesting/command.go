@@ -30,7 +30,7 @@ func NewStubCommand(stub *testing.Stub) *StubCommand {
 
 func (s *StubCommand) Info() exec.CommandInfo {
 	s.stub.AddCall("Info")
-	s.stub.NextErr() // pop one off
+	s.stub.PopNoErr()
 
 	return s.ReturnInfo
 }

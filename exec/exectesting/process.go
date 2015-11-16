@@ -27,7 +27,7 @@ func NewStubProcess(stub *testing.Stub) *StubProcess {
 
 func (s *StubProcess) Command() exec.CommandInfo {
 	s.stub.AddCall("Command")
-	s.stub.NextErr() // pop one off
+	s.stub.PopNoErr()
 
 	return s.ReturnCommand
 }
@@ -43,7 +43,7 @@ func (s *StubProcess) State() (exec.ProcessState, error) {
 
 func (s *StubProcess) PID() int {
 	s.stub.AddCall("PID")
-	s.stub.NextErr() // pop one off
+	s.stub.PopNoErr()
 
 	return s.ReturnPID
 }

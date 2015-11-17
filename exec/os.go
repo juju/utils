@@ -4,6 +4,7 @@
 package exec
 
 import (
+	"io"
 	"os"
 	osexec "os/exec"
 	"syscall"
@@ -35,134 +36,91 @@ func (e OSExec) Command(info CommandInfo) (Command, error) {
 	raw.Stdout = info.Stdio.Out
 	raw.Stderr = info.Stdio.Err
 
-	cmd := newOSCommand(raw)
+	cmd := NewOSCommand(raw)
 	return cmd, nil
 }
 
-// OSCommand is a Command implementation that wraps os/exec.Cmd.
-type OSCommand struct {
+// NewOSCommand returns a new Command that wraps the provided osexec.Cmd.
+func NewOSCommand(raw *osexec.Cmd) Command {
+	info := osCommandInfo(raw)
+	rawStdio := &osRawStdio{raw}
+	cmd := newCmd(info, rawStdio)
+	cmd.Starter = osCommandStarter{raw}
+	return cmd
+}
+
+type osCommandStarter struct {
 	*osexec.Cmd
-	start func(*osexec.Cmd) error
 }
 
-func newOSCommand(raw *osexec.Cmd) *OSCommand {
-	return &OSCommand{
-		Cmd: raw,
-		start: func(cmd *osexec.Cmd) error {
-			return cmd.Start()
-		},
-	}
-}
-
-// Info implements Command.
-func (o OSCommand) Info() CommandInfo {
-	return osCommandInfo(o.Cmd)
-}
-
-// SetStdio implements Command.
-func (o OSCommand) SetStdio(stdio Stdio) error {
-	if o.Cmd == nil {
-		return errors.New("command not initialized")
-	}
-
-	// TODO(ericsnow) Do not fail if collision is with same pointer?
-
-	stdin := stdio.In
-	if stdin == nil {
-		stdin = o.Cmd.Stdin
-	} else if o.Cmd.Stdin != nil {
-		return errors.NewNotValid(nil, "stdin already set")
-	}
-
-	stdout := stdio.Out
-	if stdout == nil {
-		stdout = o.Cmd.Stdout
-	} else if o.Cmd.Stdout != nil {
-		return errors.NewNotValid(nil, "stdout already set")
-	}
-
-	stderr := stdio.Err
-	if stderr == nil {
-		stderr = o.Cmd.Stderr
-	} else if o.Cmd.Stderr != nil {
-		return errors.NewNotValid(nil, "stderr already set")
-	}
-
-	o.Cmd.Stdin = stdin
-	o.Cmd.Stderr = stdout
-	o.Cmd.Stdout = stderr
-	return nil
-}
-
-// Start implements Command.
-func (o OSCommand) Start() (Process, error) {
+// Start implements Starter.
+func (o osCommandStarter) Start() (Process, error) {
 	if o.Cmd == nil {
 		return nil, errors.New("command not initialized")
 	}
 	raw := *o.Cmd // make a copy
 
-	if err := o.start(&raw); err != nil {
+	if err := raw.Start(); err != nil {
 		return nil, errors.Trace(err)
 	}
 
-	process := newOSProcess(&raw)
+	process := NewOSProcess(&raw)
 	return process, nil
 }
 
-// OSProcess is a Process implementation that wraps os/exec.Cmd.
-type OSProcess struct {
+type osRawStdio struct {
+	*osexec.Cmd
+}
+
+// SetStdio implements RawStdio.
+func (o osRawStdio) SetStdio(values Stdio) error {
+	o.Cmd.Stdin = values.In
+	o.Cmd.Stderr = values.Out
+	o.Cmd.Stdout = values.Err
+	return nil
+}
+
+// StdinPipe implements RawStdio.
+func (o osRawStdio) StdinPipe() (io.WriteCloser, io.Reader, error) {
+	w, err := o.Cmd.StdinPipe()
+	if err != nil {
+		return nil, nil, errors.Trace(err)
+	}
+	return w, o.Cmd.Stdin, nil
+}
+
+// StdoutPipe implements RawStdio.
+func (o osRawStdio) StdoutPipe() (io.ReadCloser, io.Writer, error) {
+	r, err := o.Cmd.StdoutPipe()
+	if err != nil {
+		return nil, nil, errors.Trace(err)
+	}
+	return r, o.Cmd.Stdout, nil
+}
+
+// StderrPipe implements RawStdio.
+func (o osRawStdio) StderrPipe() (io.ReadCloser, io.Writer, error) {
+	r, err := o.Cmd.StderrPipe()
+	if err != nil {
+		return nil, nil, errors.Trace(err)
+	}
+	return r, o.Cmd.Stderr, nil
+}
+
+// NewOSProcess returns a Process that wraps an os/exec.Cmd.
+func NewOSProcess(raw *osexec.Cmd) Process {
+	info := osCommandInfo(raw)
+	data := osProcessData{raw}
+	control := osRawProcessControl{raw}
+	return NewProcess(info, data, control)
+}
+
+type osProcessData struct {
 	info *osexec.Cmd
-	wait func() error
-	kill func() error
 }
 
-func newOSProcess(cmd *osexec.Cmd) *OSProcess {
-	return &OSProcess{
-		info: cmd,
-		wait: cmd.Wait,
-		kill: func() error {
-			return cmd.Process.Kill()
-		},
-	}
-}
-
-// Command implements Process.
-func (o OSProcess) Command() CommandInfo {
-	return osCommandInfo(o.info)
-}
-
-func osCommandInfo(raw *osexec.Cmd) CommandInfo {
-	if raw == nil {
-		return CommandInfo{}
-	}
-	// TODO(ericsnow) Ensure that raw.Path and raw.Args are not empty?
-
-	args := make([]string, len(raw.Args))
-	copy(args, raw.Args)
-
-	env := raw.Env
-	if env != nil {
-		env = make([]string, len(raw.Env))
-		copy(env, raw.Env)
-	}
-
-	return CommandInfo{
-		Path: raw.Path,
-		Args: args,
-		Context: Context{
-			Env: env,
-			Dir: raw.Dir,
-			Stdio: Stdio{
-				In:  raw.Stdin,
-				Out: raw.Stdout,
-				Err: raw.Stderr,
-			},
-		},
-	}
-}
-
-// State implements Process.
-func (o OSProcess) State() (ProcessState, error) {
+// State implements ProcessData.
+func (o osProcessData) State() (ProcessState, error) {
 	if o.info == nil {
 		return nil, errors.New("process not initialized")
 	}
@@ -173,35 +131,37 @@ func (o OSProcess) State() (ProcessState, error) {
 	return state, nil
 }
 
-// PID implements Process.
-func (o OSProcess) PID() int {
+// PID implements ProcessData.
+func (o osProcessData) PID() int {
 	if o.info == nil {
 		return 0
 	}
 	return o.info.Process.Pid
 }
 
-// Wait implements Process.
-func (o OSProcess) Wait() (ProcessState, error) {
-	if o.info == nil {
-		return nil, errors.New("process not initialized")
-	}
-
-	err := o.wait()
-	if err != nil {
-		err = errors.Trace(err)
-	}
-	state := &OSProcessState{o.info.ProcessState}
-	return state, err
+type osRawProcessControl struct {
+	raw *osexec.Cmd
 }
 
-// Kill implements Process.
-func (o OSProcess) Kill() error {
-	if o.info == nil {
+// Kill implements utils.Killer.
+func (o osRawProcessControl) Wait() error {
+	if o.raw == nil {
 		return errors.New("process not initialized")
 	}
 
-	if err := o.kill(); err != nil {
+	if err := o.raw.Wait(); err != nil {
+		return errors.Trace(err)
+	}
+	return nil
+}
+
+// Kill implements utils.Killer.
+func (o osRawProcessControl) Kill() error {
+	if o.raw == nil {
+		return errors.New("process not initialized")
+	}
+
+	if err := o.raw.Process.Kill(); err != nil {
 		return errors.Trace(err)
 	}
 	return nil
@@ -239,4 +199,34 @@ func (o OSProcessState) SysUsage() Rusage {
 // OSWaitStatus is a WaitState implementation that wraps syscall.WaitStatus.
 type OSWaitStatus struct {
 	*syscall.WaitStatus
+}
+
+func osCommandInfo(raw *osexec.Cmd) CommandInfo {
+	if raw == nil {
+		return CommandInfo{}
+	}
+	// TODO(ericsnow) Ensure that raw.Path and raw.Args are not empty?
+
+	args := make([]string, len(raw.Args))
+	copy(args, raw.Args)
+
+	env := raw.Env
+	if env != nil {
+		env = make([]string, len(raw.Env))
+		copy(env, raw.Env)
+	}
+
+	return CommandInfo{
+		Path: raw.Path,
+		Args: args,
+		Context: Context{
+			Env: env,
+			Dir: raw.Dir,
+			Stdio: Stdio{
+				In:  raw.Stdin,
+				Out: raw.Stdout,
+				Err: raw.Stderr,
+			},
+		},
+	}
 }

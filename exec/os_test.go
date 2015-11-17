@@ -46,8 +46,38 @@ func (s *OSExecSuite) TestNewOSExec(c *gc.C) {
 }
 
 func (s *OSExecSuite) TestCommand(c *gc.C) {
-	c.Skip("not implemented")
-	// TODO(ericsnow) Finish!
+	path := "/bin/ls"
+	args := []string{"ls", "-la", "."}
+	env := []string{"X=y"}
+	dir := "/x/y/z"
+	var stdin, stdout, stderr bytes.Buffer
+	e := exec.NewOSExec()
+
+	cmd, err := e.Command(exec.CommandInfo{
+		Path: path,
+		Args: args,
+		Context: exec.Context{
+			Env: env,
+			Dir: dir,
+			Stdio: exec.Stdio{
+				In:  &stdin,
+				Out: &stdout,
+				Err: &stderr,
+			},
+		},
+	})
+	c.Assert(err, jc.ErrorIsNil)
+
+	raw := cmd.(*exec.Cmd).CmdStdio.Raw.(*exec.OSRawStdio).Cmd
+	c.Check(raw, jc.DeepEquals, &osexec.Cmd{
+		Path:   path,
+		Args:   args,
+		Env:    env,
+		Dir:    dir,
+		Stdin:  &stdin,
+		Stdout: &stdout,
+		Stderr: &stderr,
+	})
 }
 
 type OSExecFunctionalSuite struct {
@@ -308,26 +338,7 @@ func (s *OSCommandSuite) TestSetStdioAlreadyStderrOkay(c *gc.C) {
 
 // TODO(ericsnow) Add tests for Std*Pipe()?
 
-func (s *OSCommandSuite) TestStartOkay(c *gc.C) {
-	c.Skip("not implemented")
-	// TODO(ericsnow) Finish!
-	//process, err := cmd.Start()
-}
-
-func (s *OSCommandSuite) TestStartError(c *gc.C) {
-	c.Skip("not implemented")
-	// TODO(ericsnow) Finish!
-	//_, err := cmd.Start()
-}
-
-func (s *OSCommandSuite) TestStartNil(c *gc.C) {
-	c.Skip("not implemented")
-	// TODO(ericsnow) Finish!
-	//_, err := cmd.Start()
-	//
-	//c.Check(err, gc.ErrorMatches, `command not initialized`)
-	//s.Stub.CheckNoCalls(c)
-}
+// TODO(ericsnow) Add tests for Start()?
 
 type OSCommandFunctionalSuite struct {
 	BaseSuite
@@ -501,15 +512,49 @@ type OSProcessFunctionalSuite struct {
 }
 
 func (s *OSProcessFunctionalSuite) TestWait(c *gc.C) {
-	c.Skip("not implemented")
-	// TODO(ericsnow) Finish!
-	//process := exec.NewOSProcess(raw)
+	var stdout, stderr bytes.Buffer
+	path := s.AddScript(c, "dump-call", `#!/bin/bash
+    echo eggs
+    `)
+	orig := &osexec.Cmd{
+		Path:   path,
+		Args:   []string{"spam"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	cmd := exec.NewOSCommand(orig)
+	process, err := cmd.Start()
+	c.Assert(err, jc.ErrorIsNil)
+
+	state, err := process.Wait()
+	c.Assert(err, jc.ErrorIsNil)
+
+	raw := process.(*exec.Proc).ProcessData.(exec.OSProcessData).Cmd
+	c.Check(state.(*exec.OSProcessState).ProcessState, jc.DeepEquals, raw.ProcessState)
+	c.Check(stdout.String(), gc.Equals, "eggs\n")
+	c.Check(stderr.String(), gc.Equals, "")
 }
 
-func (s *OSProcessFunctionalSuite) TestKillOkay(c *gc.C) {
-	c.Skip("not implemented")
-	// TODO(ericsnow) Finish!
-	//process := exec.NewOSProcess(raw)
+func (s *OSProcessFunctionalSuite) TestKill(c *gc.C) {
+	var stdout, stderr bytes.Buffer
+	path := s.AddScript(c, "dump-call", `#!/bin/bash
+    echo eggs
+    `)
+	orig := &osexec.Cmd{
+		Path:   path,
+		Args:   []string{"spam"},
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	cmd := exec.NewOSCommand(orig)
+	process, err := cmd.Start()
+	c.Assert(err, jc.ErrorIsNil)
+
+	err = process.Kill()
+	c.Assert(err, jc.ErrorIsNil)
+
+	c.Check(stdout.String(), gc.Equals, "")
+	c.Check(stderr.String(), gc.Equals, "")
 }
 
 type OSProcessStateSuite struct {

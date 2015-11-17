@@ -29,7 +29,16 @@ func (e OSExec) Command(info CommandInfo) (Command, error) {
 		copy(env, info.Env)
 	}
 
-	raw := osexec.Command(info.Args[0], info.Args[1:]...)
+	raw := &osexec.Cmd{}
+	if info.Args[0] == info.Path {
+		raw = osexec.Command(info.Args[0], info.Args[1:]...)
+	} else {
+		raw.Path = info.Path
+
+		args := make([]string, len(info.Args))
+		copy(args, info.Args)
+		raw.Args = args
+	}
 	raw.Env = env
 	raw.Dir = info.Dir
 	raw.Stdin = info.Stdio.In

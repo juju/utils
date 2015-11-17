@@ -77,6 +77,10 @@ func (s *StubSuite) NewStubProcess() *StubProcess {
 	return NewStubProcess(s.Stub)
 }
 
+func (s *StubSuite) NewStubRawProcessControl() *StubRawProcessControl {
+	return NewStubRawProcessControl(s.Stub)
+}
+
 func (s *StubSuite) NewFakeProcess() (*FakeProcess, *StubProcess) {
 	stub := s.NewStubProcess()
 	fake := NewFakeProcess(stub)

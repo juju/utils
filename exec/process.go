@@ -4,7 +4,9 @@
 package exec
 
 import (
-	"time"
+	"github.com/juju/errors"
+
+	"github.com/juju/utils"
 )
 
 // Process supports interacting with a running command.
@@ -50,49 +52,54 @@ func (p Proc) Command() CommandInfo {
 	return p.Info
 }
 
-// ProcessState describes the state of a started command.
-//
-// See os.ProcessState.
-type ProcessState interface {
-	// Exited reports whether the program has exited.
-	Exited() bool
+// TODO(ericsnow) Expose this as utils.Waiter?
 
-	// Pid returns the process id of the exited process.
-	Pid() int
-
-	// Success reports whether the program exited successfully.
-	Success() bool
-
-	// Sys return system-dependent exit information about the process.
-	Sys() WaitStatus
-
-	// SysUsage returns system-dependent resource usage information
-	// about the exited process.
-	SysUsage() Rusage
-
-	// SystemTime returns the system CPU time of the exited process
-	// and its children.
-	SystemTime() time.Duration
-
-	// UserTime returns the user CPU time of the exited process
-	// and its children.
-	UserTime() time.Duration
+// RawProcessControl exposes low-level process control.
+type RawProcessControl interface {
+	Wait() error
 }
 
-// WaitStatus exposes system-dependent exit information about a process.
-//
-// See syscall.WaitStatus
-type WaitStatus interface {
-	// ExitStatus returns the exit code for the process.
-	ExitStatus() int
+// ProcControl is a ProcessControl implementation that
+// wraps a RawProcessControl.
+type ProcControl struct {
+	// Data holds the proc's data.
+	Data ProcessData
 
-	// Exited reports whether the program has exited.
-	Exited() bool
-
-	// For now we don't worry about any others.
+	// Raw holds the proc's functionality.
+	Raw RawProcessControl
 }
 
-// Rusage exposes system-dependent resource information.
-type Rusage interface {
-	// For now we don't worry about it.
+// NewProcess returns a new Proc that wraps the provided data
+// and RawProcessControl.
+func NewProcess(info CommandInfo, data ProcessData, raw RawProcessControl) *Proc {
+	control := &ProcControl{
+		Data: data,
+		Raw:  raw,
+	}
+	return &Proc{
+		ProcessData:    data,
+		ProcessControl: control,
+		Info:           info,
+	}
+}
+
+// Wait implements Process.
+func (p ProcControl) Wait() (ProcessState, error) {
+	err := p.Raw.Wait()
+	state, stErr := p.Data.State()
+	if err != nil {
+		return state, errors.Trace(err)
+	}
+	if stErr != nil {
+		return nil, errors.Trace(err)
+	}
+	return state, nil
+}
+
+// Kill implements Process.
+func (p ProcControl) Kill() error {
+	if err := utils.KillIfSupported(p.Raw); err != nil {
+		return errors.Trace(err)
+	}
+	return nil
 }

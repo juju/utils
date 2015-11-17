@@ -85,3 +85,15 @@ func (f *FakeProcess) Wait() (exec.ProcessState, error) {
 	}
 	return state, err
 }
+
+type StubRawProcessControl struct {
+	*StubWaiter
+	*StubKiller
+}
+
+func NewStubRawProcessControl(stub *testing.Stub) *StubRawProcessControl {
+	return &StubRawProcessControl{
+		StubWaiter: NewStubWaiter(stub),
+		StubKiller: NewStubKiller(stub),
+	}
+}

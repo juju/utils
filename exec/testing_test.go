@@ -19,7 +19,6 @@ import (
 type BaseSuite struct {
 	testing.IsolationSuite
 	exectesting.StubSuite
-	exec.TestingExposer
 }
 
 func (s *BaseSuite) SetUpTest(c *gc.C) {

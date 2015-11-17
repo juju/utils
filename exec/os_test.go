@@ -76,7 +76,7 @@ func (s *osExecFunctionalSuite) TestCommandOkay(c *gc.C) {
 	})
 	c.Assert(err, jc.ErrorIsNil)
 
-	raw := s.ExposeOSCommand(cmd)
+	raw := cmd.(*exec.Cmd).CmdStdio.Raw.(*exec.OSRawStdio).Cmd
 	c.Check(raw, jc.DeepEquals, &osexec.Cmd{
 		Path:   resolved,
 		Args:   args,
@@ -98,7 +98,7 @@ func (s *osExecFunctionalSuite) TestCommandBasic(c *gc.C) {
 	})
 	c.Assert(err, jc.ErrorIsNil)
 
-	raw := s.ExposeOSCommand(cmd)
+	raw := cmd.(*exec.Cmd).CmdStdio.Raw.(*exec.OSRawStdio).Cmd
 	expected := osexec.Command("ls") // sets expected.err
 	expected.Path = "ls"
 	expected.Args = args
@@ -316,7 +316,7 @@ func (s *osCommandSuite) TestStartOkay(c *gc.C) {
 	c.Assert(err, jc.ErrorIsNil)
 
 	c.Check(process, gc.NotNil)
-	raw := s.ExposeOSProcess(process)
+	raw := process.(*exec.Proc).ProcessData.(*exec.OSProcessData).Cmd
 	c.Check(raw, jc.DeepEquals, &orig)
 	c.Check(raw, gc.Not(gc.Equals), &orig)
 	s.Stub.CheckCallNames(c, "Start")

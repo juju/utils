@@ -42,19 +42,19 @@ func (e OSExec) Command(info CommandInfo) (Command, error) {
 
 // NewOSCommand returns a new Command that wraps the provided osexec.Cmd.
 func NewOSCommand(raw *osexec.Cmd) Command {
-	info := osCommandInfo(raw)
-	rawStdio := &osRawStdio{raw}
+	info := OSCommandInfo(raw)
+	rawStdio := &OSRawStdio{raw}
 	cmd := newCmd(info, rawStdio)
-	cmd.Starter = osCommandStarter{raw}
+	cmd.Starter = OSCommandStarter{raw}
 	return cmd
 }
 
-type osCommandStarter struct {
+type OSCommandStarter struct {
 	*osexec.Cmd
 }
 
 // Start implements Starter.
-func (o osCommandStarter) Start() (Process, error) {
+func (o OSCommandStarter) Start() (Process, error) {
 	if o.Cmd == nil {
 		return nil, errors.New("command not initialized")
 	}
@@ -68,12 +68,12 @@ func (o osCommandStarter) Start() (Process, error) {
 	return process, nil
 }
 
-type osRawStdio struct {
+type OSRawStdio struct {
 	*osexec.Cmd
 }
 
 // SetStdio implements RawStdio.
-func (o osRawStdio) SetStdio(values Stdio) error {
+func (o OSRawStdio) SetStdio(values Stdio) error {
 	o.Cmd.Stdin = values.In
 	o.Cmd.Stderr = values.Out
 	o.Cmd.Stdout = values.Err
@@ -81,7 +81,7 @@ func (o osRawStdio) SetStdio(values Stdio) error {
 }
 
 // StdinPipe implements RawStdio.
-func (o osRawStdio) StdinPipe() (io.WriteCloser, io.Reader, error) {
+func (o OSRawStdio) StdinPipe() (io.WriteCloser, io.Reader, error) {
 	w, err := o.Cmd.StdinPipe()
 	if err != nil {
 		return nil, nil, errors.Trace(err)
@@ -90,7 +90,7 @@ func (o osRawStdio) StdinPipe() (io.WriteCloser, io.Reader, error) {
 }
 
 // StdoutPipe implements RawStdio.
-func (o osRawStdio) StdoutPipe() (io.ReadCloser, io.Writer, error) {
+func (o OSRawStdio) StdoutPipe() (io.ReadCloser, io.Writer, error) {
 	r, err := o.Cmd.StdoutPipe()
 	if err != nil {
 		return nil, nil, errors.Trace(err)
@@ -99,7 +99,7 @@ func (o osRawStdio) StdoutPipe() (io.ReadCloser, io.Writer, error) {
 }
 
 // StderrPipe implements RawStdio.
-func (o osRawStdio) StderrPipe() (io.ReadCloser, io.Writer, error) {
+func (o OSRawStdio) StderrPipe() (io.ReadCloser, io.Writer, error) {
 	r, err := o.Cmd.StderrPipe()
 	if err != nil {
 		return nil, nil, errors.Trace(err)
@@ -109,42 +109,42 @@ func (o osRawStdio) StderrPipe() (io.ReadCloser, io.Writer, error) {
 
 // NewOSProcess returns a Process that wraps an os/exec.Cmd.
 func NewOSProcess(raw *osexec.Cmd) Process {
-	info := osCommandInfo(raw)
-	data := osProcessData{raw}
-	control := osRawProcessControl{raw}
+	info := OSCommandInfo(raw)
+	data := OSProcessData{raw}
+	control := OSRawProcessControl{raw}
 	return NewProcess(info, data, control)
 }
 
-type osProcessData struct {
-	info *osexec.Cmd
+type OSProcessData struct {
+	*osexec.Cmd
 }
 
 // State implements ProcessData.
-func (o osProcessData) State() (ProcessState, error) {
-	if o.info == nil {
+func (o OSProcessData) State() (ProcessState, error) {
+	if o.Cmd == nil {
 		return nil, errors.New("process not initialized")
 	}
 
 	// TODO(ericsnow) Fail if o.info.ProcessState is nil?
 
-	state := &OSProcessState{o.info.ProcessState}
+	state := &OSProcessState{o.Cmd.ProcessState}
 	return state, nil
 }
 
 // PID implements ProcessData.
-func (o osProcessData) PID() int {
-	if o.info == nil {
+func (o OSProcessData) PID() int {
+	if o.Cmd == nil || o.Cmd.Process == nil {
 		return 0
 	}
-	return o.info.Process.Pid
+	return o.Cmd.Process.Pid
 }
 
-type osRawProcessControl struct {
+type OSRawProcessControl struct {
 	raw *osexec.Cmd
 }
 
 // Kill implements utils.Killer.
-func (o osRawProcessControl) Wait() error {
+func (o OSRawProcessControl) Wait() error {
 	if o.raw == nil {
 		return errors.New("process not initialized")
 	}
@@ -156,7 +156,7 @@ func (o osRawProcessControl) Wait() error {
 }
 
 // Kill implements utils.Killer.
-func (o osRawProcessControl) Kill() error {
+func (o OSRawProcessControl) Kill() error {
 	if o.raw == nil {
 		return errors.New("process not initialized")
 	}
@@ -201,7 +201,8 @@ type OSWaitStatus struct {
 	*syscall.WaitStatus
 }
 
-func osCommandInfo(raw *osexec.Cmd) CommandInfo {
+// OSCommandInfo converts an os/exec.Cmd into a CommandInfo.
+func OSCommandInfo(raw *osexec.Cmd) CommandInfo {
 	if raw == nil {
 		return CommandInfo{}
 	}

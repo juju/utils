@@ -4,8 +4,6 @@
 package exec
 
 import (
-	"io"
-
 	"github.com/juju/errors"
 )
 
@@ -34,6 +32,31 @@ func NewCommand(e Exec, path string, args ...string) (Command, error) {
 		return nil, errors.Trace(err)
 	}
 	return cmd, nil
+}
+
+// Cmd is a basic Command implementation.
+type Cmd struct {
+	CmdStdio
+	Starter
+
+	data CommandInfo
+}
+
+func newCmd(info CommandInfo, rawStdio RawStdio) *Cmd {
+	cmd := &Cmd{
+		data: info,
+		// Starter is not set.
+	}
+	cmd.CmdStdio = CmdStdio{
+		Raw:   rawStdio,
+		Stdio: &cmd.data.Stdio,
+	}
+	return cmd
+}
+
+// Info implements Command.
+func (c Cmd) Info() CommandInfo {
+	return c.data
 }
 
 // CommandInfo holds the definition of a command's execution.

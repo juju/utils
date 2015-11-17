@@ -86,3 +86,11 @@ func (s *StubSuite) NewFakeProcess() (*FakeProcess, *StubProcess) {
 func (s *StubSuite) NewStubProcessState() *StubProcessState {
 	return NewStubProcessState(s.Stub)
 }
+
+func (s *StubSuite) NewStubWaiter() *StubWaiter {
+	return NewStubWaiter(s.Stub)
+}
+
+func (s *StubSuite) NewStubKiller() *StubKiller {
+	return NewStubKiller(s.Stub)
+}

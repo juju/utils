@@ -118,3 +118,19 @@ func (s *supportedSeriesSuite) TestSeriesVersionEmpty(c *gc.C) {
 	_, err := series.SeriesVersion("")
 	c.Assert(err, gc.ErrorMatches, `.*unknown version for series: "".*`)
 }
+
+func (s *supportedSeriesSuite) TestIsWindowsNano(c *gc.C) {
+	var isWindowsNanoTests = []struct {
+		series   string
+		expected bool
+	}{
+		{"win2016nano", true},
+		{"win2016", false},
+		{"win2012r2", false},
+		{"trusty", false},
+	}
+
+	for _, t := range isWindowsNanoTests {
+		c.Assert(series.IsWindowsNano(t.series), gc.Equals, t.expected)
+	}
+}

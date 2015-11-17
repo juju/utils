@@ -143,6 +143,21 @@ var windowsNanoVersions = map[string]string{
 	"Windows Server 2016": "win2016nano",
 }
 
+// IsWindowsNano tells us whether the provided series is a
+// nano series. It may seem futile at this point, but more
+// nano series will come up with time.
+// This is here and not in a windows specific package
+// because we might want to take decisions dependant on
+// whether we have a nano series or not in more general code.
+func IsWindowsNano(series string) bool {
+	for _, val := range windowsNanoVersions {
+		if val == series {
+			return true
+		}
+	}
+	return false
+}
+
 // GetOSFromSeries will return the operating system based
 // on the series that is passed to it
 func GetOSFromSeries(series string) (os.OSType, error) {

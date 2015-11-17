@@ -49,6 +49,16 @@ func (e OSExec) Command(info CommandInfo) (Command, error) {
 	return cmd, nil
 }
 
+// CauseIsCommandNotFound determines if the error means the command
+// wasn't found.
+func CauseIsCommandNotFound(err error) bool {
+	_, execError := err.(*osexec.Error)
+	// exec.Error results are for when the executable isn't found, in
+	// those cases, drop through.
+	// TODO(ericsnow) Is that actually true?
+	return execError
+}
+
 // NewOSCommand returns a new Command that wraps the provided osexec.Cmd.
 func NewOSCommand(raw *osexec.Cmd) Command {
 	info := OSCommandInfo(raw)

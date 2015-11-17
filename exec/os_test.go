@@ -5,6 +5,7 @@ package exec_test
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"os"
 	osexec "os/exec"
@@ -308,30 +309,15 @@ func (s *osCommandSuite) TestSetStdioAlreadyStderrOkay(c *gc.C) {
 // TODO(ericsnow) Add tests for Std*Pipe()?
 
 func (s *osCommandSuite) TestStartOkay(c *gc.C) {
-	var orig osexec.Cmd
-	cmd := exec.NewOSCommand(&orig)
-	cmd.(*exec.Cmd).Starter = s.NewStubCommand()
-
-	process, err := cmd.Start()
-	c.Assert(err, jc.ErrorIsNil)
-
-	c.Check(process, gc.NotNil)
-	raw := process.(*exec.Proc).ProcessData.(*exec.OSProcessData).Cmd
-	c.Check(raw, jc.DeepEquals, &orig)
-	c.Check(raw, gc.Not(gc.Equals), &orig)
-	s.Stub.CheckCallNames(c, "Start")
+	c.Skip("not implemented")
+	// TODO(ericsnow) Finish!
+	//process, err := cmd.Start()
 }
 
 func (s *osCommandSuite) TestStartError(c *gc.C) {
-	var raw osexec.Cmd
-	failure := s.SetFailure()
-	cmd := exec.NewOSCommand(&raw)
-	cmd.(*exec.Cmd).Starter = s.NewStubCommand()
-
-	_, err := cmd.Start()
-
-	c.Check(errors.Cause(err), gc.Equals, failure)
-	s.Stub.CheckCallNames(c, "Start")
+	c.Skip("not implemented")
+	// TODO(ericsnow) Finish!
+	//_, err := cmd.Start()
 }
 
 func (s *osCommandSuite) TestStartNil(c *gc.C) {
@@ -348,9 +334,52 @@ type osCommandFunctionalSuite struct {
 }
 
 func (s *osCommandFunctionalSuite) TestStart(c *gc.C) {
-	c.Skip("not implemented")
-	// TODO(ericsnow) Finish!
-	//cmd := exec.NewOSCommand(&raw)
+	var stdin, stdout, stderr bytes.Buffer
+	dirname := c.MkDir()
+	path := s.AddScript(c, "dump-call", `#!/bin/bash
+    echo $0 $@
+    pwd
+    unset SHLVL
+    unset PWD
+    unset _
+    env | sort | grep -v '^_='
+    `)
+	orig := &osexec.Cmd{
+		Path:   path,
+		Args:   []string{"dump-call", "-xy", "z"},
+		Env:    []string{"SPAM=eggs"},
+		Dir:    dirname,
+		Stdin:  &stdin,
+		Stdout: &stdout,
+		Stderr: &stderr,
+	}
+	cmd := exec.NewOSCommand(orig)
+
+	process, err := cmd.Start()
+	c.Assert(err, jc.ErrorIsNil)
+	_, err = process.Wait()
+	c.Assert(err, jc.ErrorIsNil)
+
+	c.Check(process, gc.NotNil)
+	raw := process.(*exec.Proc).ProcessData.(exec.OSProcessData).Cmd
+	c.Check(raw, gc.Not(gc.Equals), orig)
+	c.Check(orig.Process, gc.IsNil)
+	c.Check(orig.ProcessState, gc.IsNil)
+	c.Check(raw.Process, gc.NotNil)
+	c.Check(raw.ProcessState, gc.NotNil)
+	c.Check(raw.Path, gc.Equals, orig.Path)
+	c.Check(raw.Args, jc.DeepEquals, orig.Args)
+	c.Check(raw.Env, jc.DeepEquals, orig.Env)
+	c.Check(raw.Dir, gc.Equals, orig.Dir)
+	c.Check(raw.Stdin, gc.Equals, orig.Stdin)
+	c.Check(raw.Stdout, gc.Equals, orig.Stdout)
+	c.Check(raw.Stderr, gc.Equals, orig.Stderr)
+	c.Check(stdout.String(), gc.Equals, fmt.Sprintf(`
+%s -xy z
+%s
+SPAM=eggs
+`[1:], path, dirname))
+	c.Check(stderr.String(), gc.Equals, "")
 }
 
 type osProcessSuite struct {

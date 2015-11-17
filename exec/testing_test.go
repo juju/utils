@@ -26,7 +26,7 @@ func (s *BaseSuite) SetUpTest(c *gc.C) {
 	s.StubSuite.SetUpTest(c)
 }
 
-func (s *osExecFunctionalSuite) AddScript(c *gc.C, name, script string) string {
+func (s *BaseSuite) AddScript(c *gc.C, name, script string) string {
 	binDir := c.MkDir()
 	s.PatchEnvPathPrepend(binDir)
 

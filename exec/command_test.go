@@ -11,13 +11,13 @@ import (
 	"github.com/juju/utils/exec"
 )
 
-var _ = gc.Suite(&commandSuite{})
+var _ = gc.Suite(&CommandSuite{})
 
-type commandSuite struct {
+type CommandSuite struct {
 	BaseSuite
 }
 
-func (s *commandSuite) TestNewCommandOkay(c *gc.C) {
+func (s *CommandSuite) TestNewCommandOkay(c *gc.C) {
 	expected := s.NewStubCommand()
 	s.StubExec.ReturnCommand = expected
 
@@ -38,7 +38,7 @@ func (s *commandSuite) TestNewCommandOkay(c *gc.C) {
 	)
 }
 
-func (s *commandSuite) TestNewCommandError(c *gc.C) {
+func (s *CommandSuite) TestNewCommandError(c *gc.C) {
 	expected := s.NewStubCommand()
 	s.StubExec.ReturnCommand = expected
 	failure := s.SetFailure()
@@ -49,7 +49,7 @@ func (s *commandSuite) TestNewCommandError(c *gc.C) {
 	s.Stub.CheckCallNames(c, "Command")
 }
 
-func (s *commandSuite) TestNewCommandInfo(c *gc.C) {
+func (s *CommandSuite) TestNewCommandInfo(c *gc.C) {
 	info := exec.NewCommandInfo("/x/y/z/spam", "--ham", "eggs")
 
 	c.Check(info, jc.DeepEquals, exec.CommandInfo{

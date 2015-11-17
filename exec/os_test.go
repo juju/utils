@@ -18,43 +18,43 @@ import (
 )
 
 var (
-	_ = gc.Suite(&osExecSuite{})
-	_ = gc.Suite(&osExecFunctionalSuite{})
-	_ = gc.Suite(&osCommandSuite{})
-	_ = gc.Suite(&osCommandFunctionalSuite{})
-	_ = gc.Suite(&osProcessSuite{})
-	_ = gc.Suite(&osProcessFunctionalSuite{})
-	_ = gc.Suite(&osProcessStateSuite{})
-	_ = gc.Suite(&osWaitStatusSuite{})
+	_ = gc.Suite(&OSExecSuite{})
+	_ = gc.Suite(&OSExecFunctionalSuite{})
+	_ = gc.Suite(&OSCommandSuite{})
+	_ = gc.Suite(&OSCommandFunctionalSuite{})
+	_ = gc.Suite(&OSProcessSuite{})
+	_ = gc.Suite(&OSProcessFunctionalSuite{})
+	_ = gc.Suite(&OSProcessStateSuite{})
+	_ = gc.Suite(&OSWaitStatusSuite{})
 )
 
-type osExecSuite struct {
+type OSExecSuite struct {
 	BaseSuite
 }
 
-func (s *osExecSuite) TestInterface(c *gc.C) {
+func (s *OSExecSuite) TestInterface(c *gc.C) {
 	e := exec.NewOSExec()
 
 	var t exec.Exec
 	c.Check(e, gc.Implements, &t)
 }
 
-func (s *osExecSuite) TestNewOSExec(c *gc.C) {
+func (s *OSExecSuite) TestNewOSExec(c *gc.C) {
 	e := exec.NewOSExec()
 
 	c.Check(e, gc.NotNil)
 }
 
-func (s *osExecSuite) TestCommand(c *gc.C) {
+func (s *OSExecSuite) TestCommand(c *gc.C) {
 	c.Skip("not implemented")
 	// TODO(ericsnow) Finish!
 }
 
-type osExecFunctionalSuite struct {
+type OSExecFunctionalSuite struct {
 	BaseSuite
 }
 
-func (s *osExecFunctionalSuite) TestCommandOkay(c *gc.C) {
+func (s *OSExecFunctionalSuite) TestCommandOkay(c *gc.C) {
 	resolved := s.AddScript(c, "ls", "/bin/ls $@")
 	args := []string{"ls", "-la", "."}
 	env := []string{"X=y"}
@@ -89,7 +89,7 @@ func (s *osExecFunctionalSuite) TestCommandOkay(c *gc.C) {
 	})
 }
 
-func (s *osExecFunctionalSuite) TestCommandBasic(c *gc.C) {
+func (s *OSExecFunctionalSuite) TestCommandBasic(c *gc.C) {
 	args := []string{"ls"}
 	e := exec.NewOSExec()
 
@@ -112,11 +112,11 @@ func (s *osExecFunctionalSuite) TestCommandBasic(c *gc.C) {
 	c.Check(raw.Env, gc.IsNil)
 }
 
-type osCommandSuite struct {
+type OSCommandSuite struct {
 	BaseSuite
 }
 
-func (s *osCommandSuite) newRaw(in io.Reader, out, err io.Writer) (*osexec.Cmd, exec.CommandInfo) {
+func (s *OSCommandSuite) newRaw(in io.Reader, out, err io.Writer) (*osexec.Cmd, exec.CommandInfo) {
 	args := []string{"spam", "eggs"}
 	env := []string{"X=y"}
 	dir := "/x/y/z"
@@ -146,7 +146,7 @@ func (s *osCommandSuite) newRaw(in io.Reader, out, err io.Writer) (*osexec.Cmd, 
 	return raw, info
 }
 
-func (s *osCommandSuite) TestInfoOkay(c *gc.C) {
+func (s *OSCommandSuite) TestInfoOkay(c *gc.C) {
 	var stdin, stdout, stderr bytes.Buffer
 	raw, expected := s.newRaw(&stdin, &stdout, &stderr)
 	cmd := exec.NewOSCommand(raw)
@@ -156,7 +156,7 @@ func (s *osCommandSuite) TestInfoOkay(c *gc.C) {
 	s.Stub.CheckNoCalls(c)
 }
 
-func (s *osCommandSuite) TestInfoBasic(c *gc.C) {
+func (s *OSCommandSuite) TestInfoBasic(c *gc.C) {
 	cmd := exec.NewOSCommand(&osexec.Cmd{
 		Path: "/bin/ls",
 		Args: []string{"ls"},
@@ -179,7 +179,7 @@ func (s *osCommandSuite) TestInfoBasic(c *gc.C) {
 	c.Check(info.Env, gc.IsNil)
 }
 
-func (s *osCommandSuite) TestSetStdioOkay(c *gc.C) {
+func (s *OSCommandSuite) TestSetStdioOkay(c *gc.C) {
 	var stdin, stdout, stderr bytes.Buffer
 	raw, _ := s.newRaw(nil, nil, nil)
 	expected := *raw // copied
@@ -198,7 +198,7 @@ func (s *osCommandSuite) TestSetStdioOkay(c *gc.C) {
 	s.Stub.CheckNoCalls(c)
 }
 
-func (s *osCommandSuite) TestSetStdioErrorAlreadyStdin(c *gc.C) {
+func (s *OSCommandSuite) TestSetStdioErrorAlreadyStdin(c *gc.C) {
 	var stdin, stdout, stderr bytes.Buffer
 	var existing bytes.Buffer
 	raw, _ := s.newRaw(&existing, nil, nil)
@@ -216,7 +216,7 @@ func (s *osCommandSuite) TestSetStdioErrorAlreadyStdin(c *gc.C) {
 	s.Stub.CheckNoCalls(c)
 }
 
-func (s *osCommandSuite) TestSetStdioErrorAlreadyStdout(c *gc.C) {
+func (s *OSCommandSuite) TestSetStdioErrorAlreadyStdout(c *gc.C) {
 	var stdin, stdout, stderr bytes.Buffer
 	var existing bytes.Buffer
 	raw, _ := s.newRaw(nil, &existing, nil)
@@ -234,7 +234,7 @@ func (s *osCommandSuite) TestSetStdioErrorAlreadyStdout(c *gc.C) {
 	s.Stub.CheckNoCalls(c)
 }
 
-func (s *osCommandSuite) TestSetStdioErrorAlreadyStderr(c *gc.C) {
+func (s *OSCommandSuite) TestSetStdioErrorAlreadyStderr(c *gc.C) {
 	var stdin, stdout, stderr bytes.Buffer
 	var existing bytes.Buffer
 	raw, _ := s.newRaw(nil, nil, &existing)
@@ -252,7 +252,7 @@ func (s *osCommandSuite) TestSetStdioErrorAlreadyStderr(c *gc.C) {
 	s.Stub.CheckNoCalls(c)
 }
 
-func (s *osCommandSuite) TestSetStdioAlreadyStdinOkay(c *gc.C) {
+func (s *OSCommandSuite) TestSetStdioAlreadyStdinOkay(c *gc.C) {
 	var stdin, stdout, stderr bytes.Buffer
 	raw, _ := s.newRaw(&stdin, nil, nil)
 	expected := *raw // copied
@@ -270,7 +270,7 @@ func (s *osCommandSuite) TestSetStdioAlreadyStdinOkay(c *gc.C) {
 	s.Stub.CheckNoCalls(c)
 }
 
-func (s *osCommandSuite) TestSetStdioAlreadyStdoutOkay(c *gc.C) {
+func (s *OSCommandSuite) TestSetStdioAlreadyStdoutOkay(c *gc.C) {
 	var stdin, stdout, stderr bytes.Buffer
 	raw, _ := s.newRaw(nil, &stdout, nil)
 	expected := *raw // copied
@@ -288,7 +288,7 @@ func (s *osCommandSuite) TestSetStdioAlreadyStdoutOkay(c *gc.C) {
 	s.Stub.CheckNoCalls(c)
 }
 
-func (s *osCommandSuite) TestSetStdioAlreadyStderrOkay(c *gc.C) {
+func (s *OSCommandSuite) TestSetStdioAlreadyStderrOkay(c *gc.C) {
 	var stdin, stdout, stderr bytes.Buffer
 	raw, _ := s.newRaw(nil, nil, &stderr)
 	expected := *raw // copied
@@ -308,19 +308,19 @@ func (s *osCommandSuite) TestSetStdioAlreadyStderrOkay(c *gc.C) {
 
 // TODO(ericsnow) Add tests for Std*Pipe()?
 
-func (s *osCommandSuite) TestStartOkay(c *gc.C) {
+func (s *OSCommandSuite) TestStartOkay(c *gc.C) {
 	c.Skip("not implemented")
 	// TODO(ericsnow) Finish!
 	//process, err := cmd.Start()
 }
 
-func (s *osCommandSuite) TestStartError(c *gc.C) {
+func (s *OSCommandSuite) TestStartError(c *gc.C) {
 	c.Skip("not implemented")
 	// TODO(ericsnow) Finish!
 	//_, err := cmd.Start()
 }
 
-func (s *osCommandSuite) TestStartNil(c *gc.C) {
+func (s *OSCommandSuite) TestStartNil(c *gc.C) {
 	c.Skip("not implemented")
 	// TODO(ericsnow) Finish!
 	//_, err := cmd.Start()
@@ -329,11 +329,11 @@ func (s *osCommandSuite) TestStartNil(c *gc.C) {
 	//s.Stub.CheckNoCalls(c)
 }
 
-type osCommandFunctionalSuite struct {
+type OSCommandFunctionalSuite struct {
 	BaseSuite
 }
 
-func (s *osCommandFunctionalSuite) TestStart(c *gc.C) {
+func (s *OSCommandFunctionalSuite) TestStart(c *gc.C) {
 	var stdin, stdout, stderr bytes.Buffer
 	dirname := c.MkDir()
 	path := s.AddScript(c, "dump-call", `#!/bin/bash
@@ -382,11 +382,11 @@ SPAM=eggs
 	c.Check(stderr.String(), gc.Equals, "")
 }
 
-type osProcessSuite struct {
+type OSProcessSuite struct {
 	BaseSuite
 }
 
-func (s *osProcessSuite) TestCommandOkay(c *gc.C) {
+func (s *OSProcessSuite) TestCommandOkay(c *gc.C) {
 	var stdin, stdout, stderr bytes.Buffer
 	raw := &osexec.Cmd{
 		Path:   "spam",
@@ -416,7 +416,7 @@ func (s *osProcessSuite) TestCommandOkay(c *gc.C) {
 	s.Stub.CheckNoCalls(c)
 }
 
-func (s *osProcessSuite) TestStateOkay(c *gc.C) {
+func (s *OSProcessSuite) TestStateOkay(c *gc.C) {
 	raw := &os.ProcessState{}
 	info := &osexec.Cmd{
 		ProcessState: raw,
@@ -429,7 +429,7 @@ func (s *osProcessSuite) TestStateOkay(c *gc.C) {
 	s.Stub.CheckNoCalls(c)
 }
 
-func (s *osProcessSuite) TestPIDOkay(c *gc.C) {
+func (s *OSProcessSuite) TestPIDOkay(c *gc.C) {
 	raw := &osexec.Cmd{
 		Process: &os.Process{
 			Pid: 5,
@@ -442,7 +442,7 @@ func (s *osProcessSuite) TestPIDOkay(c *gc.C) {
 	s.Stub.CheckNoCalls(c)
 }
 
-func (s *osProcessSuite) TestWaitOkay(c *gc.C) {
+func (s *OSProcessSuite) TestWaitOkay(c *gc.C) {
 	raw := &os.ProcessState{}
 	info := &osexec.Cmd{
 		ProcessState: raw,
@@ -457,7 +457,7 @@ func (s *osProcessSuite) TestWaitOkay(c *gc.C) {
 	s.Stub.CheckCallNames(c, "Wait")
 }
 
-func (s *osProcessSuite) TestWaitError(c *gc.C) {
+func (s *OSProcessSuite) TestWaitError(c *gc.C) {
 	raw := &os.ProcessState{}
 	info := &osexec.Cmd{
 		ProcessState: raw,
@@ -473,7 +473,7 @@ func (s *osProcessSuite) TestWaitError(c *gc.C) {
 	s.Stub.CheckCallNames(c, "Wait")
 }
 
-func (s *osProcessSuite) TestKillOkay(c *gc.C) {
+func (s *OSProcessSuite) TestKillOkay(c *gc.C) {
 	var info osexec.Cmd
 	process := exec.NewOSProcess(&info)
 	process.(*exec.Proc).ProcessControl.(*exec.ProcControl).Raw = s.NewStubRawProcessControl()
@@ -484,7 +484,7 @@ func (s *osProcessSuite) TestKillOkay(c *gc.C) {
 	s.Stub.CheckCallNames(c, "Kill")
 }
 
-func (s *osProcessSuite) TestKillError(c *gc.C) {
+func (s *OSProcessSuite) TestKillError(c *gc.C) {
 	var info osexec.Cmd
 	failure := s.SetFailure()
 	process := exec.NewOSProcess(&info)
@@ -496,66 +496,66 @@ func (s *osProcessSuite) TestKillError(c *gc.C) {
 	s.Stub.CheckCallNames(c, "Kill")
 }
 
-type osProcessFunctionalSuite struct {
+type OSProcessFunctionalSuite struct {
 	BaseSuite
 }
 
-func (s *osProcessFunctionalSuite) TestWait(c *gc.C) {
+func (s *OSProcessFunctionalSuite) TestWait(c *gc.C) {
 	c.Skip("not implemented")
 	// TODO(ericsnow) Finish!
 	//process := exec.NewOSProcess(raw)
 }
 
-func (s *osProcessFunctionalSuite) TestKillOkay(c *gc.C) {
+func (s *OSProcessFunctionalSuite) TestKillOkay(c *gc.C) {
 	c.Skip("not implemented")
 	// TODO(ericsnow) Finish!
 	//process := exec.NewOSProcess(raw)
 }
 
-type osProcessStateSuite struct {
+type OSProcessStateSuite struct {
 	BaseSuite
 }
 
-func (s *osProcessStateSuite) TestInterface(c *gc.C) {
+func (s *OSProcessStateSuite) TestInterface(c *gc.C) {
 	var state exec.OSProcessState
 
 	var t exec.ProcessState
 	c.Check(&state, gc.Implements, &t)
 }
 
-func (s *osProcessStateSuite) TestSysOkay(c *gc.C) {
+func (s *OSProcessStateSuite) TestSysOkay(c *gc.C) {
 	state := exec.OSProcessState{new(os.ProcessState)}
 	sys := state.Sys()
 
 	c.Check(sys, gc.NotNil)
 }
 
-func (s *osProcessStateSuite) TestSysNil(c *gc.C) {
+func (s *OSProcessStateSuite) TestSysNil(c *gc.C) {
 	state := exec.OSProcessState{nil}
 	sys := state.Sys()
 
 	c.Check(sys, gc.IsNil)
 }
 
-func (s *osProcessStateSuite) TestSysUsageOkay(c *gc.C) {
+func (s *OSProcessStateSuite) TestSysUsageOkay(c *gc.C) {
 	state := exec.OSProcessState{new(os.ProcessState)}
 	sys := state.SysUsage()
 
 	c.Check(sys, gc.IsNil)
 }
 
-func (s *osProcessStateSuite) TestSysUsageNil(c *gc.C) {
+func (s *OSProcessStateSuite) TestSysUsageNil(c *gc.C) {
 	state := exec.OSProcessState{nil}
 	sys := state.Sys()
 
 	c.Check(sys, gc.IsNil)
 }
 
-type osWaitStatusSuite struct {
+type OSWaitStatusSuite struct {
 	BaseSuite
 }
 
-func (s *osWaitStatusSuite) TestInterface(c *gc.C) {
+func (s *OSWaitStatusSuite) TestInterface(c *gc.C) {
 	var ws exec.OSWaitStatus
 
 	var t exec.WaitStatus

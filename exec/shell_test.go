@@ -11,13 +11,13 @@ import (
 	"github.com/juju/utils/exec"
 )
 
-var _ = gc.Suite(&shellSuite{})
+var _ = gc.Suite(&ShellSuite{})
 
-type shellSuite struct {
+type ShellSuite struct {
 	BaseSuite
 }
 
-func (s *shellSuite) TestRunWithStdinStringOkay(c *gc.C) {
+func (s *ShellSuite) TestRunWithStdinStringOkay(c *gc.C) {
 	var input string
 	cmd := s.newStdioCommand(&input,
 		"abc",
@@ -33,7 +33,7 @@ func (s *shellSuite) TestRunWithStdinStringOkay(c *gc.C) {
 	s.Stub.CheckCallNames(c, "SetStdio", "Start", "Wait")
 }
 
-func (s *shellSuite) TestRunWithStdinStringError(c *gc.C) {
+func (s *ShellSuite) TestRunWithStdinStringError(c *gc.C) {
 	var input string
 	cmd := s.newStdioCommand(&input,
 		"abc",
@@ -51,7 +51,7 @@ func (s *shellSuite) TestRunWithStdinStringError(c *gc.C) {
 	s.Stub.CheckCallNames(c, "SetStdio", "Start", "Wait")
 }
 
-func (s *shellSuite) TestRunBashScript(c *gc.C) {
+func (s *ShellSuite) TestRunBashScript(c *gc.C) {
 	e := s.NewStubExec()
 	var input string
 	e.ReturnCommand = s.newStdioCommand(&input,
@@ -67,7 +67,7 @@ func (s *shellSuite) TestRunBashScript(c *gc.C) {
 	s.Stub.CheckCallNames(c, "Command", "SetStdio", "Start", "Wait")
 }
 
-func (s *shellSuite) TestBashCommand(c *gc.C) {
+func (s *ShellSuite) TestBashCommand(c *gc.C) {
 	e := s.NewStubExec()
 	expected := s.NewStubCommand()
 	e.ReturnCommand = expected

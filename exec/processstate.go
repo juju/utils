@@ -3,10 +3,6 @@
 
 package exec
 
-import (
-	"time"
-)
-
 // ProcessState describes the state of a started command.
 //
 // See os.ProcessState.
@@ -23,17 +19,7 @@ type ProcessState interface {
 	// Sys return system-dependent exit information about the process.
 	Sys() WaitStatus
 
-	// SysUsage returns system-dependent resource usage information
-	// about the exited process.
-	SysUsage() Rusage
-
-	// SystemTime returns the system CPU time of the exited process
-	// and its children.
-	SystemTime() time.Duration
-
-	// UserTime returns the user CPU time of the exited process
-	// and its children.
-	UserTime() time.Duration
+	// TODO(ericsnow) Add SysUsage, SystemTime, and UserTime methods?
 }
 
 // WaitStatus exposes system-dependent exit information about a process.

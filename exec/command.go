@@ -42,18 +42,6 @@ type Cmd struct {
 	data CommandInfo
 }
 
-func newCmd(info CommandInfo, rawStdio RawStdio) *Cmd {
-	cmd := &Cmd{
-		data: info,
-		// Starter is not set.
-	}
-	cmd.CmdStdio = CmdStdio{
-		Raw:   rawStdio,
-		Stdio: &cmd.data.Stdio,
-	}
-	return cmd
-}
-
 // Info implements Command.
 func (c Cmd) Info() CommandInfo {
 	return c.data

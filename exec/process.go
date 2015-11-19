@@ -3,12 +3,6 @@
 
 package exec
 
-import (
-	"github.com/juju/errors"
-
-	"github.com/juju/utils"
-)
-
 // Process supports interacting with a running command.
 //
 // See os.Process.
@@ -52,23 +46,6 @@ func (p Proc) Command() CommandInfo {
 	return p.Info
 }
 
-// TODO(ericsnow) Expose this as utils.Waiter?
-
-// RawProcessControl exposes low-level process control.
-type RawProcessControl interface {
-	Wait() error
-}
-
-// ProcControl is a ProcessControl implementation that
-// wraps a RawProcessControl.
-type ProcControl struct {
-	// Data holds the proc's data.
-	Data ProcessData
-
-	// Raw holds the proc's functionality.
-	Raw RawProcessControl
-}
-
 // NewProcess returns a new Proc that wraps the provided data
 // and RawProcessControl.
 func NewProcess(info CommandInfo, data ProcessData, raw RawProcessControl) *Proc {
@@ -81,25 +58,4 @@ func NewProcess(info CommandInfo, data ProcessData, raw RawProcessControl) *Proc
 		ProcessControl: control,
 		Info:           info,
 	}
-}
-
-// Wait implements Process.
-func (p ProcControl) Wait() (ProcessState, error) {
-	err := p.Raw.Wait()
-	state, stErr := p.Data.State()
-	if err != nil {
-		return state, errors.Trace(err)
-	}
-	if stErr != nil {
-		return nil, errors.Trace(err)
-	}
-	return state, nil
-}
-
-// Kill implements Process.
-func (p ProcControl) Kill() error {
-	if err := utils.KillIfSupported(p.Raw); err != nil {
-		return errors.Trace(err)
-	}
-	return nil
 }

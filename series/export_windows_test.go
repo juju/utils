@@ -6,5 +6,6 @@ package series
 
 var (
 	CurrentVersionKey = &currentVersionKey
+	IsNanoKey         = &isNanoKey
 	ReadSeries        = readSeries
 )

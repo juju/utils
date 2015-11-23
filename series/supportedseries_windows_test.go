@@ -45,6 +45,8 @@ func (s *supportedSeriesWindowsSuite) TestSupportedSeries(c *gc.C) {
 		"win2012hv",
 		"win2012hvr2",
 		"win2012r2",
+		"win2016",
+		"win2016nano",
 		"win7",
 		"win8",
 		"win81",

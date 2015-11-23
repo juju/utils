@@ -67,6 +67,8 @@ var seriesVersions = map[string]string{
 	"win2012hv":   "win2012hv",
 	"win2012r2":   "win2012r2",
 	"win2012":     "win2012",
+	"win2016":     "win2016",
+	"win2016nano": "win2016nano",
 	"win7":        "win7",
 	"win8":        "win8",
 	"win81":       "win81",
@@ -106,6 +108,7 @@ var windowsVersionMatchOrder = []string{
 	"Hyper-V Server 2012",
 	"Windows Server 2012 R2",
 	"Windows Server 2012",
+	"Windows Server 2016",
 	"Windows Storage Server 2012 R2",
 	"Windows Storage Server 2012",
 	"Windows 7",
@@ -121,12 +124,38 @@ var windowsVersions = map[string]string{
 	"Hyper-V Server 2012":            "win2012hv",
 	"Windows Server 2012 R2":         "win2012r2",
 	"Windows Server 2012":            "win2012",
+	"Windows Server 2016":            "win2016",
 	"Windows Storage Server 2012 R2": "win2012r2",
 	"Windows Storage Server 2012":    "win2012",
 	"Windows 7":                      "win7",
 	"Windows 8.1":                    "win81",
 	"Windows 8":                      "win8",
 	"Windows 10":                     "win10",
+}
+
+// windowsNanoVersions is a mapping from the product name
+// stored in registry to a juju defined nano-series
+// On the nano version so far the product name actually
+// is identical to the correspondent main windows version
+// and the information about it being nano is stored in
+// a different place.
+var windowsNanoVersions = map[string]string{
+	"Windows Server 2016": "win2016nano",
+}
+
+// IsWindowsNano tells us whether the provided series is a
+// nano series. It may seem futile at this point, but more
+// nano series will come up with time.
+// This is here and not in a windows specific package
+// because we might want to take decisions dependant on
+// whether we have a nano series or not in more general code.
+func IsWindowsNano(series string) bool {
+	for _, val := range windowsNanoVersions {
+		if val == series {
+			return true
+		}
+	}
+	return false
 }
 
 // GetOSFromSeries will return the operating system based
@@ -145,6 +174,11 @@ func GetOSFromSeries(series string) (os.OSType, error) {
 		return os.Arch, nil
 	}
 	for _, val := range windowsVersions {
+		if val == series {
+			return os.Windows, nil
+		}
+	}
+	for _, val := range windowsNanoVersions {
 		if val == series {
 			return os.Windows, nil
 		}

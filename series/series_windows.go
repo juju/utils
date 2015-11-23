@@ -5,6 +5,7 @@
 package series
 
 import (
+	"os"
 	"strings"
 
 	"github.com/gabriel-samfira/sys/windows/registry"
@@ -24,12 +25,12 @@ var (
 func getVersionFromRegistry() (string, error) {
 	k, err := registry.OpenKey(registry.LOCAL_MACHINE, currentVersionKey, registry.QUERY_VALUE)
 	if err != nil {
-		return "", err
+		return "", errors.Trace(err)
 	}
 	defer k.Close()
 	s, _, err := k.GetStringValue("ProductName")
 	if err != nil {
-		return "", err
+		return "", errors.Trace(err)
 	}
 
 	return s, nil
@@ -38,14 +39,17 @@ func getVersionFromRegistry() (string, error) {
 func readSeries() (string, error) {
 	ver, err := getVersionFromRegistry()
 	if err != nil {
-		return "unknown", err
+		return "unknown", errors.Trace(err)
 	}
 
-	var lookAt map[string]string
-	if isWindowsNano() {
+	var lookAt = windowsVersions
+
+	isNano, err := isWindowsNano()
+	if err != nil && os.IsNotExist(err) {
+		return "unknown", errors.Trace(err)
+	}
+	if isNano {
 		lookAt = windowsNanoVersions
-	} else {
-		lookAt = windowsVersions
 	}
 
 	for _, value := range windowsVersionMatchOrder {
@@ -58,18 +62,16 @@ func readSeries() (string, error) {
 	return "unknown", errors.Errorf("unknown series %q", ver)
 }
 
-func isWindowsNano() bool {
+func isWindowsNano() (bool, error) {
 	k, err := registry.OpenKey(registry.LOCAL_MACHINE, isNanoKey, registry.QUERY_VALUE)
 	if err != nil {
-		return false
-
+		return false, errors.Trace(err)
 	}
 	defer k.Close()
 
 	s, _, err := k.GetIntegerValue("NanoServer")
 	if err != nil {
-		return false
-
+		return false, errors.Trace(err)
 	}
-	return s == 1
+	return s == 1, nil
 }

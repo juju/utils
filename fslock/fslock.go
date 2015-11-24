@@ -122,6 +122,7 @@ func NewLock(lockDir, name string, cfg LockConfig) (*Lock, error) {
 	if err := os.RemoveAll(lock.aliveFile(lock.PID)); err != nil {
 		return nil, err
 	}
+	lock.stopWritingAliveFile = make(chan struct{})
 	return lock, nil
 }
 
@@ -157,8 +158,6 @@ func (lock *Lock) isAlive(PID int) bool {
 // createAliveFile kicks off a gorouteine that creates a proof of life file
 // and keeps its timestamp current.
 func (lock *Lock) createAliveFile(dir string) {
-	lock.stopWritingAliveFile = make(chan struct{})
-
 	go func() {
 		aliveFile := lock.aliveFile(lock.PID)
 		for {

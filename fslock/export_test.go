@@ -12,3 +12,7 @@ func IsAlive(lock *Lock, PID int) bool {
 func DeclareDead(lock *Lock) {
 	lock.declareDead()
 }
+
+func AliveFile(lock *Lock) string {
+	return lock.aliveFile(lock.PID)
+}

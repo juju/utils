@@ -71,15 +71,16 @@ func Defaults() LockConfig {
 
 // Lock is a file system lock
 type Lock struct {
-	name                 string
-	parent               string
-	clock                clock.Clock
-	nonce                string
-	PID                  int
-	stopWritingAliveFile chan struct{}
-	waitDelay            time.Duration
-	lividityTimeout      time.Duration
-	readRetryTimeout     time.Duration
+	name                  string
+	parent                string
+	clock                 clock.Clock
+	nonce                 string
+	PID                   int
+	stopWritingAliveFile  chan struct{}
+	startWritingAliveFile chan struct{}
+	waitDelay             time.Duration
+	lividityTimeout       time.Duration
+	readRetryTimeout      time.Duration
 }
 
 type onDisk struct {
@@ -103,15 +104,16 @@ func NewLock(lockDir, name string, cfg LockConfig) (*Lock, error) {
 		return nil, err
 	}
 	lock := &Lock{
-		name:                 name,
-		parent:               lockDir,
-		clock:                cfg.Clock,
-		nonce:                uuid.String(),
-		PID:                  os.Getpid(),
-		stopWritingAliveFile: make(chan struct{}),
-		waitDelay:            cfg.WaitDelay,
-		lividityTimeout:      cfg.LividityTimeout,
-		readRetryTimeout:     cfg.ReadRetryTimeout,
+		name:                  name,
+		parent:                lockDir,
+		clock:                 cfg.Clock,
+		nonce:                 uuid.String(),
+		PID:                   os.Getpid(),
+		stopWritingAliveFile:  make(chan struct{}, 1),
+		startWritingAliveFile: make(chan struct{}, 1),
+		waitDelay:             cfg.WaitDelay,
+		lividityTimeout:       cfg.LividityTimeout,
+		readRetryTimeout:      cfg.ReadRetryTimeout,
 	}
 	// Ensure the parent exists.
 	if err := os.MkdirAll(lock.parent, 0755); err != nil {
@@ -122,7 +124,77 @@ func NewLock(lockDir, name string, cfg LockConfig) (*Lock, error) {
 	if err := os.RemoveAll(lock.aliveFile(lock.PID)); err != nil {
 		return nil, err
 	}
+
 	return lock, nil
+}
+
+// keepAlive writes an alive file until a stop is signalled by
+// stopWritingAliveFile. If the alive file can't be created
+// or updated, even after multiple retries, the function will exit.
+func keepAlive(lock *Lock) {
+	/* We assume this usage:
+
+	select {
+	case lock.startWritingAliveFile <- struct{}{}:
+		go keepAlive(lock)
+	default:
+	}
+
+	This ensures that only one goroutine is started because
+	lock.startWritingAliveFile is only emptied when this function
+	(and thus the goroutine it is started in) exits.
+	*/
+	defer func() {
+		select {
+		case <-lock.startWritingAliveFile:
+		default:
+		}
+	}()
+
+	// try5times runs the passed function five times or until it returns
+	// without error. After each failed attempt pauses 50ms. Used here
+	// for file system operations that sometimes fail.
+	try5times := func(target func() error) (err error) {
+		for attempt := 0; attempt < 5; attempt++ {
+			err = target()
+			if err == nil {
+				break
+			}
+			time.Sleep(50 * time.Millisecond)
+		}
+		logger.Debugf("Failed to write/update lock alive file: (%s)", err)
+		return err
+	}
+
+	aliveFile := lock.aliveFile(lock.PID)
+
+	// Try the initial alive file creation up to five times. It has been seen
+	// to fail because this point in the code is reached before the lock directory
+	// has finished being created.
+	err := try5times(func() error {
+		return ioutil.WriteFile(aliveFile, []byte{}, 644)
+	})
+	if err != nil {
+		return
+	}
+
+	for {
+		select {
+		case <-time.After(5 * lock.waitDelay):
+			now := time.Now()
+			// Touch the alive file with the current time. Hasn't been seen
+			// to fail in tests, but seems worth putting through try5times
+			// just in case.
+			err := try5times(func() error {
+				return os.Chtimes(aliveFile, now, now)
+			})
+			if err != nil {
+				return
+			}
+		case <-lock.stopWritingAliveFile:
+			return
+		}
+	}
 }
 
 func (lock *Lock) lockDir() string {
@@ -157,49 +229,18 @@ func (lock *Lock) isAlive(PID int) bool {
 // createAliveFile kicks off a gorouteine that creates a proof of life file
 // and keeps its timestamp current.
 func (lock *Lock) createAliveFile(dir string) {
-	lock.stopWritingAliveFile = make(chan struct{})
-
-	go func() {
-		aliveFile := lock.aliveFile(lock.PID)
-		for {
-			select {
-			case <-time.After(5 * lock.waitDelay):
-				if lock.IsLockHeld() {
-					if _, err := os.Stat(aliveFile); os.IsNotExist(err) {
-						ioutil.WriteFile(aliveFile, []byte{}, 644)
-					} else {
-						now := time.Now()
-						os.Chtimes(aliveFile, now, now)
-					}
-				}
-			case <-lock.stopWritingAliveFile:
-				return
-			}
-		}
-	}()
+	select {
+	case lock.startWritingAliveFile <- struct{}{}:
+		go keepAlive(lock)
+	default:
+	}
 }
 
 func (lock *Lock) declareDead() {
 	select {
-	case <-lock.stopWritingAliveFile:
-	// Channel is closed, unless our logic went really wrong
+	case lock.stopWritingAliveFile <- struct{}{}:
+		break
 	default:
-		// Close the channel to indicate that we should stop writing the alive file
-		close(lock.stopWritingAliveFile)
-	}
-}
-
-func (lock *Lock) updateProcessAliveFile() {
-	ioutil.WriteFile(lock.aliveFile(lock.PID), []byte{}, 644)
-	for {
-		select {
-		case <-time.After(5 * time.Second):
-			if lock.IsLockHeld() {
-				ioutil.WriteFile(lock.aliveFile(lock.PID), []byte{}, 644)
-			}
-		case <-lock.stopWritingAliveFile:
-			return
-		}
 	}
 }
 

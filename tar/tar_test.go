@@ -285,3 +285,24 @@ func (t *TarSuite) TestFindFileNotFound(c *gc.C) {
 
 	c.Check(err, gc.ErrorMatches, "does_not_exist not found")
 }
+
+func (t *TarSuite) TestUntarFilesHeadersIgnored(c *gc.C) {
+	var buf bytes.Buffer
+	w := tar.NewWriter(&buf)
+	err := w.WriteHeader(&tar.Header{
+		Name:     "pax_global_header",
+		Typeflag: tar.TypeXGlobalHeader,
+	})
+	c.Assert(err, gc.IsNil)
+	err = w.Flush()
+	c.Assert(err, gc.IsNil)
+
+	err = UntarFiles(&buf, t.cwd)
+	err = filepath.Walk(t.cwd, func(path string, finfo os.FileInfo, err error) error {
+		if path != t.cwd {
+			return fmt.Errorf("unexpected file: %v", path)
+		}
+		return err
+	})
+	c.Assert(err, gc.IsNil)
+}

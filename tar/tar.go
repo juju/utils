@@ -167,22 +167,21 @@ func UntarFiles(tarFile io.Reader, outputFolder string) error {
 			return fmt.Errorf("failed while reading tar header: %v", err)
 		}
 		fullPath := filepath.Join(outputFolder, hdr.Name)
-		if hdr.Typeflag == tar.TypeDir {
+		switch hdr.Typeflag {
+		case tar.TypeDir:
 			if err = os.MkdirAll(fullPath, os.FileMode(hdr.Mode)); err != nil {
 				return fmt.Errorf("cannot extract directory %q: %v", fullPath, err)
 			}
-			continue
-		}
-		if hdr.Typeflag == tar.TypeSymlink {
+		case tar.TypeSymlink:
 			if err = symlink.New(hdr.Linkname, fullPath); err != nil {
 				return fmt.Errorf("cannot extract symlink %q to %q: %v", hdr.Linkname, fullPath, err)
 			}
 			continue
+		case tar.TypeReg, tar.TypeRegA:
+			if err = createAndFill(fullPath, hdr.Mode, tr); err != nil {
+				return fmt.Errorf("cannot extract file %q: %v", fullPath, err)
+			}
 		}
-		if err = createAndFill(fullPath, hdr.Mode, tr); err != nil {
-			return fmt.Errorf("cannot extract file %q: %v", fullPath, err)
-		}
-
 	}
 	return nil
 }

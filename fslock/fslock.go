@@ -201,6 +201,10 @@ func (lock *Lock) declareDead() {
 	case lock.stopWritingAliveFile <- struct{}{}:
 	default:
 	}
+	select {
+	case <-lock.startWritingAliveFile:
+	default:
+	}
 }
 
 // clean reads the lock and checks that it is valid. If the lock points to a running

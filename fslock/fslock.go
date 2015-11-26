@@ -128,75 +128,6 @@ func NewLock(lockDir, name string, cfg LockConfig) (*Lock, error) {
 	return lock, nil
 }
 
-// keepAlive writes an alive file until a stop is signalled by
-// stopWritingAliveFile. If the alive file can't be created
-// or updated, even after multiple retries, the function will exit.
-func keepAlive(lock *Lock) {
-	/* We assume this usage:
-
-	select {
-	case lock.startWritingAliveFile <- struct{}{}:
-		go keepAlive(lock)
-	default:
-	}
-
-	This ensures that only one goroutine is started because
-	lock.startWritingAliveFile is only emptied when this function
-	(and thus the goroutine it is started in) exits.
-	*/
-	defer func() {
-		select {
-		case <-lock.startWritingAliveFile:
-		default:
-		}
-	}()
-
-	// try5times runs the passed function five times or until it returns
-	// without error. After each failed attempt pauses 50ms. Used here
-	// for file system operations that sometimes fail.
-	try5times := func(target func() error) (err error) {
-		for attempt := 0; attempt < 5; attempt++ {
-			err = target()
-			if err == nil {
-				break
-			}
-			time.Sleep(50 * time.Millisecond)
-		}
-		logger.Debugf("Failed to write/update lock alive file: (%s)", err)
-		return err
-	}
-
-	aliveFile := lock.aliveFile(lock.PID)
-
-	// Try the initial alive file creation up to five times. It has been seen
-	// to fail because this point in the code is reached before the lock directory
-	// has finished being created.
-	err := try5times(func() error {
-		return ioutil.WriteFile(aliveFile, []byte{}, 644)
-	})
-	if err != nil {
-		return
-	}
-
-	for {
-		select {
-		case <-time.After(5 * lock.waitDelay):
-			now := time.Now()
-			// Touch the alive file with the current time. Hasn't been seen
-			// to fail in tests, but seems worth putting through try5times
-			// just in case.
-			err := try5times(func() error {
-				return os.Chtimes(aliveFile, now, now)
-			})
-			if err != nil {
-				return
-			}
-		case <-lock.stopWritingAliveFile:
-			return
-		}
-	}
-}
-
 func (lock *Lock) lockDir() string {
 	return path.Join(lock.parent, lock.name)
 }
@@ -228,18 +159,46 @@ func (lock *Lock) isAlive(PID int) bool {
 
 // createAliveFile kicks off a gorouteine that creates a proof of life file
 // and keeps its timestamp current.
-func (lock *Lock) createAliveFile(dir string) {
-	select {
-	case lock.startWritingAliveFile <- struct{}{}:
-		go keepAlive(lock)
-	default:
-	}
+func (lock *Lock) createAliveFile() {
+	go func() {
+		select {
+		case lock.startWritingAliveFile <- struct{}{}:
+		default:
+			return
+		}
+
+		// This ensures that only one goroutine is started because
+		// lock.startWritingAliveFile is only emptied when this function
+		// (and thus the goroutine it is started in) exits.
+		defer func() {
+			select {
+			case <-lock.startWritingAliveFile:
+			default:
+			}
+		}()
+
+		aliveFile := lock.aliveFile(lock.PID)
+		if err := ioutil.WriteFile(aliveFile, []byte{}, 644); err != nil {
+			return
+		}
+
+		for {
+			select {
+			case <-time.After(5 * lock.waitDelay):
+				now := time.Now()
+				if err := os.Chtimes(aliveFile, now, now); err != nil {
+					return
+				}
+			case <-lock.stopWritingAliveFile:
+				return
+			}
+		}
+	}()
 }
 
 func (lock *Lock) declareDead() {
 	select {
 	case lock.stopWritingAliveFile <- struct{}{}:
-		break
 	default:
 	}
 }
@@ -285,7 +244,6 @@ func (lock *Lock) acquire(message string) (bool, error) {
 	if err != nil {
 		return false, err // this shouldn't really fail...
 	}
-	lock.createAliveFile(tempDirName)
 
 	// write lock into the temp dir
 	l := onDisk{
@@ -310,6 +268,7 @@ func (lock *Lock) acquire(message string) (bool, error) {
 		return false, nil
 	}
 	// We now have the lock.
+	lock.createAliveFile()
 	return true, nil
 }
 

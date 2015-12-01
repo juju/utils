@@ -17,6 +17,7 @@ import (
 	"path"
 	"regexp"
 	"runtime"
+	"sync"
 	"time"
 
 	"github.com/juju/errors"
@@ -71,16 +72,16 @@ func Defaults() LockConfig {
 
 // Lock is a file system lock
 type Lock struct {
-	name                  string
-	parent                string
-	clock                 clock.Clock
-	nonce                 string
-	PID                   int
-	stopWritingAliveFile  chan struct{}
-	startWritingAliveFile chan struct{}
-	waitDelay             time.Duration
-	lividityTimeout       time.Duration
-	readRetryTimeout      time.Duration
+	name                   string
+	parent                 string
+	clock                  clock.Clock
+	nonce                  string
+	PID                    int
+	stopWritingAliveFile   chan struct{}
+	createAliveFileRunning sync.WaitGroup
+	waitDelay              time.Duration
+	lividityTimeout        time.Duration
+	readRetryTimeout       time.Duration
 }
 
 type onDisk struct {
@@ -100,20 +101,16 @@ func NewLock(lockDir, name string, cfg LockConfig) (*Lock, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err != nil {
-		return nil, err
-	}
 	lock := &Lock{
-		name:                  name,
-		parent:                lockDir,
-		clock:                 cfg.Clock,
-		nonce:                 uuid.String(),
-		PID:                   os.Getpid(),
-		stopWritingAliveFile:  make(chan struct{}, 1),
-		startWritingAliveFile: make(chan struct{}, 1),
-		waitDelay:             cfg.WaitDelay,
-		lividityTimeout:       cfg.LividityTimeout,
-		readRetryTimeout:      cfg.ReadRetryTimeout,
+		name:                 name,
+		parent:               lockDir,
+		clock:                cfg.Clock,
+		nonce:                uuid.String(),
+		PID:                  os.Getpid(),
+		stopWritingAliveFile: make(chan struct{}, 1),
+		waitDelay:            cfg.WaitDelay,
+		lividityTimeout:      cfg.LividityTimeout,
+		readRetryTimeout:     cfg.ReadRetryTimeout,
 	}
 	// Ensure the parent exists.
 	if err := os.MkdirAll(lock.parent, 0755); err != nil {
@@ -160,22 +157,9 @@ func (lock *Lock) isAlive(PID int) bool {
 // createAliveFile kicks off a gorouteine that creates a proof of life file
 // and keeps its timestamp current.
 func (lock *Lock) createAliveFile() {
+	lock.createAliveFileRunning.Add(1)
 	go func() {
-		select {
-		case lock.startWritingAliveFile <- struct{}{}:
-		default:
-			return
-		}
-
-		// This ensures that only one goroutine is started because
-		// lock.startWritingAliveFile is only emptied when this function
-		// (and thus the goroutine it is started in) exits.
-		defer func() {
-			select {
-			case <-lock.startWritingAliveFile:
-			default:
-			}
-		}()
+		defer lock.createAliveFileRunning.Done()
 
 		aliveFile := lock.aliveFile(lock.PID)
 		if err := ioutil.WriteFile(aliveFile, []byte{}, 644); err != nil {
@@ -201,10 +185,7 @@ func (lock *Lock) declareDead() {
 	case lock.stopWritingAliveFile <- struct{}{}:
 	default:
 	}
-	select {
-	case <-lock.startWritingAliveFile:
-	default:
-	}
+	lock.createAliveFileRunning.Wait()
 }
 
 // clean reads the lock and checks that it is valid. If the lock points to a running

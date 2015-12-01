@@ -293,7 +293,7 @@ func (s *fslockSuite) TestInitialMessageWhenLocking(c *gc.C) {
 
 func (s *fslockSuite) TestStress(c *gc.C) {
 	const lockAttempts = 200
-	const concurrentLocks = 10
+	const concurrentLocks = 40
 
 	var counter = new(int64)
 	// Use atomics to update lockState to make sure the lock isn't held by

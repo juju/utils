@@ -82,6 +82,7 @@ type Lock struct {
 	waitDelay              time.Duration
 	lividityTimeout        time.Duration
 	readRetryTimeout       time.Duration
+	sanityCheck            chan struct{}
 }
 
 type onDisk struct {
@@ -111,6 +112,7 @@ func NewLock(lockDir, name string, cfg LockConfig) (*Lock, error) {
 		waitDelay:            cfg.WaitDelay,
 		lividityTimeout:      cfg.LividityTimeout,
 		readRetryTimeout:     cfg.ReadRetryTimeout,
+		sanityCheck:          make(chan struct{}),
 	}
 	// Ensure the parent exists.
 	if err := os.MkdirAll(lock.parent, 0755); err != nil {
@@ -158,6 +160,7 @@ func (lock *Lock) isAlive(PID int) bool {
 // and keeps its timestamp current.
 func (lock *Lock) createAliveFile() {
 	lock.createAliveFileRunning.Add(1)
+	close(lock.sanityCheck)
 	go func() {
 		defer lock.createAliveFileRunning.Done()
 
@@ -186,6 +189,7 @@ func (lock *Lock) declareDead() {
 	default:
 	}
 	lock.createAliveFileRunning.Wait()
+	lock.sanityCheck = make(chan struct{}) // refresh sanity check
 }
 
 // clean reads the lock and checks that it is valid. If the lock points to a running

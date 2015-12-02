@@ -6,7 +6,6 @@ package fslock_test
 import (
 	"fmt"
 	"io/ioutil"
-	"math/rand"
 	"os"
 	"path"
 	"runtime"
@@ -293,7 +292,7 @@ func (s *fslockSuite) TestInitialMessageWhenLocking(c *gc.C) {
 
 func (s *fslockSuite) TestStress(c *gc.C) {
 	const lockAttempts = 200
-	const concurrentLocks = 40
+	const concurrentLocks = 10
 
 	var counter = new(int64)
 	// Use atomics to update lockState to make sure the lock isn't held by
@@ -393,68 +392,27 @@ func (s *fslockSuite) TestCleanNoMatchingProcess(c *gc.C) {
 	assertCanLock(c, lock)
 }
 
-func checkAliveFile(aliveFile string, expectAlive bool) (tests int, dead bool) {
-	var misses int
-	for check := 0; check < 200; check++ {
-		runtime.Gosched()
-		time.Sleep(time.Duration(rand.Intn(100)) * time.Millisecond)
-		aliveInfo, err := os.Lstat(aliveFile)
-		if err != nil {
-			// Typically this is file not existing. Whatever the reason, just retry
-			misses++
-			if misses > 5 && expectAlive == false {
-				// Alive file isn't going to arrive. Stop testing.
-				break
-			}
-			continue
-		}
-		tests++
-		if time.Now().Sub(aliveInfo.ModTime()) > 500*time.Millisecond {
-			// Alive file is too old - lock is dead
-			dead = true
-			break
-		}
-		if tests > 5 && expectAlive {
-			// Alive file is being kept up to date. Stop testing.
-			break
-		}
-	}
-
-	return tests, dead
-}
-
 // TestProofOfLife checks that the alive file doesn't get older than 500ms. Normally
 // it can get older, but we crank up the refresh interval for testing.
 func (s *fslockSuite) TestProofOfLife(c *gc.C) {
 	s.lockConfig.WaitDelay = 20 * time.Millisecond
-	lock, _, _ := newLockedLock(c, s.lockConfig)
-	aliveFile := fslock.AliveFile(lock)
+	lock, _, dir := newLockedLock(c, s.lockConfig)
+	aliveFile := path.Join(dir, "testing", fmt.Sprintf("alive.%d", lock.PID))
 
-	tests, dead := checkAliveFile(aliveFile, true)
+	tests := 0
+	for check := 0; check < 20; check++ {
+		aliveInfo, err := os.Lstat(aliveFile)
+		if err != nil {
+			// Typically this is file not existing. Whatever the reason, just retry
+			time.Sleep(50 * time.Millisecond)
+			continue
+		}
+
+		c.Assert(time.Now().Sub(aliveInfo.ModTime()), jc.DurationLessThan, 500*time.Millisecond)
+		tests++
+		time.Sleep(50 * time.Millisecond)
+	}
+
 	// Make sure we actually spotted an alive file and checked its time.
-	c.Assert(tests, jc.GreaterThan, 1)
-	c.Assert(dead, jc.IsFalse)
-
-	// Unlock the lock - the alive file should stop being updated
-	lock.Unlock()
-	time.Sleep(500 * time.Millisecond)
-
-	tests, dead = checkAliveFile(aliveFile, false)
-	c.Assert(tests, gc.Equals, 0)
-	c.Assert(dead, jc.IsFalse)
-
-	// re-lock - alive file should start being updated again
-	err := lock.Lock("testing")
-	c.Assert(err, gc.IsNil)
-	tests, dead = checkAliveFile(aliveFile, true)
-	c.Assert(dead, jc.IsFalse)
-	c.Assert(tests, jc.GreaterThan, 1)
-
-	// Make the lock stale
-	fslock.DeclareDead(lock)
-	time.Sleep(500 * time.Millisecond)
-
-	tests, dead = checkAliveFile(aliveFile, false)
-	c.Assert(tests, gc.Equals, 1)
-	c.Assert(dead, jc.IsTrue)
+	c.Assert(tests > 1, gc.Equals, true)
 }

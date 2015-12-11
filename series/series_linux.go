@@ -25,7 +25,7 @@ func readSeries() (string, error) {
 	if err != nil {
 		return "unknown", err
 	}
-	updateSeriesVersions()
+	updateSeriesVersionsOnce()
 	return seriesFromOSRelease(values)
 }
 
@@ -63,11 +63,8 @@ func ReleaseVersion() string {
 	return release["VERSION_ID"]
 }
 
-func updateLocalSeriesVersions() {
-	err := updateDistroInfo()
-	if err != nil {
-		logger.Warningf("failed to update distro info: %v", err)
-	}
+func updateLocalSeriesVersions() error {
+	return updateDistroInfo()
 }
 
 var distroInfo = "/usr/share/distro-info/ubuntu.csv"

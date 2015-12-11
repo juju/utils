@@ -41,6 +41,33 @@ func (s *supportedSeriesSuite) TestSupportedSeries(c *gc.C) {
 	c.Assert(series, gc.DeepEquals, expectedSeries)
 }
 
+func (s *supportedSeriesSuite) TestUpdateSeriesVersions(c *gc.C) {
+	d := c.MkDir()
+	filename := filepath.Join(d, "ubuntu.csv")
+	err := ioutil.WriteFile(filename, []byte(distInfoData), 0644)
+	c.Assert(err, jc.ErrorIsNil)
+	s.PatchValue(series.DistroInfo, filename)
+
+	expectedSeries := []string{"precise", "quantal", "raring", "saucy"}
+	checkSeries := func() {
+		series := series.SupportedSeries()
+		sort.Strings(series)
+		c.Assert(series, gc.DeepEquals, expectedSeries)
+	}
+	checkSeries()
+
+	// Updating the file does not normally trigger an update;
+	// we only refresh automatically one time. After that, we
+	// must explicitly refresh.
+	err = ioutil.WriteFile(filename, []byte(distInfoData2), 0644)
+	c.Assert(err, jc.ErrorIsNil)
+	checkSeries()
+
+	expectedSeries = append(expectedSeries, "trusty")
+	series.UpdateSeriesVersions()
+	checkSeries()
+}
+
 const distInfoData = `version,codename,series,created,release,eol,eol-server
 4.10,Warty Warthog,warty,2004-03-05,2004-10-20,2006-04-30
 5.04,Hoary Hedgehog,hoary,2004-10-20,2005-04-08,2006-10-31
@@ -61,4 +88,8 @@ const distInfoData = `version,codename,series,created,release,eol,eol-server
 12.10,Quantal Quetzal,quantal,2012-04-26,2012-10-18,2014-04-18
 13.04,Raring Ringtail,raring,2012-10-18,2013-04-25,2014-01-27
 13.10,Saucy Salamander,saucy,2013-04-25,2013-10-17,2014-07-17
+`
+
+const distInfoData2 = distInfoData + `
+14.04 LTS,Trusty Tahr,trusty,2013-10-17,2014-04-17,2019-04-17
 `

@@ -12,5 +12,6 @@ func ReleaseVersion() string {
 	return ""
 }
 
-func updateLocalSeriesVersions() {
+func updateLocalSeriesVersions() error {
+	return nil
 }

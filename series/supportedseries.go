@@ -205,7 +205,7 @@ func SeriesVersion(series string) (string, error) {
 	if vers, ok := seriesVersions[series]; ok {
 		return vers, nil
 	}
-	updateSeriesVersions()
+	updateSeriesVersionsOnce()
 	if vers, ok := seriesVersions[series]; ok {
 		return vers, nil
 	}
@@ -223,7 +223,7 @@ func VersionSeries(version string) (string, error) {
 	if series, ok := versionSeries[version]; ok {
 		return series, nil
 	}
-	updateSeriesVersions()
+	updateSeriesVersionsOnce()
 	if series, ok := versionSeries[version]; ok {
 		return series, nil
 	}
@@ -248,7 +248,7 @@ func reverseSeriesVersion() map[string]string {
 func SupportedSeries() []string {
 	seriesVersionsMutex.Lock()
 	defer seriesVersionsMutex.Unlock()
-	updateSeriesVersions()
+	updateSeriesVersionsOnce()
 	var series []string
 	for s := range seriesVersions {
 		series = append(series, s)
@@ -270,11 +270,21 @@ func OSSupportedSeries(os os.OSType) []string {
 	return osSeries
 }
 
+// UpdateSeriesVersions forces an update of the series versions by querying
+// distro-info if possible.
+func UpdateSeriesVersions() error {
+	seriesVersionsMutex.Lock()
+	defer seriesVersionsMutex.Unlock()
+	return updateLocalSeriesVersions()
+}
+
 var updatedseriesVersions bool
 
-func updateSeriesVersions() {
+func updateSeriesVersionsOnce() {
 	if !updatedseriesVersions {
-		updateLocalSeriesVersions()
+		if err := updateLocalSeriesVersions(); err != nil {
+			logger.Warningf("failed to update distro info: %v", err)
+		}
 		updatedseriesVersions = true
 	}
 }

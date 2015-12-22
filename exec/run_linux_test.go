@@ -11,13 +11,13 @@ import (
 	"github.com/juju/utils/exec"
 )
 
-type execSuite struct {
+type runCommandsSuite struct {
 	testing.IsolationSuite
 }
 
-var _ = gc.Suite(&execSuite{})
+var _ = gc.Suite(&runCommandsSuite{})
 
-func (*execSuite) TestRunCommands(c *gc.C) {
+func (*runCommandsSuite) TestRunCommands(c *gc.C) {
 	newDir := c.MkDir()
 
 	for i, test := range []struct {
@@ -83,7 +83,7 @@ func (*execSuite) TestRunCommands(c *gc.C) {
 	}
 }
 
-func (*execSuite) TestExecUnknownCommand(c *gc.C) {
+func (*runCommandsSuite) TestExecUnknownCommand(c *gc.C) {
 	result, err := exec.RunCommands(
 		exec.RunParams{
 			Commands: "unknown-command",

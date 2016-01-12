@@ -41,7 +41,8 @@ func (hs hashSum) Fingerprint() Fingerprint {
 // SHA384 returns the newHash and validate functions for use
 // with SHA384 hashes. SHA384 is used in several key places in Juju.
 func SHA384() (newHash func() hash.Hash, validate func([]byte) error) {
-	validate = newSizeChecker(48) // 384 / 8
+	const digestLenBytes = 384 / 8
+	validate = newSizeChecker(digestLenBytes)
 	return sha512.New384, validate
 }
 

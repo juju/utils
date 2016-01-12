@@ -7,26 +7,25 @@ import (
 	"encoding/base64"
 	"fmt"
 	"hash"
-	"io"
 )
 
-type hash struct {
+type hashSum struct {
 	raw hash.Hash
 }
 
 // Sum returns the raw checksum.
-func (h hash) Sum() []byte {
-	return h.raw.Sum(nil)
+func (hs hashSum) Sum() []byte {
+	return hs.raw.Sum(nil)
 }
 
 // Base64Sum returns the base64 encoded hash.
-func (h hash) Base64Sum() string {
-	raw := h.raw.Sum(nil)
+func (hs hashSum) Base64Sum() string {
+	raw := hs.raw.Sum(nil)
 	return base64.StdEncoding.EncodeToString(raw)
 }
 
 // HexSum returns the hex-ified checksum.
-func (h hash) HexSum() string {
-	raw := h.raw.Sum(nil)
+func (hs hashSum) HexSum() string {
+	raw := hs.raw.Sum(nil)
 	return fmt.Sprintf("%x", raw)
 }

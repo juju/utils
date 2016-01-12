@@ -5,9 +5,11 @@ package hash_test
 
 import (
 	"bytes"
-	"errors"
 
+	"github.com/juju/errors"
 	"github.com/juju/testing"
+	jc "github.com/juju/testing/checkers"
+	"github.com/juju/testing/filetesting"
 	gc "gopkg.in/check.v1"
 
 	"github.com/juju/utils/hash"
@@ -17,86 +19,83 @@ var _ = gc.Suite(&WriterSuite{})
 
 type WriterSuite struct {
 	testing.IsolationSuite
+
+	stub    *testing.Stub
+	wBuffer *bytes.Buffer
+	writer  *filetesting.StubWriter
+	hBuffer *bytes.Buffer
+	hash    *filetesting.StubHash
 }
 
-type errorWriter struct {
-	err error
-}
+func (s *WriterSuite) SetUpTest(c *gc.C) {
+	s.IsolationSuite.SetUpTest(c)
 
-func (w *errorWriter) Write(data []byte) (int, error) {
-	return 0, w.err
+	s.stub = &testing.Stub{}
+	s.wBuffer = new(bytes.Buffer)
+	s.writer = &filetesting.StubWriter{
+		Stub:        s.stub,
+		ReturnWrite: s.wBuffer,
+	}
+	s.hBuffer = new(bytes.Buffer)
+	s.hash = filetesting.NewStubHash(s.stub, s.hBuffer)
 }
-
-type fakeHasher struct {
-	bytes.Buffer
-	sum []byte
-}
-
-func (h *fakeHasher) Sum(b []byte) []byte {
-	return h.sum
-}
-
-// Not used:
-func (h *fakeHasher) Reset()         {}
-func (h *fakeHasher) Size() int      { return -1 }
-func (h *fakeHasher) BlockSize() int { return -1 }
 
 func (s *WriterSuite) TestHashingWriterWriteEmpty(c *gc.C) {
-	var buf bytes.Buffer
-	hasher := fakeHasher{}
-	w := hash.NewHashingWriter(&buf, &hasher)
+	w := hash.NewHashingWriter(s.writer, s.hash)
 	n, err := w.Write(nil)
+	c.Assert(err, jc.ErrorIsNil)
 
-	c.Check(err, gc.IsNil)
+	s.stub.CheckCallNames(c, "Write", "Write")
 	c.Check(n, gc.Equals, 0)
-	c.Check(buf.String(), gc.Equals, "")
-	c.Check(hasher.String(), gc.Equals, "")
+	c.Check(s.wBuffer.String(), gc.Equals, "")
+	c.Check(s.hBuffer.String(), gc.Equals, "")
 }
 
 func (s *WriterSuite) TestHashingWriterWriteSmall(c *gc.C) {
-	var buf bytes.Buffer
-	hasher := fakeHasher{}
-	w := hash.NewHashingWriter(&buf, &hasher)
+	w := hash.NewHashingWriter(s.writer, s.hash)
 	n, err := w.Write([]byte("spam"))
+	c.Assert(err, jc.ErrorIsNil)
 
-	c.Check(err, gc.IsNil)
+	s.stub.CheckCallNames(c, "Write", "Write")
 	c.Check(n, gc.Equals, 4)
-	c.Check(buf.String(), gc.Equals, "spam")
-	c.Check(hasher.String(), gc.Equals, "spam")
+	c.Check(s.wBuffer.String(), gc.Equals, "spam")
+	c.Check(s.hBuffer.String(), gc.Equals, "spam")
 }
 
 func (s *WriterSuite) TestHashingWriterWriteFileError(c *gc.C) {
-	file := errorWriter{err: errors.New("failed!")}
-	hasher := fakeHasher{}
-	w := hash.NewHashingWriter(&file, &hasher)
+	w := hash.NewHashingWriter(s.writer, s.hash)
+	failure := errors.New("<failed>")
+	s.stub.SetErrors(failure)
+
 	_, err := w.Write([]byte("spam"))
 
-	c.Check(err, gc.ErrorMatches, "failed!")
+	s.stub.CheckCallNames(c, "Write")
+	c.Check(errors.Cause(err), gc.Equals, failure)
 }
 
 func (s *WriterSuite) TestHashingWriterSum(c *gc.C) {
-	var buf bytes.Buffer
-	hasher := fakeHasher{sum: []byte("spam")}
-	w := hash.NewHashingWriter(&buf, &hasher)
-	b64hash := string(w.Sum())
+	s.hash.ReturnSum = []byte("spam")
+	w := hash.NewHashingWriter(s.writer, s.hash)
+	sum := string(w.Sum())
 
-	c.Check(b64hash, gc.Equals, "spam")
+	s.stub.CheckCallNames(c, "Sum")
+	c.Check(sum, gc.Equals, "spam")
 }
 
 func (s *WriterSuite) TestHashingWriterBase64Sum(c *gc.C) {
-	var buf bytes.Buffer
-	hasher := fakeHasher{sum: []byte("spam")}
-	w := hash.NewHashingWriter(&buf, &hasher)
-	b64hash := w.Base64Sum()
+	s.hash.ReturnSum = []byte("spam")
+	w := hash.NewHashingWriter(s.writer, s.hash)
+	b64sum := w.Base64Sum()
 
-	c.Check(b64hash, gc.Equals, "c3BhbQ==")
+	s.stub.CheckCallNames(c, "Sum")
+	c.Check(b64sum, gc.Equals, "c3BhbQ==")
 }
 
 func (s *WriterSuite) TestHashingWriterHexSum(c *gc.C) {
-	var buf bytes.Buffer
-	hasher := fakeHasher{sum: []byte("spam")}
-	w := hash.NewHashingWriter(&buf, &hasher)
-	rawhash := w.HexSum()
+	s.hash.ReturnSum = []byte("spam")
+	w := hash.NewHashingWriter(s.writer, s.hash)
+	hexSum := w.HexSum()
 
-	c.Check(rawhash, gc.Equals, "7370616d")
+	s.stub.CheckCallNames(c, "Sum")
+	c.Check(hexSum, gc.Equals, "7370616d")
 }

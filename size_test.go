@@ -4,7 +4,14 @@
 package utils_test
 
 import (
+	"bytes"
+	"io"
+	"io/ioutil"
+	"strings"
+
+	"github.com/juju/errors"
 	"github.com/juju/testing"
+	jc "github.com/juju/testing/checkers"
 	gc "gopkg.in/check.v1"
 
 	"github.com/juju/utils"
@@ -76,4 +83,61 @@ func (*sizeSuite) TestParseSize(c *gc.C) {
 			c.Assert(size, gc.Equals, test.out)
 		}
 	}
+}
+
+func (*sizeSuite) TestSizingReader(c *gc.C) {
+	expected := "some data"
+	stub := &testing.Stub{}
+	raw := &stubFile{stub: stub}
+	raw.returnRead = strings.NewReader(expected)
+
+	reader := utils.NewSizingReader(raw)
+	data, err := ioutil.ReadAll(reader)
+	c.Assert(err, jc.ErrorIsNil)
+
+	stub.CheckCallNames(c, "Read", "Read")
+	c.Check(string(data), gc.Equals, expected)
+	c.Check(reader.Size(), gc.Equals, int64(len(expected)))
+}
+
+func (*sizeSuite) TestSizingWriter(c *gc.C) {
+	expected := "some data"
+	stub := &testing.Stub{}
+	raw := &stubFile{stub: stub}
+	buffer := new(bytes.Buffer)
+	raw.returnWrite = buffer
+
+	writer := utils.NewSizingWriter(raw)
+	n, err := writer.Write([]byte(expected))
+	c.Assert(err, jc.ErrorIsNil)
+
+	stub.CheckCallNames(c, "Write")
+	c.Check(n, gc.Equals, len(expected))
+	c.Check(buffer.String(), gc.Equals, expected)
+	c.Check(writer.Size(), gc.Equals, int64(len(expected)))
+}
+
+type stubFile struct {
+	stub *testing.Stub
+
+	returnRead  io.Reader
+	returnWrite io.Writer
+}
+
+func (s *stubFile) Read(data []byte) (int, error) {
+	s.stub.AddCall("Read", data)
+	if err := s.stub.NextErr(); err != nil {
+		return 0, errors.Trace(err)
+	}
+
+	return s.returnRead.Read(data)
+}
+
+func (s *stubFile) Write(data []byte) (int, error) {
+	s.stub.AddCall("Write", data)
+	if err := s.stub.NextErr(); err != nil {
+		return 0, errors.Trace(err)
+	}
+
+	return s.returnWrite.Write(data)
 }

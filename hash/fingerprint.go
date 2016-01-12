@@ -103,9 +103,14 @@ func (fp Fingerprint) Bytes() []byte {
 	return append([]byte{}, fp.sum...)
 }
 
+// IsZero returns whether or not the fingerprint is the zero value.
+func (fp Fingerprint) IsZero() bool {
+	return len(fp.sum) == 0
+}
+
 // Validate returns an error if the fingerprint is invalid.
 func (fp Fingerprint) Validate() error {
-	if len(fp.sum) == 0 {
+	if fp.IsZero() {
 		return errors.NotValidf("zero-value fingerprint")
 	}
 	return nil

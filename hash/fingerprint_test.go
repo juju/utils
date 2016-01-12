@@ -78,7 +78,7 @@ func (s *FingerprintSuite) TestNewValidFingerprint(c *gc.C) {
 	c.Check(sum, jc.DeepEquals, expected)
 }
 
-func (s *FingerprintSuite) TestGenerateFingerprint(c *gc.C) {
+func (s *FingerprintSuite) TestGenerateFingerprintOkay(c *gc.C) {
 	expected, _ := newFingerprint(c, "spamspamspam")
 	s.hash.ReturnSum = expected
 	s.hash.Writer, _ = filetesting.NewStubWriter(s.stub)
@@ -90,6 +90,13 @@ func (s *FingerprintSuite) TestGenerateFingerprint(c *gc.C) {
 
 	s.stub.CheckCallNames(c, "newHash", "Read", "Write", "Read", "Sum")
 	c.Check(sum, jc.DeepEquals, expected)
+}
+
+func (s *FingerprintSuite) TestGenerateFingerprintNil(c *gc.C) {
+	_, err := hash.GenerateFingerprint(nil, s.newHash)
+
+	s.stub.CheckNoCalls(c)
+	c.Check(err, gc.ErrorMatches, `missing reader`)
 }
 
 func (s *FingerprintSuite) TestParseHexFingerprint(c *gc.C) {

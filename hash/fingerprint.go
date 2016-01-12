@@ -23,6 +23,7 @@ func NewFingerprint(sum []byte, validate func([]byte) error) (Fingerprint, error
 	if validate == nil {
 		return Fingerprint{}, errors.New("missing validate func")
 	}
+
 	if err := validate(sum); err != nil {
 		return Fingerprint{}, errors.Trace(err)
 	}
@@ -46,18 +47,28 @@ func newFingerprint(sum []byte) Fingerprint {
 func GenerateFingerprint(reader io.Reader, newHash func() hash.Hash) (Fingerprint, error) {
 	var fp Fingerprint
 
+	if reader == nil {
+		return fp, errors.New("missing reader")
+	}
+	if newHash == nil {
+		return fp, errors.New("missing new hash func")
+	}
+
 	hash := newHash()
 	if _, err := io.Copy(hash, reader); err != nil {
 		return fp, errors.Trace(err)
 	}
 	fp.sum = hash.Sum(nil)
-
 	return fp, nil
 }
 
 // ParseHexFingerprint returns wraps the provided raw fingerprint string.
 // This function roundtrips with Fingerprint.Hex().
 func ParseHexFingerprint(hexSum string, validate func([]byte) error) (Fingerprint, error) {
+	if validate == nil {
+		return Fingerprint{}, errors.New("missing validate func")
+	}
+
 	sum, err := hex.DecodeString(hexSum)
 	if err != nil {
 		return Fingerprint{}, errors.Trace(err)
@@ -72,6 +83,10 @@ func ParseHexFingerprint(hexSum string, validate func([]byte) error) (Fingerprin
 // ParseBase64Fingerprint returns wraps the provided raw fingerprint string.
 // This function roundtrips with Fingerprint.Base64().
 func ParseBase64Fingerprint(b64Sum string, validate func([]byte) error) (Fingerprint, error) {
+	if validate == nil {
+		return Fingerprint{}, errors.New("missing validate func")
+	}
+
 	sum, err := base64.StdEncoding.DecodeString(b64Sum)
 	if err != nil {
 		return Fingerprint{}, errors.Trace(err)

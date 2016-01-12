@@ -4,9 +4,12 @@
 package hash
 
 import (
+	"crypto/sha512"
 	"encoding/base64"
 	"fmt"
 	"hash"
+
+	"github.com/juju/errors"
 )
 
 type hashSum struct {
@@ -28,4 +31,28 @@ func (hs hashSum) Base64Sum() string {
 func (hs hashSum) HexSum() string {
 	raw := hs.raw.Sum(nil)
 	return fmt.Sprintf("%x", raw)
+}
+
+// Fingerprint returns the fingerprint corresponding to this hash.
+func (hs hashSum) Fingerprint() Fingerprint {
+	return NewValidFingerprint(hs.raw)
+}
+
+// SHA384 returns the newHash and validate functions for use
+// with SHA384 hashes. SHA384 is used in several key places in Juju.
+func SHA384() (newHash func() hash.Hash, validate func([]byte) error) {
+	validate = newSizeChecker(48) // 384 / 8
+	return sha512.New384, validate
+}
+
+func newSizeChecker(size int) func([]byte) error {
+	return func(sum []byte) error {
+		if len(sum) < size {
+			return errors.NewNotValid(nil, "invalid fingerprint (too small)")
+		}
+		if len(sum) > size {
+			return errors.NewNotValid(nil, "invalid fingerprint (too big)")
+		}
+		return nil
+	}
 }

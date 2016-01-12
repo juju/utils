@@ -14,8 +14,8 @@ import (
 // written to it.  A HashingWriter may be used in place of the writer it
 // wraps.
 type HashingWriter struct {
+	hash
 	wrapped io.Writer
-	hasher  hash.Hash
 }
 
 // NewHashingWriter returns a new HashingWriter that wraps the provided
@@ -27,31 +27,53 @@ type HashingWriter struct {
 //   hash := hw.Base64Sum()
 func NewHashingWriter(writer io.Writer, hasher hash.Hash) *HashingWriter {
 	hashingWriter := HashingWriter{
+		hash: hash{
+			raw: hasher,
+		},
 		wrapped: writer,
-		hasher:  hasher,
 	}
 	return &hashingWriter
 }
 
 // Write writes to both the wrapped file and the hash.
 func (h *HashingWriter) Write(data []byte) (int, error) {
-	h.hasher.Write(data)
-	return h.wrapped.Write(data)
+	n, err := h.wrapped.Write(data)
+	if err != nil {
+		return n, err
+	}
+	return h.raw.Write(data[:n])
 }
 
-// Sum returns the raw checksum.
-func (h *HashingWriter) Sum() []byte {
-	return h.hasher.Sum(nil)
+// HashingReader wraps an io.Reader, providing the checksum of all data
+// written to it.  A HashingReader may be used in place of the reader it
+// wraps.
+type HashingReader struct {
+	hash
+	wrapped io.Reader
 }
 
-// Base64Sum returns the base64 encoded hash.
-func (h *HashingWriter) Base64Sum() string {
-	raw := h.hasher.Sum(nil)
-	return base64.StdEncoding.EncodeToString(raw)
+// NewHashingReader returns a new HashingReader that wraps the provided
+// reader and the hasher.
+//
+// Example:
+//   hw := NewHashingReader(w, sha1.New())
+//   io.Copy(writer, hw)
+//   hash := hw.Base64Sum()
+func NewHashingReader(reader io.Reader, hasher hash.Hash) *HashingReader {
+	hashingReader := HashingReader{
+		hash: hash{
+			raw: hasher,
+		},
+		wrapped: reader,
+	}
+	return &hashingReader
 }
 
-// HexSum returns the hex-ified checksum.
-func (h *HashingWriter) HexSum() string {
-	raw := h.hasher.Sum(nil)
-	return fmt.Sprintf("%x", raw)
+// Write writes to both the wrapped file and the hash.
+func (h *HashingReader) Read(data []byte) (int, error) {
+	n, err := h.wrapped.Read(data)
+	if err != nil {
+		return n, err
+	}
+	return h.raw.Write(data[:n])
 }

@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"strings"
 	"sync"
+	"time"
 )
 
 var insecureClient = (*http.Client)(nil)
@@ -77,9 +78,11 @@ func NewHttpTLSTransport(tlsConfig *tls.Config) *http.Transport {
 	// We need to force the connection to close each time so that we don't
 	// hit the above Go bug.
 	transport := &http.Transport{
-		TLSClientConfig:   tlsConfig,
-		DisableKeepAlives: true,
-		Dial:              dial,
+		Proxy:               http.ProxyFromEnvironment,
+		TLSClientConfig:     tlsConfig,
+		DisableKeepAlives:   true,
+		Dial:                dial,
+		TLSHandshakeTimeout: 10 * time.Second,
 	}
 	registerFileProtocol(transport)
 	return transport

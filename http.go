@@ -70,21 +70,6 @@ func GetNonValidatingHTTPClient() *http.Client {
 	}
 }
 
-// NewHttpTLSTransport returns a new http.Transport constructed with the TLS config
-// and the necessary parameters for Juju.
-func NewHttpTLSTransport(tlsConfig *tls.Config) *http.Transport {
-	// See https://code.google.com/p/go/issues/detail?id=4677
-	// We need to force the connection to close each time so that we don't
-	// hit the above Go bug.
-	transport := &http.Transport{
-		TLSClientConfig:   tlsConfig,
-		DisableKeepAlives: true,
-		Dial:              dial,
-	}
-	registerFileProtocol(transport)
-	return transport
-}
-
 // BasicAuthHeader creates a header that contains just the "Authorization"
 // entry.  The implementation was originally taked from net/http but this is
 // needed externally from the http request object in order to use this with

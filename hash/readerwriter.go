@@ -39,6 +39,7 @@ func (hw *HashingWriter) Write(data []byte) (int, error) {
 	n, err := hw.wrapped.Write(data)
 	if err != nil {
 		if _, err := hw.raw.Write(data[:n]); err != nil {
+			// The initial error takes precedence.
 			logger.Errorf("could not write to hash: %v", err)
 		}
 		// No trace because some callers, like ioutil.ReadAll(), won't work.
@@ -79,6 +80,7 @@ func (hr *HashingReader) Read(data []byte) (int, error) {
 	n, err := hr.wrapped.Read(data)
 	if err != nil {
 		if _, err := hr.raw.Write(data[:n]); err != nil {
+			// The initial error takes precedence.
 			logger.Errorf("could not write to hash: %v", err)
 		}
 		// No trace because some callers, like ioutil.ReadAll(), won't work.

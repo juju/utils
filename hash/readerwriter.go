@@ -6,6 +6,8 @@ package hash
 import (
 	"hash"
 	"io"
+
+	"github.com/juju/errors"
 )
 
 // HashingWriter wraps an io.Writer, providing the checksum of all data
@@ -35,10 +37,11 @@ func NewHashingWriter(writer io.Writer, hasher hash.Hash) *HashingWriter {
 // Write writes to both the wrapped file and the hash.
 func (hw *HashingWriter) Write(data []byte) (int, error) {
 	n, err := hw.wrapped.Write(data)
-	if err != nil {
-		return n, err
+	if _, err2 := hw.raw.Write(data[:n]); err == nil {
+		return n, errors.Trace(err2)
 	}
-	return hw.raw.Write(data[:n])
+	// No trace because some callers, like ioutil.ReadAll(), won't work.
+	return n, err
 }
 
 // HashingReader wraps an io.Reader, providing the checksum of all data
@@ -68,8 +71,9 @@ func NewHashingReader(reader io.Reader, hasher hash.Hash) *HashingReader {
 // Write writes to both the wrapped file and the hash.
 func (hr *HashingReader) Read(data []byte) (int, error) {
 	n, err := hr.wrapped.Read(data)
-	if err != nil {
-		return n, err
+	if _, err2 := hr.raw.Write(data[:n]); err == nil {
+		return n, errors.Trace(err2)
 	}
-	return hr.raw.Write(data[:n])
+	// No trace because some callers, like ioutil.ReadAll(), won't work.
+	return n, err
 }

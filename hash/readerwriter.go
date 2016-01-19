@@ -37,11 +37,17 @@ func NewHashingWriter(writer io.Writer, hasher hash.Hash) *HashingWriter {
 // Write writes to both the wrapped file and the hash.
 func (hw *HashingWriter) Write(data []byte) (int, error) {
 	n, err := hw.wrapped.Write(data)
-	if _, err2 := hw.raw.Write(data[:n]); err == nil {
-		return n, errors.Trace(err2)
+	if err != nil {
+		if _, err := hw.raw.Write(data[:n]); err != nil {
+			logger.Errorf("could not write to hash: %v", err)
+		}
+		// No trace because some callers, like ioutil.ReadAll(), won't work.
+		return n, err
 	}
-	// No trace because some callers, like ioutil.ReadAll(), won't work.
-	return n, err
+	if _, err := hw.raw.Write(data[:n]); err != nil {
+		return n, errors.Trace(err)
+	}
+	return n, nil
 }
 
 // HashingReader wraps an io.Reader, providing the checksum of all data
@@ -71,9 +77,15 @@ func NewHashingReader(reader io.Reader, hasher hash.Hash) *HashingReader {
 // Write writes to both the wrapped file and the hash.
 func (hr *HashingReader) Read(data []byte) (int, error) {
 	n, err := hr.wrapped.Read(data)
-	if _, err2 := hr.raw.Write(data[:n]); err == nil {
-		return n, errors.Trace(err2)
+	if err != nil {
+		if _, err := hr.raw.Write(data[:n]); err != nil {
+			logger.Errorf("could not write to hash: %v", err)
+		}
+		// No trace because some callers, like ioutil.ReadAll(), won't work.
+		return n, err
 	}
-	// No trace because some callers, like ioutil.ReadAll(), won't work.
-	return n, err
+	if _, err := hr.raw.Write(data[:n]); err != nil {
+		return n, errors.Trace(err)
+	}
+	return n, nil
 }

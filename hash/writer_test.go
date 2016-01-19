@@ -69,7 +69,7 @@ func (s *WriterSuite) TestHashingWriterWriteFileError(c *gc.C) {
 
 	_, err := w.Write([]byte("spam"))
 
-	s.stub.CheckCallNames(c, "Write")
+	s.stub.CheckCallNames(c, "Write", "Write")
 	c.Check(errors.Cause(err), gc.Equals, failure)
 }
 

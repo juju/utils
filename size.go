@@ -76,12 +76,9 @@ func (st *sizeTracker) Reset() {
 // op implements io.Reader/io.Writer.
 func (st *sizeTracker) op(data []byte) (n int, err error) {
 	n, err = st.rawOp(data)
-	if err != nil {
-		// No trace because some callers, like ioutil.ReadAll(), won't work.
-		return n, err
-	}
 	st.size += int64(n)
-	return n, nil
+	// No trace because some callers, like ioutil.ReadAll(), won't work.
+	return n, err
 }
 
 // SizingReader is a reader that tracks the number of bytes read.

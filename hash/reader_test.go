@@ -46,7 +46,7 @@ func (s *ReaderSuite) TestHashingReaderReadEmpty(c *gc.C) {
 	data, err := ioutil.ReadAll(r)
 	c.Assert(err, jc.ErrorIsNil)
 
-	s.stub.CheckCallNames(c, "Read")
+	s.stub.CheckCallNames(c, "Read", "Write")
 	c.Check(string(data), gc.HasLen, 0)
 	c.Check(s.hBuffer.String(), gc.Equals, "")
 }
@@ -58,7 +58,7 @@ func (s *ReaderSuite) TestHashingReaderReadSmall(c *gc.C) {
 	data, err := ioutil.ReadAll(r)
 	c.Assert(err, jc.ErrorIsNil)
 
-	s.stub.CheckCallNames(c, "Read", "Write", "Read")
+	s.stub.CheckCallNames(c, "Read", "Write", "Read", "Write")
 	c.Check(string(data), gc.Equals, "spam")
 	c.Check(s.hBuffer.String(), gc.Equals, "spam")
 }
@@ -70,7 +70,7 @@ func (s *ReaderSuite) TestHashingReaderReadFileError(c *gc.C) {
 
 	_, err := ioutil.ReadAll(r)
 
-	s.stub.CheckCallNames(c, "Read")
+	s.stub.CheckCallNames(c, "Read", "Write")
 	c.Check(errors.Cause(err), gc.Equals, failure)
 	c.Check(s.hBuffer.String(), gc.Equals, "")
 }

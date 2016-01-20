@@ -43,7 +43,6 @@
 //     if fp.IsZero() {
 //         ...
 //     }
-
 package hash
 
 import (

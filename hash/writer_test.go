@@ -69,17 +69,8 @@ func (s *WriterSuite) TestHashingWriterWriteFileError(c *gc.C) {
 
 	_, err := w.Write([]byte("spam"))
 
-	s.stub.CheckCallNames(c, "Write", "Write")
+	s.stub.CheckCallNames(c, "Write")
 	c.Check(errors.Cause(err), gc.Equals, failure)
-}
-
-func (s *WriterSuite) TestHashingWriterSum(c *gc.C) {
-	s.hash.ReturnSum = []byte("spam")
-	w := hash.NewHashingWriter(s.writer, s.hash)
-	sum := string(w.Sum())
-
-	s.stub.CheckCallNames(c, "Sum")
-	c.Check(sum, gc.Equals, "spam")
 }
 
 func (s *WriterSuite) TestHashingWriterBase64Sum(c *gc.C) {
@@ -89,13 +80,4 @@ func (s *WriterSuite) TestHashingWriterBase64Sum(c *gc.C) {
 
 	s.stub.CheckCallNames(c, "Sum")
 	c.Check(b64sum, gc.Equals, "c3BhbQ==")
-}
-
-func (s *WriterSuite) TestHashingWriterHexSum(c *gc.C) {
-	s.hash.ReturnSum = []byte("spam")
-	w := hash.NewHashingWriter(s.writer, s.hash)
-	hexSum := w.HexSum()
-
-	s.stub.CheckCallNames(c, "Sum")
-	c.Check(hexSum, gc.Equals, "7370616d")
 }

@@ -86,49 +86,52 @@ func (*sizeSuite) TestParseSize(c *gc.C) {
 func (*sizeSuite) TestSizingReaderOkay(c *gc.C) {
 	expected := "some data"
 	stub := &testing.Stub{}
-	raw := filetesting.NewStubReader(stub, expected)
+	reader := filetesting.NewStubReader(stub, expected)
 
-	reader := utils.NewSizingReader(raw)
-	data, err := ioutil.ReadAll(reader)
+	var st utils.SizeTracker
+	sizingReader := io.TeeReader(reader, &st)
+	data, err := ioutil.ReadAll(sizingReader)
 	c.Assert(err, jc.ErrorIsNil)
 
 	stub.CheckCallNames(c, "Read", "Read")
 	c.Check(string(data), gc.Equals, expected)
-	c.Check(reader.Size(), gc.Equals, int64(len(expected)))
+	c.Check(st.Size(), gc.Equals, int64(len(expected)))
 }
 
 func (*sizeSuite) TestSizingReaderMixedEOF(c *gc.C) {
 	expected := "some data"
 	stub := &testing.Stub{}
-	raw := &filetesting.StubReader{
+	reader := &filetesting.StubReader{
 		Stub: stub,
 		ReturnRead: &fakeStream{
 			data: expected,
 		},
 	}
 
-	reader := utils.NewSizingReader(raw)
-	data, err := ioutil.ReadAll(reader)
+	var st utils.SizeTracker
+	sizingReader := io.TeeReader(reader, &st)
+	data, err := ioutil.ReadAll(sizingReader)
 	c.Assert(err, jc.ErrorIsNil)
 
-	stub.CheckCallNames(c, "Read")
+	stub.CheckCallNames(c, "Read") // The EOF was mixed with the data.
 	c.Check(string(data), gc.Equals, expected)
-	c.Check(reader.Size(), gc.Equals, int64(len(expected)))
+	c.Check(st.Size(), gc.Equals, int64(len(expected)))
 }
 
 func (*sizeSuite) TestSizingWriter(c *gc.C) {
 	expected := "some data"
 	stub := &testing.Stub{}
-	raw, buffer := filetesting.NewStubWriter(stub)
+	writer, buffer := filetesting.NewStubWriter(stub)
 
-	writer := utils.NewSizingWriter(raw)
-	n, err := writer.Write([]byte(expected))
+	var st utils.SizeTracker
+	sizingWriter := io.MultiWriter(writer, &st)
+	n, err := sizingWriter.Write([]byte(expected))
 	c.Assert(err, jc.ErrorIsNil)
 
 	stub.CheckCallNames(c, "Write")
 	c.Check(n, gc.Equals, len(expected))
 	c.Check(buffer.String(), gc.Equals, expected)
-	c.Check(writer.Size(), gc.Equals, int64(len(expected)))
+	c.Check(st.Size(), gc.Equals, int64(len(expected)))
 }
 
 type fakeStream struct {

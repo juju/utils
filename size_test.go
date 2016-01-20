@@ -4,6 +4,7 @@
 package utils_test
 
 import (
+	"io"
 	"io/ioutil"
 
 	"github.com/juju/testing"
@@ -82,7 +83,7 @@ func (*sizeSuite) TestParseSize(c *gc.C) {
 	}
 }
 
-func (*sizeSuite) TestSizingReader(c *gc.C) {
+func (*sizeSuite) TestSizingReaderOkay(c *gc.C) {
 	expected := "some data"
 	stub := &testing.Stub{}
 	raw := filetesting.NewStubReader(stub, expected)
@@ -92,6 +93,25 @@ func (*sizeSuite) TestSizingReader(c *gc.C) {
 	c.Assert(err, jc.ErrorIsNil)
 
 	stub.CheckCallNames(c, "Read", "Read")
+	c.Check(string(data), gc.Equals, expected)
+	c.Check(reader.Size(), gc.Equals, int64(len(expected)))
+}
+
+func (*sizeSuite) TestSizingReaderMixedEOF(c *gc.C) {
+	expected := "some data"
+	stub := &testing.Stub{}
+	raw := &filetesting.StubReader{
+		Stub: stub,
+		ReturnRead: &fakeStream{
+			data: expected,
+		},
+	}
+
+	reader := utils.NewSizingReader(raw)
+	data, err := ioutil.ReadAll(reader)
+	c.Assert(err, jc.ErrorIsNil)
+
+	stub.CheckCallNames(c, "Read")
 	c.Check(string(data), gc.Equals, expected)
 	c.Check(reader.Size(), gc.Equals, int64(len(expected)))
 }
@@ -109,4 +129,18 @@ func (*sizeSuite) TestSizingWriter(c *gc.C) {
 	c.Check(n, gc.Equals, len(expected))
 	c.Check(buffer.String(), gc.Equals, expected)
 	c.Check(writer.Size(), gc.Equals, int64(len(expected)))
+}
+
+type fakeStream struct {
+	data string
+	pos  uint64
+}
+
+func (f *fakeStream) Read(data []byte) (int, error) {
+	n := copy(data, f.data[f.pos:])
+	f.pos += uint64(n)
+	if f.pos >= uint64(len(f.data)) {
+		return n, io.EOF
+	}
+	return n, nil
 }

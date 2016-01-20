@@ -61,17 +61,13 @@ func sizeSuffixMultiplier(i int) int {
 // Use SizeTracker with io.MultiWriter() to track number of bytes
 // written. Use with io.TeeReader() to track number of bytes read.
 type SizeTracker struct {
+	// size is the number of bytes written so far.
 	size int64
 }
 
-// Size returns the number of bytes read so far.
+// Size returns the number of bytes written so far.
 func (st SizeTracker) Size() int64 {
 	return st.size
-}
-
-// Reset sets the number of bytes read to zero.
-func (st *SizeTracker) Reset() {
-	st.size = 0
 }
 
 // Write implements io.Writer.

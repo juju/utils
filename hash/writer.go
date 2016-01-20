@@ -18,7 +18,7 @@ import (
 // Note: HashingWriter is deprecated. Please do not use it. We will
 // remove it ASAP.
 type HashingWriter struct {
-	raw     hash.Hash
+	hash    hash.Hash
 	wrapped io.Writer
 }
 
@@ -34,15 +34,15 @@ type HashingWriter struct {
 // remove it ASAP.
 func NewHashingWriter(writer io.Writer, hasher hash.Hash) *HashingWriter {
 	return &HashingWriter{
-		raw:     hasher,
+		hash:    hasher,
 		wrapped: io.MultiWriter(writer, hasher),
 	}
 }
 
 // Base64Sum returns the base64 encoded hash.
 func (hw HashingWriter) Base64Sum() string {
-	raw := hw.raw.Sum(nil)
-	return base64.StdEncoding.EncodeToString(raw)
+	sumBytes := hw.hash.Sum(nil)
+	return base64.StdEncoding.EncodeToString(sumBytes)
 }
 
 // Write writes to both the wrapped file and the hash.

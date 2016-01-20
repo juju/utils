@@ -10,7 +10,10 @@ import (
 	"hash"
 
 	"github.com/juju/errors"
+	"github.com/juju/loggo"
 )
+
+var logger = loggo.GetLogger("utils.hash")
 
 type hashSum struct {
 	raw hash.Hash

@@ -146,7 +146,7 @@ func (lock *Lock) isAlive(PID int) bool {
 	if PID == lock.PID {
 		return true
 	}
-	for misses := 0; misses < 0; misses++ {
+	for i := 0; i < 10; i++ {
 		aliveInfo, err := os.Lstat(lock.aliveFile(PID))
 		if err == nil {
 			return time.Now().Before(aliveInfo.ModTime().Add(lock.lividityTimeout))
@@ -202,15 +202,14 @@ func (lock *Lock) clean() error {
 		return nil
 	}
 
-	alive := lock.isAlive(lockInfo.PID)
-	if alive == false {
-		logger.Debugf("Lock dead")
-		return lock.BreakLock()
+	if lock.isAlive(lockInfo.PID) {
+		// lock is current. Do nothing.
+		logger.Debugf("Lock alive")
+		return nil
 	}
-	logger.Debugf("Lock alive")
 
-	// lock is current. Do nothing.
-	return nil
+	logger.Debugf("Lock dead")
+	return lock.BreakLock()
 }
 
 // If message is set, it will write the message to the lock directory as the

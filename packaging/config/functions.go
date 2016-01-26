@@ -27,3 +27,18 @@ func GetCloudArchiveSource(series string) (packaging.PackageSource, packaging.Pa
 		return configureCloudArchiveSourceUbuntu(series)
 	}
 }
+
+func RequiresBackports(series string, pkg string) bool {
+	backportPkgs, ok := backportsBySeries[series]
+	if !ok {
+		return false
+	}
+
+	for _, backportPkg := range backportPkgs {
+		if pkg == backportPkg {
+			return true
+		}
+	}
+
+	return false
+}

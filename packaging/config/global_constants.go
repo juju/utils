@@ -41,4 +41,8 @@ var (
 		// for example:
 		"curl",
 	}
+
+	backportsBySeries = map[string][]string{
+		"trusty": []string{"lxd"},
+	}
 )

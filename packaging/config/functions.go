@@ -29,10 +29,7 @@ func GetCloudArchiveSource(series string) (packaging.PackageSource, packaging.Pa
 }
 
 func RequiresBackports(series string, pkg string) bool {
-	backportPkgs, ok := backportsBySeries[series]
-	if !ok {
-		return false
-	}
+	backportPkgs := backportsBySeries[series]
 
 	for _, backportPkg := range backportPkgs {
 		if pkg == backportPkg {

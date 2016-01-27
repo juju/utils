@@ -9,6 +9,7 @@ import (
 
 	"github.com/juju/utils/packaging"
 	"github.com/juju/utils/packaging/config"
+	jc "github.com/juju/testing/checkers"
 	gc "gopkg.in/check.v1"
 )
 
@@ -63,4 +64,9 @@ func (s *FunctionsSuite) TestGetCloudArchiveSourceUbuntu(c *gc.C) {
 
 	c.Assert(src, gc.Equals, expectedSrc)
 	c.Assert(prefs, gc.Equals, expectedPrefs)
+}
+
+func (s *FunctionsSuite) TestRequiresBackportsTrustyLXD(c *gc.C) {
+	requiresBackports := config.RequiresBackports("trusty", "lxd")
+	c.Assert(requiresBackports, jc.IsTrue)
 }

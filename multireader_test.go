@@ -37,6 +37,7 @@ func (*multiReaderSeekerSuite) TestSeekStart(c *gc.C) {
 	}
 	all := strings.Join(parts, "")
 	for off := int64(0); off <= int64(len(all)); off++ {
+		c.Logf("-- offset %d", off)
 		r := newMultiStringReader(parts)
 		gotOff, err := r.Seek(off, 0)
 		c.Assert(err, gc.IsNil)
@@ -175,10 +176,66 @@ func (*multiReaderSeekerSuite) TestSeekPastEnd(c *gc.C) {
 	c.Assert(string(data), gc.Equals, "netwo")
 }
 
+type multiReaderAtSuite struct{}
+
+var _ = gc.Suite(&multiReaderAtSuite{})
+
+func (*multiReaderAtSuite) TestReadComplete(c *gc.C) {
+	parts := []string{
+		"one",
+		"two",
+		"three",
+		"four",
+	}
+	all := strings.Join(parts, "")
+	r := newMultistringReaderAt(parts)
+
+	buf := make([]byte, len(all))
+	n, err := r.ReadAt(buf, 0)
+	c.Assert(err, jc.ErrorIsNil)
+	c.Assert(n, gc.Equals, len(buf))
+	c.Assert(string(buf), gc.Equals, all)
+}
+
+func (*multiReaderAtSuite) TestReadPartial(c *gc.C) {
+	parts := []string{
+		"one",
+		"two",
+		"three",
+		"four",
+	}
+	all := strings.Join(parts, "")
+	r := newMultistringReaderAt(parts)
+
+	buf := make([]byte, len(all)-4)
+	n, err := r.ReadAt(buf, 2)
+	c.Assert(err, jc.ErrorIsNil)
+	c.Assert(n, gc.Equals, len(buf))
+	c.Assert(string(buf), gc.Equals, "etwothreefo")
+}
+
 func newMultiStringReader(parts []string) io.ReadSeeker {
 	readers := make([]io.ReadSeeker, len(parts))
 	for i, part := range parts {
 		readers[i] = strings.NewReader(part)
 	}
 	return utils.NewMultiReaderSeeker(readers...)
+}
+
+type stringReader struct {
+	*strings.Reader
+}
+
+// This method is implemented in later versions
+// of Go's StringReader but not prior to Go 1.5.
+func (r stringReader) Size() int64 {
+	return int64(r.Len())
+}
+
+func newMultistringReaderAt(parts []string) io.ReaderAt {
+	readers := make([]utils.SizeReaderAt, len(parts))
+	for i, part := range parts {
+		readers[i] = stringReader{strings.NewReader(part)}
+	}
+	return utils.NewMultiReaderAt(readers...)
 }

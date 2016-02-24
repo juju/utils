@@ -1,4 +1,5 @@
-// Copyright 2014 Canonical Ltd.
+// Copyright 2016 Canonical Ltd.
+// Copyright 2016 Cloudbase Solutions
 // Licensed under the LGPLv3, see LICENCE file for details.
 
 package exec
@@ -12,9 +13,11 @@ import (
 	"runtime"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/juju/errors"
 	"github.com/juju/loggo"
+	"github.com/juju/utils/clock"
 )
 
 var logger = loggo.GetLogger("juju.util.exec")
@@ -23,10 +26,12 @@ var logger = loggo.GetLogger("juju.util.exec")
 // executed using bash or PowerShell.  If WorkingDir is set, this is passed
 // through.  Similarly if the Environment is specified, this is used
 // for executing the command.
+// TODO: refactor this to use a config struct and a constructor
 type RunParams struct {
 	Commands    string
 	WorkingDir  string
 	Environment []string
+	Clock       clock.Clock
 
 	tempDir string
 	stdout  *bytes.Buffer
@@ -133,6 +138,8 @@ func (r *RunParams) Run() error {
 		r.ps.Dir = r.WorkingDir
 	}
 
+	r.populateSysProcAttr()
+
 	r.tempDir = tempDir
 	r.stdout = &bytes.Buffer{}
 	r.stderr = &bytes.Buffer{}
@@ -182,6 +189,49 @@ func (r *RunParams) Wait() (*ExecResponse, error) {
 		logger.Infof("run result: %v", ee)
 	}
 	return result, err
+}
+
+// ErrCancelled is returned by WaitWithCancel in case it successfully manages to kill
+// the running process.
+var ErrCancelled = errors.New("command cancelled")
+
+// Wait with cancel waits until the process exits or until a signal is sent on the
+// cancel channel. In case a signal is sent it first tries to kill the process and
+// return ErrCancelled. If it fails at killing the process it will return anyway
+// and report the problematic PID.
+// Until the package is better refactored to make the creation of commands
+// more transparent, make sure you pass in a clock to the RunParams struct before
+// calling this method.
+func (r *RunParams) WaitWithCancel(cancel <-chan struct{}) (*ExecResponse, error) {
+	var res *ExecResponse
+
+	done := make(chan error, 1)
+	go func() {
+		defer close(done)
+		waitResult, err := r.Wait()
+		res = waitResult
+		done <- err
+	}()
+
+	select {
+	case err := <-done:
+		return res, errors.Trace(err)
+	case <-cancel:
+		logger.Debugf("attempting to kill process")
+		err := KillProcess(r.ps.Process)
+		if err != nil {
+			logger.Infof("kill returned: %s", err)
+		}
+
+		// After we issue a kill we expect the wait above to return within 10 seconds.
+		// In case it doesn't we just go on and assume the process is stuck, but we don't block
+		select {
+		case <-done:
+			return res, errors.New("command cancelled")
+		case <-r.Clock.After(30 * time.Second):
+			return nil, errors.Errorf("tried to kill process %v, but timed out", r.ps.Process.Pid)
+		}
+	}
 }
 
 // RunCommands executes the Commands specified in the RunParams using

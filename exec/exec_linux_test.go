@@ -4,18 +4,14 @@
 package exec_test
 
 import (
-	"github.com/juju/testing"
 	jc "github.com/juju/testing/checkers"
 	gc "gopkg.in/check.v1"
 
 	"github.com/juju/utils/exec"
 )
 
-type execSuite struct {
-	testing.IsolationSuite
-}
-
-var _ = gc.Suite(&execSuite{})
+// 0 is thrown by linux probably due to improper cleanup
+var cancelErrCode = 0
 
 func (*execSuite) TestRunCommands(c *gc.C) {
 	newDir := c.MkDir()
@@ -80,6 +76,14 @@ func (*execSuite) TestRunCommands(c *gc.C) {
 		c.Assert(string(result.Stderr), gc.Equals, test.stderr)
 		c.Assert(result.Code, gc.Equals, test.code)
 
+		err = params.Run()
+		c.Assert(err, gc.IsNil)
+		c.Assert(params.Process(), gc.Not(gc.IsNil))
+		result, err = params.WaitWithCancel(nil)
+		c.Assert(err, gc.IsNil)
+		c.Assert(string(result.Stdout), gc.Equals, test.stdout)
+		c.Assert(string(result.Stderr), gc.Equals, test.stderr)
+		c.Assert(result.Code, gc.Equals, test.code)
 	}
 }
 

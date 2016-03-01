@@ -195,7 +195,11 @@ func (r *RunParams) Wait() (*ExecResponse, error) {
 // the running process.
 var ErrCancelled = errors.New("command cancelled")
 
-// Wait with cancel waits until the process exits or until a signal is sent on the
+// timeWaitForKill reperesent the time we wait after attempting to kill a
+// process before bailing out and returning.
+var timeWaitForKill = 30 * time.Second
+
+// WaitWithCancel waits until the process exits or until a signal is sent on the
 // cancel channel. In case a signal is sent it first tries to kill the process and
 // return ErrCancelled. If it fails at killing the process it will return anyway
 // and report the problematic PID.
@@ -220,15 +224,15 @@ func (r *RunParams) WaitWithCancel(cancel <-chan struct{}) (*ExecResponse, error
 		logger.Debugf("attempting to kill process")
 		err := KillProcess(r.ps.Process)
 		if err != nil {
-			logger.Infof("kill returned: %s", err)
+			logger.Errorf("kill returned: %s", err)
 		}
 
-		// After we issue a kill we expect the wait above to return within 10 seconds.
+		// After we issue a kill we expect the wait above to return within timeWaitForKill.
 		// In case it doesn't we just go on and assume the process is stuck, but we don't block
 		select {
 		case <-done:
 			return res, errors.New("command cancelled")
-		case <-r.Clock.After(30 * time.Second):
+		case <-r.Clock.After(timeWaitForKill):
 			return nil, errors.Errorf("tried to kill process %v, but timed out", r.ps.Process.Pid)
 		}
 	}

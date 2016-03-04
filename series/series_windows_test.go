@@ -35,6 +35,10 @@ var versionTests = []struct {
 		"win2012hv",
 	},
 	{
+		"Windows Server 2008 R2",
+		"win2008r2",
+	},
+	{
 		"Windows Server 2012 R2",
 		"win2012r2",
 	},

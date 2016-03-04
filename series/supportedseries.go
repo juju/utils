@@ -63,6 +63,7 @@ var seriesVersions = map[string]string{
 	"trusty":      "14.04",
 	"utopic":      "14.10",
 	"vivid":       "15.04",
+	"win2008r2":   "win2008r2",
 	"win2012hvr2": "win2012hvr2",
 	"win2012hv":   "win2012hv",
 	"win2012r2":   "win2012r2",
@@ -106,6 +107,7 @@ var ubuntuSeries = map[string]string{
 var windowsVersionMatchOrder = []string{
 	"Hyper-V Server 2012 R2",
 	"Hyper-V Server 2012",
+	"Windows Server 2008 R2",
 	"Windows Server 2012 R2",
 	"Windows Server 2012",
 	"Windows Server 2016",
@@ -122,6 +124,7 @@ var windowsVersionMatchOrder = []string{
 var windowsVersions = map[string]string{
 	"Hyper-V Server 2012 R2":         "win2012hvr2",
 	"Hyper-V Server 2012":            "win2012hv",
+	"Windows Server 2008 R2":         "win2008r2",
 	"Windows Server 2012 R2":         "win2012r2",
 	"Windows Server 2012":            "win2012",
 	"Windows Server 2016":            "win2016",

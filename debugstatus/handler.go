@@ -6,6 +6,7 @@ package debugstatus
 import (
 	"net/http"
 
+	"golang.org/x/net/trace"
 	"gopkg.in/errgo.v1"
 
 	pprof "github.com/juju/httpprof"
@@ -41,6 +42,15 @@ type Handler struct {
 	// of the endpoints under /debug/pprof - the
 	// error returned will be ErrNoPprofConfigured.
 	CheckPprofAllowed func(req *http.Request) error
+
+	// CheckTraceAllowed will be used to check whether the given
+	// trace request should be allowed. It should return an error if
+	// not, which will not be masked. If this is nil, no access will
+	// be allowed to either /debug/events or /debug/requests - the
+	// error returned will be ErrNoTraceConfigured. If access is
+	// allowed the sensative boolean is passed on the the trace
+	// handles.
+	CheckTraceAllowed func(req *http.Request) (err error, sensitive bool)
 }
 
 // DebugStatusRequest describes the /debug/status endpoint.
@@ -115,4 +125,47 @@ func (h *Handler) checkPprofAllowed(req *http.Request) error {
 		return ErrNoPprofConfigured
 	}
 	return h.CheckPprofAllowed(req)
+}
+
+// DebugEventsRequest describes the /debug/events endpoint.
+type DebugEventsRequest struct {
+	httprequest.Route `httprequest:"GET /debug/events"`
+}
+
+// DebugEvents serves the /debug/events endpoint.
+func (h *Handler) DebugEvents(p httprequest.Params, r *DebugEventsRequest) error {
+	err, sensitive := h.checkTraceAllowed(p.Request)
+	if err != nil {
+		return err
+	}
+	trace.RenderEvents(p.Response, p.Request, sensitive)
+	return nil
+}
+
+// DebugRequestsRequest describes the /debug/requests endpoint.
+type DebugRequestsRequest struct {
+	httprequest.Route `httprequest:"GET /debug/requests"`
+}
+
+// DebugRequests serves the /debug/requests endpoint.
+func (h *Handler) DebugRequests(p httprequest.Params, r *DebugRequestsRequest) error {
+	err, sensitive := h.checkTraceAllowed(p.Request)
+	if err != nil {
+		return err
+	}
+	trace.Render(p.Response, p.Request, sensitive)
+	return nil
+}
+
+// ErrNoTraceConfigured is the error returned on access
+// to endpoints when Handler.CheckTraceAllowed is nil.
+var ErrNoTraceConfigured = errgo.New("no trace access configured")
+
+// checkTraceAllowed is used instead of h.CheckTraceAllowed
+// so that we don't panic if that is nil.
+func (h *Handler) checkTraceAllowed(req *http.Request) (error, bool) {
+	if h.CheckTraceAllowed == nil {
+		return ErrNoTraceConfigured, false
+	}
+	return h.CheckTraceAllowed(req)
 }

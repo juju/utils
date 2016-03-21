@@ -10,11 +10,11 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
-	"strings"
 	"syscall"
 
 	"github.com/juju/errors"
 	"github.com/juju/loggo"
+	"github.com/juju/utils"
 )
 
 var logger = loggo.GetLogger("juju.util.exec")
@@ -51,23 +51,9 @@ func mergeEnvironment(env []string) []string {
 	if env == nil {
 		return nil
 	}
-	m := make(map[string]string)
-	var tmpEnv []string
-	for _, val := range os.Environ() {
-		varSplit := strings.SplitN(val, "=", 2)
-		m[varSplit[0]] = varSplit[1]
-	}
-
-	for _, val := range env {
-		varSplit := strings.SplitN(val, "=", 2)
-		m[varSplit[0]] = varSplit[1]
-	}
-
-	for key, val := range m {
-		tmpEnv = append(tmpEnv, key+"="+val)
-	}
-
-	return tmpEnv
+	osEnv := utils.ReadOSEnv()
+	osEnv.Update(env...)
+	return osEnv.AsList()
 }
 
 // shellAndArgs returns the name of the shell command and arguments to run the

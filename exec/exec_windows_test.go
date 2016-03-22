@@ -8,18 +8,14 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/juju/testing"
 	jc "github.com/juju/testing/checkers"
 	gc "gopkg.in/check.v1"
 
 	"github.com/juju/utils/exec"
 )
 
-type execSuite struct {
-	testing.IsolationSuite
-}
-
-var _ = gc.Suite(&execSuite{})
+// 1 is thrown by powershell after the a command is cancelled
+const cancelErrCode = 1
 
 // longPath is copied over from the symlink package. This should be removed
 // if we add it to gc or in some other convenience package
@@ -113,6 +109,14 @@ func (*execSuite) TestRunCommands(c *gc.C) {
 		c.Assert(string(result.Stderr), jc.Contains, test.stderr)
 		c.Assert(result.Code, gc.Equals, test.code)
 
+		err = params.Run()
+		c.Assert(err, gc.IsNil)
+		c.Assert(params.Process(), gc.Not(gc.IsNil))
+		result, err = params.WaitWithCancel(nil)
+		c.Assert(err, gc.IsNil)
+		c.Assert(string(result.Stdout), gc.Equals, test.stdout)
+		c.Assert(string(result.Stderr), jc.Contains, test.stderr)
+		c.Assert(result.Code, gc.Equals, test.code)
 	}
 }
 

@@ -11,8 +11,7 @@ import (
 )
 
 // KillProcess tries to kill the process passed in.
-// It's a var to allow easy testing mocks.
-var KillProcess = func(proc *os.Process) error {
+func KillProcess(proc *os.Process) error {
 	return proc.Kill()
 }
 

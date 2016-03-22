@@ -34,13 +34,10 @@ func (*execSuite) TestWaitWithCancel(c *gc.C) {
 	c.Assert(params.Process(), gc.Not(gc.IsNil))
 
 	cancelChan := make(chan struct{}, 1)
-	go func() {
-		<-time.After(1 * time.Second)
-		cancelChan <- struct{}{}
-	}()
 	defer close(cancelChan)
+	cancelChan <- struct{}{}
 	result, err := params.WaitWithCancel(cancelChan)
-	c.Assert(err, gc.ErrorMatches, exec.ErrCancelled.Error())
+	c.Assert(err, gc.Equals, exec.ErrCancelled)
 	c.Assert(string(result.Stdout), gc.Equals, "")
 	c.Assert(string(result.Stderr), gc.Equals, "")
 	c.Assert(result.Code, gc.Equals, cancelErrCode)
@@ -48,18 +45,18 @@ func (*execSuite) TestWaitWithCancel(c *gc.C) {
 
 func (s *execSuite) TestKillAbortedIfUnsuccessfull(c *gc.C) {
 	killCalled := false
-	s.PatchValue(&exec.KillProcess, func(*os.Process) error {
-		killCalled = true
-		return nil
-	})
 
-	mockChan := make(chan time.Time)
+	mockChan := make(chan time.Time, 1)
 	defer close(mockChan)
 	params := exec.RunParams{
 		Commands:    "sleep 100",
 		WorkingDir:  "",
 		Environment: []string{},
 		Clock:       &mockClock{C: mockChan},
+		KillProcess: func(*os.Process) error {
+			killCalled = true
+			return nil
+		},
 	}
 
 	err := params.Run()
@@ -68,11 +65,8 @@ func (s *execSuite) TestKillAbortedIfUnsuccessfull(c *gc.C) {
 
 	cancelChan := make(chan struct{}, 1)
 	defer close(cancelChan)
-	go func() {
-		<-time.After(1 * time.Second)
-		cancelChan <- struct{}{}
-		mockChan <- time.Now()
-	}()
+	cancelChan <- struct{}{}
+	mockChan <- time.Now()
 	res, err := params.WaitWithCancel(cancelChan)
 	c.Assert(err, gc.ErrorMatches, fmt.Sprintf("tried to kill process %d, but timed out", params.Process().Pid))
 	c.Assert(res, gc.IsNil)

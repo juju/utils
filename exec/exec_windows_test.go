@@ -15,7 +15,7 @@ import (
 )
 
 // 1 is thrown by powershell after the a command is cancelled
-var cancelErrCode = 1
+const cancelErrCode = 1
 
 // longPath is copied over from the symlink package. This should be removed
 // if we add it to gc or in some other convenience package

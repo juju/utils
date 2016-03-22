@@ -11,12 +11,12 @@ import (
 	"syscall"
 )
 
-// Kill tries to kill the process being ran by RunParams
+// KillProcess tries to kill the process being ran by RunParams
 // We need this convoluted implementation because everything
 // ran under the bash script is spawned as a different process
 // and doesn't get killed by a regular process.Kill()
 // For details see https://groups.google.com/forum/#!topic/golang-nuts/XoQ3RhFBJl8
-var KillProcess = func(proc *os.Process) error {
+func KillProcess(proc *os.Process) error {
 	pgid, err := syscall.Getpgid(proc.Pid)
 	if err == nil {
 		return syscall.Kill(-pgid, 15) // note the minus sign

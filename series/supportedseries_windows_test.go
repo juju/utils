@@ -5,8 +5,6 @@
 package series_test
 
 import (
-	"sort"
-
 	jc "github.com/juju/testing/checkers"
 	gc "gopkg.in/check.v1"
 
@@ -33,6 +31,7 @@ func (s *supportedSeriesWindowsSuite) TestSupportedSeries(c *gc.C) {
 	expectedSeries := []string{
 		"arch",
 		"centos7",
+
 		"precise",
 		"quantal",
 		"raring",
@@ -40,6 +39,9 @@ func (s *supportedSeriesWindowsSuite) TestSupportedSeries(c *gc.C) {
 		"trusty",
 		"utopic",
 		"vivid",
+		"wily",
+		"xenial",
+
 		"win10",
 		"win2008r2",
 		"win2012",
@@ -53,6 +55,5 @@ func (s *supportedSeriesWindowsSuite) TestSupportedSeries(c *gc.C) {
 		"win81",
 	}
 	series := series.SupportedSeries()
-	sort.Strings(series)
-	c.Assert(series, gc.DeepEquals, expectedSeries)
+	c.Assert(series, jc.SameContents, expectedSeries)
 }

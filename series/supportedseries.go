@@ -63,6 +63,8 @@ var seriesVersions = map[string]string{
 	"trusty":      "14.04",
 	"utopic":      "14.10",
 	"vivid":       "15.04",
+	"wily":        "15.10",
+	"xenial":      "16.04",
 	"win2008r2":   "win2008r2",
 	"win2012hvr2": "win2012hvr2",
 	"win2012hv":   "win2012hv",
@@ -97,6 +99,8 @@ var ubuntuSeries = map[string]string{
 	"trusty":  "14.04",
 	"utopic":  "14.10",
 	"vivid":   "15.04",
+	"wily":    "15.10",
+	"xenial":  "16.04",
 }
 
 // Windows versions come in various flavors:

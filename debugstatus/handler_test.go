@@ -33,10 +33,12 @@ var errUnauthorized = errgo.New("you shall not pass!")
 func newHTTPHandler(h *debugstatus.Handler) http.Handler {
 	errMapper := httprequest.ErrorMapper(func(err error) (httpStatus int, errorBody interface{}) {
 		code, status := "", http.StatusInternalServerError
-		switch err {
+		switch errgo.Cause(err) {
 		case errUnauthorized:
 			code, status = "unauthorized", http.StatusUnauthorized
 		case debugstatus.ErrNoPprofConfigured:
+			code, status = "forbidden", http.StatusForbidden
+		case debugstatus.ErrNoTraceConfigured:
 			code, status = "forbidden", http.StatusForbidden
 		}
 		return status, httprequest.RemoteError{
@@ -156,6 +158,55 @@ func (s *handlerSuite) TestDebugPprofForbiddenWhenNotConfigured(c *gc.C) {
 		ExpectBody: httprequest.RemoteError{
 			Code:    "forbidden",
 			Message: "no pprof access configured",
+		},
+	})
+}
+
+var debugTracePaths = []string{
+	"/debug/events",
+	"/debug/requests",
+}
+
+func (s *handlerSuite) TestServeTraceEvents(c *gc.C) {
+	httpHandler := newHTTPHandler(&debugstatus.Handler{
+		CheckTraceAllowed: func(req *http.Request) (bool, error) {
+			if req.Header.Get("Authorization") == "" {
+				return false, errUnauthorized
+			}
+			return false, nil
+		},
+	})
+	authHeader := make(http.Header)
+	authHeader.Set("Authorization", "let me in")
+	for i, path := range debugTracePaths {
+		c.Logf("%d. %s", i, path)
+		httptesting.AssertJSONCall(c, httptesting.JSONCallParams{
+			Handler:      httpHandler,
+			URL:          path,
+			ExpectStatus: http.StatusUnauthorized,
+			ExpectBody: httprequest.RemoteError{
+				Code:    "unauthorized",
+				Message: "you shall not pass!",
+			},
+		})
+		rr := httptesting.DoRequest(c, httptesting.DoRequestParams{
+			Handler: httpHandler,
+			URL:     path,
+			Header:  authHeader,
+		})
+		c.Assert(rr.Code, gc.Equals, http.StatusOK)
+	}
+}
+
+func (s *handlerSuite) TestDebugEventsForbiddenWhenNotConfigured(c *gc.C) {
+	httpHandler := newHTTPHandler(&debugstatus.Handler{})
+	httptesting.AssertJSONCall(c, httptesting.JSONCallParams{
+		Handler:      httpHandler,
+		URL:          "/debug/events",
+		ExpectStatus: http.StatusForbidden,
+		ExpectBody: httprequest.RemoteError{
+			Code:    "forbidden",
+			Message: "no trace access configured",
 		},
 	})
 }

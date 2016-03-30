@@ -33,7 +33,7 @@ var errUnauthorized = errgo.New("you shall not pass!")
 func newHTTPHandler(h *debugstatus.Handler) http.Handler {
 	errMapper := httprequest.ErrorMapper(func(err error) (httpStatus int, errorBody interface{}) {
 		code, status := "", http.StatusInternalServerError
-		switch err {
+		switch errgo.Cause(err) {
 		case errUnauthorized:
 			code, status = "unauthorized", http.StatusUnauthorized
 		case debugstatus.ErrNoPprofConfigured:
@@ -169,11 +169,11 @@ var debugTracePaths = []string{
 
 func (s *handlerSuite) TestServeTraceEvents(c *gc.C) {
 	httpHandler := newHTTPHandler(&debugstatus.Handler{
-		CheckTraceAllowed: func(req *http.Request) (error, bool) {
+		CheckTraceAllowed: func(req *http.Request) (bool, error) {
 			if req.Header.Get("Authorization") == "" {
-				return errUnauthorized, false
+				return false, errUnauthorized
 			}
-			return nil, false
+			return false, nil
 		},
 	})
 	authHeader := make(http.Header)

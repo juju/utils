@@ -48,9 +48,9 @@ type Handler struct {
 	// not, which will not be masked. If this is nil, no access will
 	// be allowed to either /debug/events or /debug/requests - the
 	// error returned will be ErrNoTraceConfigured. If access is
-	// allowed the sensative boolean is passed on the the trace
-	// handles.
-	CheckTraceAllowed func(req *http.Request) (err error, sensitive bool)
+	// allowed, the sensitive value specifies whether sensitive trace
+	// events will be shown.
+	CheckTraceAllowed func(req *http.Request) (sensitive bool, err error)
 }
 
 // DebugStatusRequest describes the /debug/status endpoint.
@@ -134,9 +134,9 @@ type DebugEventsRequest struct {
 
 // DebugEvents serves the /debug/events endpoint.
 func (h *Handler) DebugEvents(p httprequest.Params, r *DebugEventsRequest) error {
-	err, sensitive := h.checkTraceAllowed(p.Request)
+	sensitive, err := h.checkTraceAllowed(p.Request)
 	if err != nil {
-		return err
+		return errgo.Mask(err, errgo.Any)
 	}
 	trace.RenderEvents(p.Response, p.Request, sensitive)
 	return nil
@@ -149,9 +149,9 @@ type DebugRequestsRequest struct {
 
 // DebugRequests serves the /debug/requests endpoint.
 func (h *Handler) DebugRequests(p httprequest.Params, r *DebugRequestsRequest) error {
-	err, sensitive := h.checkTraceAllowed(p.Request)
+	sensitive, err := h.checkTraceAllowed(p.Request)
 	if err != nil {
-		return err
+		return errgo.Mask(err, errgo.Any)
 	}
 	trace.Render(p.Response, p.Request, sensitive)
 	return nil
@@ -163,9 +163,9 @@ var ErrNoTraceConfigured = errgo.New("no trace access configured")
 
 // checkTraceAllowed is used instead of h.CheckTraceAllowed
 // so that we don't panic if that is nil.
-func (h *Handler) checkTraceAllowed(req *http.Request) (error, bool) {
+func (h *Handler) checkTraceAllowed(req *http.Request) (bool, error) {
 	if h.CheckTraceAllowed == nil {
-		return ErrNoTraceConfigured, false
+		return false, ErrNoTraceConfigured
 	}
 	return h.CheckTraceAllowed(req)
 }

@@ -196,7 +196,12 @@ func (r *RunParams) Wait() (*ExecResponse, error) {
 		}
 		logger.Infof("run result: %v", ee)
 	}
-	return result, err
+
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+
+	return result, nil
 }
 
 // ErrCancelled is returned by WaitWithCancel in case it successfully manages to kill
@@ -232,7 +237,10 @@ func (r *RunParams) WaitWithCancel(cancel <-chan struct{}) (*ExecResponse, error
 
 	select {
 	case resWithError := <-done:
-		return resWithError.execResult, errors.Trace(resWithError.err)
+		if resWithError.err != nil {
+			return nil, errors.Trace(resWithError.err)
+		}
+		return resWithError.execResult, nil
 	case <-cancel:
 		logger.Debugf("attempting to kill process")
 		err := r.KillProcess(r.ps.Process)
@@ -243,8 +251,8 @@ func (r *RunParams) WaitWithCancel(cancel <-chan struct{}) (*ExecResponse, error
 		// After we issue a kill we expect the wait above to return within timeWaitForKill.
 		// In case it doesn't we just go on and assume the process is stuck, but we don't block
 		select {
-		case resWithError := <-done:
-			return resWithError.execResult, ErrCancelled
+		case <-done:
+			return nil, ErrCancelled
 		case <-_clock.After(timeWaitForKill):
 			return nil, errors.Errorf("tried to kill process %v, but timed out", r.ps.Process.Pid)
 		}

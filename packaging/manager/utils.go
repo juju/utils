@@ -70,6 +70,15 @@ var RunCommandWithRetry = func(cmd string) (output string, code int, err error) 
 			return string(out), 0, nil
 		}
 
+		// If we couldn't find the package don't retry.
+		// apt-get will report "Unable to locate package"
+		// yum will report "Error: Nothing to do"
+		if strings.Contains(string(out), "Unable to locate package") ||
+			strings.Contains(string(out), "Error: Nothing to do") {
+			err = errors.Annotatef(err, "giving up; package not found")
+			break
+		}
+
 		exitError, ok := err.(*exec.ExitError)
 		if !ok {
 			err = errors.Annotatef(err, "unexpected error type %T", err)

@@ -5,6 +5,7 @@
 package manager_test
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 
@@ -78,4 +79,48 @@ func (s *UtilsSuite) TestRunCommandWithRetryDoesNotCallCombinedOutputTwice(c *gc
 	err = yum.Install(testedPackageName)
 	c.Check(err, gc.ErrorMatches, "packaging command failed: exit status.*")
 	c.Check(calls, gc.Equals, minRetries)
+}
+
+func (s *UtilsSuite) TestRunCommandWithRetryStopsWithUnableToLocateErr(c *gc.C) {
+	const minRetries = 3
+	var calls int
+	state := os.ProcessState{}
+	cmdError := &exec.ExitError{&state}
+	s.PatchValue(&manager.AttemptStrategy, utils.AttemptStrategy{Min: minRetries})
+	s.PatchValue(&manager.ProcessStateSys, func(*os.ProcessState) interface{} {
+		return mockExitStatuser(100) // retry each time.
+	})
+	s.PatchValue(&manager.CommandOutput, func(cmd *exec.Cmd) ([]byte, error) {
+		calls++
+		cmdOutput := fmt.Sprintf("Reading state information...\nE: Unable to locate package %s",
+			testedPackageName)
+		return []byte(cmdOutput), cmdError
+	})
+
+	apt := manager.NewAptPackageManager()
+	err := apt.Install(testedPackageName)
+	c.Check(err, gc.ErrorMatches, "packaging command failed: giving up; package not found: exit status.*")
+	c.Check(calls, gc.Equals, 1)
+}
+
+func (s *UtilsSuite) TestRunCommandWithRetryStopsWithNothingToDoErr(c *gc.C) {
+	const minRetries = 3
+	var calls int
+	state := os.ProcessState{}
+	cmdError := &exec.ExitError{&state}
+	s.PatchValue(&manager.AttemptStrategy, utils.AttemptStrategy{Min: minRetries})
+	s.PatchValue(&manager.ProcessStateSys, func(*os.ProcessState) interface{} {
+		return mockExitStatuser(100) // retry each time.
+	})
+	s.PatchValue(&manager.CommandOutput, func(cmd *exec.Cmd) ([]byte, error) {
+		calls++
+		cmdOutput := fmt.Sprintf("No package %s available.\nError: Nothing to do",
+			testedPackageName)
+		return []byte(cmdOutput), cmdError
+	})
+
+	yum := manager.NewYumPackageManager()
+	err := yum.Install(testedPackageName)
+	c.Check(err, gc.ErrorMatches, "packaging command failed: giving up; package not found: exit status.*")
+	c.Check(calls, gc.Equals, 1)
 }

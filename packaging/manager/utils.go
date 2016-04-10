@@ -45,7 +45,7 @@ type exitStatuser interface {
 // It returns the output of the command, the exit code, and an error, if one occurs,
 // logging along the way.
 // It was aliased for testing purposes.
-var RunCommandWithRetry = func(cmd string) (output string, code int, err error) {
+var RunCommandWithRetry = func(cmd string, isFatalError func(string) bool) (output string, code int, err error) {
 	var out []byte
 
 	// split the command for use with exec
@@ -70,15 +70,6 @@ var RunCommandWithRetry = func(cmd string) (output string, code int, err error) 
 			return string(out), 0, nil
 		}
 
-		// If we couldn't find the package don't retry.
-		// apt-get will report "Unable to locate package"
-		// yum will report "Error: Nothing to do"
-		if strings.Contains(string(out), "Unable to locate package") ||
-			strings.Contains(string(out), "Error: Nothing to do") {
-			err = errors.Annotatef(err, "giving up; package not found")
-			break
-		}
-
 		exitError, ok := err.(*exec.ExitError)
 		if !ok {
 			err = errors.Annotatef(err, "unexpected error type %T", err)
@@ -94,6 +85,11 @@ var RunCommandWithRetry = func(cmd string) (output string, code int, err error) 
 		// issues (ex: momentary dns failure).
 		code = waitStatus.ExitStatus()
 		if code != 100 {
+			break
+		}
+
+		if isFatalError != nil && isFatalError(string(out)) {
+			err = errors.Annotatef(err, "encountered fatal error")
 			break
 		}
 

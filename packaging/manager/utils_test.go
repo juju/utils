@@ -100,6 +100,6 @@ func (s *UtilsSuite) TestRunCommandWithRetryStopsWithFatalError(c *gc.C) {
 
 	apt := manager.NewAptPackageManager()
 	err := apt.Install(testedPackageName)
-	c.Check(err, gc.ErrorMatches, "packaging command failed: encountered fatal error: exit status.*")
+	c.Check(err, gc.ErrorMatches, "packaging command failed: encountered fatal error: unable to locate package")
 	c.Check(calls, gc.Equals, 1)
 }

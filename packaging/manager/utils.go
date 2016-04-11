@@ -45,7 +45,7 @@ type exitStatuser interface {
 // It returns the output of the command, the exit code, and an error, if one occurs,
 // logging along the way.
 // It was aliased for testing purposes.
-var RunCommandWithRetry = func(cmd string) (output string, code int, err error) {
+var RunCommandWithRetry = func(cmd string, getFatalError func(string) error) (output string, code int, err error) {
 	var out []byte
 
 	// split the command for use with exec
@@ -86,6 +86,13 @@ var RunCommandWithRetry = func(cmd string) (output string, code int, err error) 
 		code = waitStatus.ExitStatus()
 		if code != 100 {
 			break
+		}
+
+		if getFatalError != nil {
+			if fatalErr := getFatalError(string(out)); fatalErr != nil {
+				err = errors.Annotatef(fatalErr, "encountered fatal error")
+				break
+			}
 		}
 
 		logger.Infof("Retrying: %s", cmd)

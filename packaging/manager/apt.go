@@ -11,6 +11,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/juju/errors"
 	"github.com/juju/utils/proxy"
 )
 
@@ -25,7 +26,7 @@ type apt struct {
 
 // Search is defined on the PackageManager interface.
 func (apt *apt) Search(pack string) (bool, error) {
-	out, _, err := RunCommandWithRetry(apt.cmder.SearchCmd(pack))
+	out, _, err := RunCommandWithRetry(apt.cmder.SearchCmd(pack), nil)
 	if err != nil {
 		return false, err
 	}
@@ -36,6 +37,20 @@ func (apt *apt) Search(pack string) (bool, error) {
 		return false, nil
 	}
 	return true, nil
+}
+
+// Install is defined on the PackageManager interface.
+func (apt *apt) Install(packs ...string) error {
+	fatalErr := func(output string) error {
+		// If we couldn't find the package don't retry.
+		// apt-get will report "Unable to locate package"
+		if strings.Contains(output, "Unable to locate package") {
+			return errors.New("unable to locate package")
+		}
+		return nil
+	}
+	_, _, err := RunCommandWithRetry(apt.cmder.InstallCmd(packs...), fatalErr)
+	return err
 }
 
 // GetProxySettings is defined on the PackageManager interface.

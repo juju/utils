@@ -19,7 +19,7 @@ type yum struct {
 
 // Search is defined on the PackageManager interface.
 func (yum *yum) Search(pack string) (bool, error) {
-	_, code, err := RunCommandWithRetry(yum.cmder.SearchCmd(pack))
+	_, code, err := RunCommandWithRetry(yum.cmder.SearchCmd(pack), nil)
 
 	// yum list package returns 1 when it cannot find the package.
 	if code == 1 {

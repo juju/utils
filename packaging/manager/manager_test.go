@@ -268,7 +268,7 @@ func (s *ManagerSuite) TestSimpleErrorCases(c *gc.C) {
 		expectedErrMsg = `E: I done failed :(`
 	)
 	state := os.ProcessState{}
-	cmdError := &exec.ExitError{&state}
+	cmdError := &exec.ExitError{ProcessState: &state}
 
 	cmdChan := s.HookCommandOutput(&manager.CommandOutput, []byte(expectedErrMsg), error(cmdError))
 

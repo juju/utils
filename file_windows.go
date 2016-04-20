@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 	"syscall"
 	"unsafe"
 
@@ -65,33 +64,14 @@ func ReplaceFile(source, destination string) error {
 
 // MakeFileURL returns a proper file URL for the given path/directory
 func MakeFileURL(in string) string {
-	var volumeName string
-	if strings.HasPrefix(in, "file://") {
-		volumeName = filepath.VolumeName(strings.TrimPrefix(in, "file://"))
-	} else {
-		volumeName = filepath.VolumeName(in)
+	in = filepath.ToSlash(in)
+	// for windows at least should be <letter>: to be considered valid
+	// so we cant do anything with less than that.
+	if len(in) < 2 {
+		return in
 	}
-
-	if volumeName != "" {
-		// Strip colon
-		volumeName = strings.TrimSuffix(volumeName, ":")
-
-		// Do not apply function twice
-		if strings.HasPrefix(in, "file://\\\\localhost\\") {
-			return in
-		}
-
-		in = filepath.ToSlash(in)
-		prefix := "file://\\\\localhost\\" + volumeName + "$"
-		if strings.HasPrefix(in, volumeName) {
-			return prefix + strings.TrimPrefix(in, volumeName+":")
-		}
-		if strings.HasPrefix(in, "file://"+volumeName) {
-			return prefix + strings.TrimPrefix(in, "file://"+volumeName+":")
-		}
-	}
-
-	return in
+	// since go 1.6 http client will only take this format.
+	return "file://" + in
 }
 
 func getUserSID(username string) (string, error) {

@@ -70,6 +70,9 @@ func MakeFileURL(in string) string {
 	if len(in) < 2 {
 		return in
 	}
+	if string(in[1]) != ":" {
+		return in
+	}
 	// since go 1.6 http client will only take this format.
 	return "file://" + in
 }

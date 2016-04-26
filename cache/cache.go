@@ -43,15 +43,9 @@ type Cache struct {
 }
 
 // New returns a new Cache that will cache items for
-// at most maxAge.
+// at most maxAge. If maxAge is zero, items will
+// never be cached.
 func New(maxAge time.Duration) *Cache {
-	// A maxAge is < 2ns then the expiry code will panic because the
-	// actual expiry time will be maxAge - a random value in the
-	// interval [0, maxAge/2). If maxAge is < 2ns then this requires
-	// a random interval in [0, 0) which causes a panic.
-	if maxAge < 2*time.Nanosecond {
-		maxAge = 2 * time.Nanosecond
-	}
 	// The returned cache will have a zero-valued expire
 	// time, so will expire immediately, causing the new
 	// map to be created.
@@ -104,6 +98,17 @@ func (c *Cache) getAtTime(key Key, fetch func() (interface{}, error), now time.T
 	if err != nil {
 		// TODO consider caching cache misses.
 		return nil, errgo.Mask(err, errgo.Any)
+	}
+	if c.maxAge < 2*time.Nanosecond {
+		// If maxAge is < 2ns then the expiry code will panic because the
+		// actual expiry time will be maxAge - a random value in the
+		// interval [0, maxAge/2). If maxAge is < 2ns then this requires
+		// a random interval in [0, 0) which causes a panic.
+		//
+		// This value is so small that there's no need to cache anyway,
+		// which makes tests more obviously deterministic when using
+		// a zero expiry time.
+		return val, nil
 	}
 	c.mu.Lock()
 	defer c.mu.Unlock()

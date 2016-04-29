@@ -15,8 +15,6 @@ import (
 	"github.com/juju/utils"
 )
 
-var opensshCommonOptions = []string{"-o", "StrictHostKeyChecking no"}
-
 // default identities will not be attempted if
 // -i is specified and they are not explcitly
 // included.
@@ -65,10 +63,12 @@ func NewOpenSSHClient() (*OpenSSHClient, error) {
 }
 
 func opensshOptions(options *Options, commandKind opensshCommandKind) []string {
-	args := append([]string{}, opensshCommonOptions...)
 	if options == nil {
 		options = &Options{}
 	}
+	var args []string
+
+	args = append(args, "-o", "StrictHostKeyChecking "+yesNo(options.strictHostKeyChecking))
 	if len(options.proxyCommand) > 0 {
 		args = append(args, "-o", "ProxyCommand "+utils.CommandString(options.proxyCommand...))
 	}
@@ -194,4 +194,11 @@ func (c *opensshCmd) Kill() error {
 		return errors.Errorf("process has not been started")
 	}
 	return c.Process.Kill()
+}
+
+func yesNo(v bool) string {
+	if v {
+		return "yes"
+	}
+	return "no"
 }

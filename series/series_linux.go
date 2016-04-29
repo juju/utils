@@ -108,6 +108,9 @@ func updateDistroInfo() error {
 		seriesInfo := strings.Split(parts[0], " ")
 		seriesVersions[series] = seriesInfo[0]
 		ubuntuSeries[series] = seriesInfo[0]
+		if len(seriesInfo) == 2 {
+			ubuntuLts[series] = true
+		}
 	}
 	updateVersionSeries()
 	return nil

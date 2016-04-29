@@ -20,36 +20,6 @@ func TestMain(m *testing.M) {
 
 }
 
-type DummyDefaultSeries struct{}
-
-var dummySeries string
-var dummyBool bool
-
-func (_ DummyDefaultSeries) DefaultSeries() (string, bool) { return dummySeries, dummyBool }
-
-// API tests
-func TestPreferred(t *testing.T) {
-	table := []struct {
-		name   string
-		dummyS string
-		dummyB bool
-		want   string
-	}{
-		{"Test Preferred no default", "", false, "xenial"},
-		{"Test Preferred with default", "series", true, "series"},
-	}
-	d := DummyDefaultSeries{}
-	for _, test := range table {
-		dummySeries = test.dummyS
-		dummyBool = test.dummyB
-		got := Preferred(d)
-		if got != test.want {
-			t.Errorf(failFmt, test.name, got, test.want)
-		}
-	}
-
-}
-
 func TestLastestLts(t *testing.T) {
 	table := []struct {
 		name   string

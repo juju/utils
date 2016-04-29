@@ -10,10 +10,30 @@ var (
 	failErrFmt = "%s got an error value %s, but wanted %s"
 )
 
+// func (s *ConfigSuite) TestLastestLtsSeriesFallback(c *gc.C) {
+// 	config.ResetCachedLtsSeries()
+// 	s.PatchValue(config.DistroLtsSeries, func() (string, error) {
+// 		return "", fmt.Errorf("error")
+// 	})
+// 	c.Assert(series.LatestLts(), gc.Equals, "xenial")
+// }
+
+// func (s *ConfigSuite) TestLastestLtsSeries(c *gc.C) {
+// 	config.ResetCachedLtsSeries()
+// 	s.PatchValue(config.DistroLtsSeries, func() (string, error) {
+// 		return "series", nil
+// 	})
+// 	c.Assert(series.LatestLts(), gc.Equals, "series")
+// }
+
 func TestMain(m *testing.M) {
 	// Preserve the original distInfoCmd and restore it after these test runs.
 	origDistInfoCmd := distInfoCmd
-	defer func() { distInfoCmd = origDistInfoCmd }()
+	origLatestLts := latestLtsSeries
+	defer func() {
+		distInfoCmd = origDistInfoCmd
+		latestLtsSeries = origLatestLts
+	}()
 
 	// Run the tests.
 	m.Run()
@@ -29,6 +49,7 @@ func TestLastestLts(t *testing.T) {
 	}{
 		{"Test latestLtsSeries is set", func() ([]byte, error) { return []byte("nope"), nil }, "latest", "latest"},
 		{"Test distroReturns value", func() ([]byte, error) { return []byte("trusty"), nil }, "", "trusty"},
+		{"Test distroReturns value", func() ([]byte, error) { return []byte(""), nil }, "a series", "a series"},
 		{"Test fallbackLtsSeries", func() ([]byte, error) { return []byte(""), errors.New("error") }, "", fallbackLtsSeries},
 	}
 	for _, test := range table {

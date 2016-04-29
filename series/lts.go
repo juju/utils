@@ -18,19 +18,6 @@ const fallbackLtsSeries = "xenial"
 // the work to determine the latest lts series once.
 var latestLtsSeries string
 
-type HasDefault interface {
-	DefaultSeries() (string, bool)
-}
-
-// PreferredSeries returns the preferred series to use when a charm does not
-// explicitly specify a series.
-func Preferred(cfg HasDefault) string {
-	if series, ok := cfg.DefaultSeries(); ok {
-		return series
-	}
-	return LatestLts()
-}
-
 // LatestLtsSeries returns the LatestLtsSeries found in distro-info
 func LatestLts() string {
 	if latestLtsSeries != "" {

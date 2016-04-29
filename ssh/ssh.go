@@ -36,6 +36,9 @@ type Options struct {
 	// knownHostsFile is a path to a file in which to save the host's
 	// fingerprint.
 	knownHostsFile string
+	// strictHostKeyChecking sets that the host being connected to must
+	// exist in the known_hosts file, and with a matching public key.
+	strictHostKeyChecking bool
 }
 
 // SetProxyCommand sets a command to execute to proxy traffic through.
@@ -61,6 +64,13 @@ func (o *Options) EnablePTY() {
 // Host fingerprints are saved in ~/.ssh/known_hosts by default.
 func (o *Options) SetKnownHostsFile(file string) {
 	o.knownHostsFile = file
+}
+
+// EnableStrictHostKeyChecking requires that the host being connected
+// to must exist in the known_hosts file, and with a matching public
+// key.
+func (o *Options) EnableStrictHostKeyChecking() {
+	o.strictHostKeyChecking = true
 }
 
 // AllowPasswordAuthentication allows the SSH

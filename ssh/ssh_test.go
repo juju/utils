@@ -122,6 +122,15 @@ func (s *SSHCommandSuite) TestCommandSetKnownHostsFile(c *gc.C) {
 	)
 }
 
+func (s *SSHCommandSuite) TestCommandStrictHostKeyChecking(c *gc.C) {
+	var opts ssh.Options
+	opts.EnableStrictHostKeyChecking()
+	s.assertCommandArgs(c, s.commandOptions([]string{echoCommand, "123"}, &opts),
+		fmt.Sprintf("%s -o StrictHostKeyChecking yes -o PasswordAuthentication no -o ServerAliveInterval 30 localhost %s 123",
+			s.fakessh, echoCommand),
+	)
+}
+
 func (s *SSHCommandSuite) TestCommandAllowPasswordAuthentication(c *gc.C) {
 	var opts ssh.Options
 	opts.AllowPasswordAuthentication()

@@ -4,6 +4,7 @@
 package series
 
 import (
+	"sort"
 	"sync"
 
 	"github.com/juju/errors"
@@ -101,6 +102,12 @@ var ubuntuSeries = map[string]string{
 	"vivid":   "15.04",
 	"wily":    "15.10",
 	"xenial":  "16.04",
+}
+
+var ubuntuLts = map[string]bool{
+	"precise": true,
+	"trusty":  true,
+	"xenial":  true,
 }
 
 // Windows versions come in various flavors:
@@ -235,6 +242,55 @@ func VersionSeries(version string) (string, error) {
 		return series, nil
 	}
 	return "", errors.Trace(unknownVersionSeriesError(version))
+}
+
+// SupportedLts are the current supported LTS series in ascending order.
+func SupportedLts() []string {
+	seriesVersionsMutex.Lock()
+	defer seriesVersionsMutex.Unlock()
+	updateSeriesVersionsOnce()
+
+	versions := []string{}
+	for k := range ubuntuLts {
+		versions = append(versions, ubuntuSeries[k])
+	}
+	sort.Strings(versions)
+	sorted := []string{}
+	for _, v := range versions {
+		sorted = append(sorted, versionSeries[v])
+	}
+	return sorted
+}
+
+// latestLtsSeries is used to ensure we only do
+// the work to determine the latest lts series once.
+var latestLtsSeries string
+
+// LatestLts returns the LatestLtsSeries found in distro-info
+func LatestLts() string {
+	seriesVersionsMutex.Lock()
+	defer seriesVersionsMutex.Unlock()
+	updateSeriesVersionsOnce()
+
+	if latestLtsSeries != "" {
+		return latestLtsSeries
+	}
+
+	var latest string
+	for k := range ubuntuLts {
+		if ubuntuSeries[k] > ubuntuSeries[latest] {
+			latest = k
+		}
+	}
+	latestLtsSeries = latest
+	return latest
+}
+
+// SetLatestLtsForTesting is provided to allow tests to
+// override the lts series used and decouple the tests
+// from the host by avoiding calling out to distro-ifno.
+func SetLatestLtsForTesting(series string) {
+	latestLtsSeries = series
 }
 
 func updateVersionSeries() {

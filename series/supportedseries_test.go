@@ -134,3 +134,26 @@ func (s *supportedSeriesSuite) TestIsWindowsNano(c *gc.C) {
 		c.Assert(series.IsWindowsNano(t.series), gc.Equals, t.expected)
 	}
 }
+
+func (s *supportedSeriesSuite) TestLatestLts(c *gc.C) {
+	table := []struct {
+		latest string
+		want   string
+	}{
+		{"testseries", "testseries"},
+		{"", "xenial"},
+	}
+	for _, test := range table {
+		series.SetLatestLtsForTesting(test.latest)
+		got := series.LatestLts()
+		c.Assert(got, gc.Equals, test.want)
+	}
+}
+
+func (s *supportedSeriesSuite) TestSupportedLts(c *gc.C) {
+	got := series.SupportedLts()
+	want := []string{"precise", "trusty", "xenial"}
+	for i, v := range got {
+		c.Assert(v, gc.Equals, want[i])
+	}
+}

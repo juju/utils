@@ -153,7 +153,5 @@ func (s *supportedSeriesSuite) TestLatestLts(c *gc.C) {
 func (s *supportedSeriesSuite) TestSupportedLts(c *gc.C) {
 	got := series.SupportedLts()
 	want := []string{"precise", "trusty", "xenial"}
-	for i, v := range got {
-		c.Assert(v, gc.Equals, want[i])
-	}
+	c.Assert(got, gc.DeepEquals, want)
 }

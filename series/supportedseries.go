@@ -4,6 +4,7 @@
 package series
 
 import (
+	"sort"
 	"sync"
 
 	"github.com/juju/errors"
@@ -101,6 +102,17 @@ var ubuntuSeries = map[string]string{
 	"vivid":   "15.04",
 	"wily":    "15.10",
 	"xenial":  "16.04",
+}
+
+// ubuntuLts provides a lookup for current LTS series.  Like seriesVersions,
+// the values here are current at the time of writing. On Ubuntu systems this
+// map is updated by updateDistroInfo, using data from
+// /usr/share/distro-info/ubuntu.csv to ensure we have the latest values.  On
+// non-Ubuntu systems, these values provide a nice fallback option.
+var ubuntuLts = map[string]bool{
+	"precise": true,
+	"trusty":  true,
+	"xenial":  true,
 }
 
 // Windows versions come in various flavors:
@@ -237,6 +249,58 @@ func VersionSeries(version string) (string, error) {
 	return "", errors.Trace(unknownVersionSeriesError(version))
 }
 
+// SupportedLts are the current supported LTS series in ascending order.
+func SupportedLts() []string {
+	seriesVersionsMutex.Lock()
+	defer seriesVersionsMutex.Unlock()
+	updateSeriesVersionsOnce()
+
+	versions := []string{}
+	for k := range ubuntuLts {
+		versions = append(versions, ubuntuSeries[k])
+	}
+	sort.Strings(versions)
+	sorted := []string{}
+	for _, v := range versions {
+		sorted = append(sorted, versionSeries[v])
+	}
+	return sorted
+}
+
+// latestLtsSeries is used to ensure we only do
+// the work to determine the latest lts series once.
+var latestLtsSeries string
+
+// LatestLts returns the LatestLtsSeries found in distro-info
+func LatestLts() string {
+	seriesVersionsMutex.Lock()
+	defer seriesVersionsMutex.Unlock()
+	updateSeriesVersionsOnce()
+
+	if latestLtsSeries != "" {
+		return latestLtsSeries
+	}
+
+	var latest string
+	for k := range ubuntuLts {
+		if ubuntuSeries[k] > ubuntuSeries[latest] {
+			latest = k
+		}
+	}
+	latestLtsSeries = latest
+	return latest
+}
+
+// SetLatestLtsForTesting is provided to allow tests to override the lts series
+// used and decouple the tests from the host by avoiding calling out to
+// distro-info.  It returns the previous setting so that it may be set back to
+// the original value by the caller.
+func SetLatestLtsForTesting(series string) string {
+	old := latestLtsSeries
+	latestLtsSeries = series
+	return old
+}
+
 func updateVersionSeries() {
 	versionSeries = reverseSeriesVersion()
 }
@@ -282,7 +346,13 @@ func OSSupportedSeries(os os.OSType) []string {
 func UpdateSeriesVersions() error {
 	seriesVersionsMutex.Lock()
 	defer seriesVersionsMutex.Unlock()
-	return updateLocalSeriesVersions()
+	err := updateLocalSeriesVersions()
+	if err != nil {
+		return err
+	}
+	updateVersionSeries()
+	latestLtsSeries = ""
+	return nil
 }
 
 var updatedseriesVersions bool
@@ -292,6 +362,7 @@ func updateSeriesVersionsOnce() {
 		if err := updateLocalSeriesVersions(); err != nil {
 			logger.Warningf("failed to update distro info: %v", err)
 		}
+		updateVersionSeries()
 		updatedseriesVersions = true
 	}
 }

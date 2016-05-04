@@ -271,15 +271,15 @@ func SupportedLts() []string {
 // the work to determine the latest lts series once.
 var latestLtsSeries string
 
-// LatestLts returns the LatestLtsSeries found in distro-info
+// LatestLts returns the Latest LTS Series found in distro-info
 func LatestLts() string {
-	seriesVersionsMutex.Lock()
-	defer seriesVersionsMutex.Unlock()
-	updateSeriesVersionsOnce()
-
 	if latestLtsSeries != "" {
 		return latestLtsSeries
 	}
+
+	seriesVersionsMutex.Lock()
+	defer seriesVersionsMutex.Unlock()
+	updateSeriesVersionsOnce()
 
 	var latest string
 	for k := range ubuntuLts {
@@ -287,6 +287,7 @@ func LatestLts() string {
 			latest = k
 		}
 	}
+
 	latestLtsSeries = latest
 	return latest
 }

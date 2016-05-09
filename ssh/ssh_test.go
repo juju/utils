@@ -131,6 +131,32 @@ func (s *SSHCommandSuite) TestCommandStrictHostKeyChecking(c *gc.C) {
 	)
 }
 
+func (s *SSHCommandSuite) TestSetStrictHostKeyChecking(c *gc.C) {
+	commandPattern := fmt.Sprintf("%s%%s -o PasswordAuthentication no -o ServerAliveInterval 30 localhost %s 123",
+		s.fakessh, echoCommand)
+
+	tests := []struct {
+		input    ssh.StrictHostChecksOption
+		expected string
+	}{
+		{ssh.StrictHostChecksNo, "no"},
+		{ssh.StrictHostChecksYes, "yes"},
+		{ssh.StrictHostChecksAsk, "ask"},
+		{ssh.StrictHostChecksUnset, ""},
+		{ssh.StrictHostChecksOption(999), ""},
+	}
+	for _, t := range tests {
+		var opts ssh.Options
+		opts.SetStrictHostKeyChecking(t.input)
+		expectedOpt := ""
+		if t.expected != "" {
+			expectedOpt = " -o StrictHostKeyChecking " + t.expected
+		}
+		s.assertCommandArgs(c, s.commandOptions([]string{echoCommand, "123"}, &opts),
+			fmt.Sprintf(commandPattern, expectedOpt))
+	}
+}
+
 func (s *SSHCommandSuite) TestCommandAllowPasswordAuthentication(c *gc.C) {
 	var opts ssh.Options
 	opts.AllowPasswordAuthentication()

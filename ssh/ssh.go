@@ -18,6 +18,31 @@ import (
 	je "github.com/juju/errors"
 )
 
+// StrictHostChecksOption defines the possible values taken by
+// Option.SetStrictHostKeyChecking().
+type StrictHostChecksOption int
+
+const (
+	// StrictHostChecksNo disables strict host key checking. This is
+	// the default.
+	StrictHostChecksNo StrictHostChecksOption = iota
+
+	// StrictHostChecksYes enabled strict host key checking
+	// enabled. Target hosts must appear in known_hosts file or
+	// connections will fail.
+	StrictHostChecksYes
+
+	// StrictHostChecksAsk will cause openssh to ask the user about
+	// hosts that don't appear in known_hosts file.
+	StrictHostChecksAsk
+
+	// StrictHostChecksUnset will prevent the addition of a
+	// StrictHostKeyChecking option to the openssh command line. The
+	// StrictHostKeyChecking setting from user's personal
+	// configuration will be used.
+	StrictHostChecksUnset
+)
+
 // Options is a client-implementation independent SSH options set.
 type Options struct {
 	// proxyCommand specifies the command to
@@ -36,9 +61,10 @@ type Options struct {
 	// knownHostsFile is a path to a file in which to save the host's
 	// fingerprint.
 	knownHostsFile string
+
 	// strictHostKeyChecking sets that the host being connected to must
 	// exist in the known_hosts file, and with a matching public key.
-	strictHostKeyChecking bool
+	strictHostKeyChecking StrictHostChecksOption
 }
 
 // SetProxyCommand sets a command to execute to proxy traffic through.
@@ -68,9 +94,16 @@ func (o *Options) SetKnownHostsFile(file string) {
 
 // EnableStrictHostKeyChecking requires that the host being connected
 // to must exist in the known_hosts file, and with a matching public
-// key.
+// key. See also SetStrictHostKeyChecking.
 func (o *Options) EnableStrictHostKeyChecking() {
-	o.strictHostKeyChecking = true
+	o.strictHostKeyChecking = StrictHostChecksYes
+}
+
+// SetStrictHostKeyChecking sets the desired host key checking
+// behaviour. It takes one of the StrictHostChecksOption constants.
+// See also EnableStrictHostKeyChecking.
+func (o *Options) SetStrictHostKeyChecking(value StrictHostChecksOption) {
+	o.strictHostKeyChecking = value
 }
 
 // AllowPasswordAuthentication allows the SSH

@@ -46,7 +46,7 @@ func (s *UtilsSuite) TestRunCommandWithRetryDoesNotCallCombinedOutputTwice(c *gc
 	const minRetries = 3
 	var calls int
 	state := os.ProcessState{}
-	cmdError := &exec.ExitError{&state}
+	cmdError := &exec.ExitError{ProcessState: &state}
 	s.PatchValue(&manager.AttemptStrategy, utils.AttemptStrategy{Min: minRetries})
 	s.PatchValue(&manager.ProcessStateSys, func(*os.ProcessState) interface{} {
 		return mockExitStatuser(100) // retry each time.

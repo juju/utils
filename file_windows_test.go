@@ -23,16 +23,16 @@ func (s *windowsFileSuite) TestMakeFileURL(c *gc.C) {
 		expected string
 	}{{
 		in:       "file://C:\\foo\\baz",
-		expected: "file://\\\\localhost\\C$/foo/baz",
+		expected: "file://C:/foo/baz",
 	}, {
 		in:       "C:\\foo\\baz",
-		expected: "file://\\\\localhost\\C$/foo/baz",
+		expected: "file://C:/foo/baz",
 	}, {
 		in:       "http://foo/baz",
 		expected: "http://foo/baz",
 	}, {
-		in:       "file://\\\\localhost\\C$/foo/baz",
-		expected: "file://\\\\localhost\\C$/foo/baz",
+		in:       "file://C:/foo/baz",
+		expected: "file://C:/foo/baz",
 	}}
 
 	for i, t := range makeFileURLTests {

@@ -12,6 +12,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/juju/errors"
 	"github.com/juju/testing"
 	jc "github.com/juju/testing/checkers"
 	"github.com/juju/utils"
@@ -196,7 +197,7 @@ func (s *fslockSuite) TestLockWithTimeoutLocked(c *gc.C) {
 	c.Assert(err, gc.IsNil)
 
 	err = lock2.LockWithTimeout(shortWait, "")
-	c.Assert(err, gc.Equals, fslock.ErrTimeout)
+	c.Assert(errors.Cause(err), gc.Equals, fslock.ErrTimeout)
 }
 
 func (s *fslockSuite) TestUnlock(c *gc.C) {
@@ -249,16 +250,22 @@ func (s *fslockSuite) TestMessage(c *gc.C) {
 	dir := c.MkDir()
 	lock, err := fslock.NewLock(dir, "testing", s.lockConfig)
 	c.Assert(err, gc.IsNil)
-	c.Assert(lock.Message(), gc.Equals, "")
+	msg, err := lock.Message()
+	c.Assert(err, gc.IsNil)
+	c.Assert(msg, gc.Equals, "")
 
 	err = lock.Lock("my message")
 	c.Assert(err, gc.IsNil)
-	c.Assert(lock.Message(), gc.Equals, "my message")
+	msg, err = lock.Message()
+	c.Assert(err, gc.IsNil)
+	c.Assert(msg, gc.Equals, "my message")
 
 	// Unlocking removes the message.
 	err = lock.Unlock()
 	c.Assert(err, gc.IsNil)
-	c.Assert(lock.Message(), gc.Equals, "")
+	msg, err = lock.Message()
+	c.Assert(err, gc.IsNil)
+	c.Assert(msg, gc.Equals, "")
 }
 
 func (s *fslockSuite) TestMessageAcrossLocks(c *gc.C) {
@@ -270,7 +277,9 @@ func (s *fslockSuite) TestMessageAcrossLocks(c *gc.C) {
 
 	err = lock1.Lock("very busy")
 	c.Assert(err, gc.IsNil)
-	c.Assert(lock2.Message(), gc.Equals, "very busy")
+	msg, err := lock2.Message()
+	c.Assert(err, gc.IsNil)
+	c.Assert(msg, gc.Equals, "very busy")
 }
 
 func (s *fslockSuite) TestInitialMessageWhenLocking(c *gc.C) {
@@ -280,14 +289,18 @@ func (s *fslockSuite) TestInitialMessageWhenLocking(c *gc.C) {
 
 	err = lock.Lock("initial message")
 	c.Assert(err, gc.IsNil)
-	c.Assert(lock.Message(), gc.Equals, "initial message")
+	msg, err := lock.Message()
+	c.Assert(err, gc.IsNil)
+	c.Assert(msg, gc.Equals, "initial message")
 
 	err = lock.Unlock()
 	c.Assert(err, gc.IsNil)
 
 	err = lock.LockWithTimeout(shortWait, "initial timeout message")
 	c.Assert(err, gc.IsNil)
-	c.Assert(lock.Message(), gc.Equals, "initial timeout message")
+	msg, err = lock.Message()
+	c.Assert(err, gc.IsNil)
+	c.Assert(msg, gc.Equals, "initial timeout message")
 }
 
 func (s *fslockSuite) TestStress(c *gc.C) {
@@ -364,9 +377,10 @@ func (s *fslockSuite) TestTomb(c *gc.C) {
 	}()
 
 	err = lock.LockWithFunc("won't happen", checkTomb)
-	c.Assert(err, gc.Equals, tomb.ErrDying)
-	c.Assert(lock.Message(), gc.Equals, "very busy")
-
+	c.Assert(errors.Cause(err), gc.Equals, tomb.ErrDying)
+	msg, err := lock.Message()
+	c.Assert(err, gc.IsNil)
+	c.Assert(msg, gc.Equals, "very busy")
 }
 
 func (s *fslockSuite) TestCleanStaleLock(c *gc.C) {

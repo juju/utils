@@ -267,15 +267,18 @@ func (lock *Lock) lockLoop(message string, continueFunc func() error) error {
 	for {
 		acquired, err := lock.acquire(message)
 		if err != nil {
-			return err
+			return errors.Trace(err)
 		}
 		if acquired {
 			return nil
 		}
 		if err = continueFunc(); err != nil {
-			return err
+			return errors.Trace(err)
 		}
-		currMessage := lock.Message()
+		currMessage, err := lock.Message()
+		if err != nil {
+			return errors.Trace(err)
+		}
 		if currMessage != heldMessage {
 			logger.Infof("attempted lock failed %q, %s, currently held: %s", lock.name, message, currMessage)
 			heldMessage = currMessage
@@ -382,10 +385,10 @@ func (lock *Lock) BreakLock() error {
 
 // Message returns the saved message, or the empty string if there is no
 // saved message.
-func (lock *Lock) Message() string {
+func (lock *Lock) Message() (string, error) {
 	lockInfo, err := lock.readLock()
-	if err != nil {
-		return ""
+	if err != nil && !os.IsNotExist(err) {
+		return "", errors.Trace(err)
 	}
-	return lockInfo.Message
+	return lockInfo.Message, nil
 }

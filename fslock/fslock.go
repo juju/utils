@@ -199,7 +199,7 @@ func (lock *Lock) clean() error {
 	// If a lock exists, see if it is stale
 	lockInfo, err := lock.readLock()
 	if err != nil {
-		return nil
+		return err
 	}
 
 	if lock.isAlive(lockInfo.PID) {
@@ -331,8 +331,8 @@ func (lock *Lock) readLock() (lockInfo onDisk, err error) {
 	return lockInfo, err
 }
 
-// IsLockHeld returns whether the lock is currently held by the receiver.
-func (lock *Lock) IsLockHeld() bool {
+// isLockHeld returns whether the lock is currently held by the receiver.
+func (lock *Lock) isLockHeld() bool {
 	lockInfo, err := lock.readLock()
 	if err != nil {
 		return false
@@ -343,7 +343,7 @@ func (lock *Lock) IsLockHeld() bool {
 // Unlock releases a held lock.  If the lock is not held ErrLockNotHeld is
 // returned.
 func (lock *Lock) Unlock() error {
-	if !lock.IsLockHeld() {
+	if !lock.isLockHeld() {
 		return ErrLockNotHeld
 	}
 	// To ensure reasonable unlocking, we should rename to a temp name, and delete that.

@@ -9,10 +9,4 @@ func IsAlive(lock *Lock, PID int) bool {
 	return lock.isAlive(PID)
 }
 
-func DeclareDead(lock *Lock) {
-	lock.declareDead()
-}
-
-func AliveFile(lock *Lock) string {
-	return lock.aliveFile(lock.PID)
-}
+func (l *Lock) IsLockHeld() bool { return l.isLockHeld() }

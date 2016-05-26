@@ -191,5 +191,5 @@ func (s *dialSuite) TestInsecureClientNoAccess(c *gc.C) {
 func (s *dialSuite) TestSecureClientNoAccess(c *gc.C) {
 	s.PatchValue(&utils.OutgoingAccessAllowed, false)
 	_, err := utils.GetValidatingHTTPClient().Get("http://10.0.0.1:1234")
-	c.Assert(err, gc.ErrorMatches, `.*access to address "10.0.0.1:1234" not allowed`)
+	c.Assert(err, gc.ErrorMatches, `.*10.0.0.1:1234.* connection refused`)
 }

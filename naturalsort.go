@@ -1,13 +1,12 @@
-// Copyright 2015 Canonical Ltd.
+// Copyright 2016 Canonical Ltd.
 // Licensed under the AGPLv3, see LICENCE file for details.
 
-package common
+package utils
 
 import (
 	"fmt"
 	"sort"
 	"strconv"
-	"strings"
 	"unicode"
 )
 
@@ -30,28 +29,67 @@ func (n naturally) Swap(a, b int) {
 // Less sorts by non-numeric prefix and numeric suffix
 // when one exists.
 func (n naturally) Less(a, b int) bool {
-	aPrefix, aNumber := splitAtNumber(n[a])
-	bPrefix, bNumber := splitAtNumber(n[b])
-	if aPrefix == bPrefix {
-		return aNumber < bNumber
+	aVal := n[a]
+	bVal := n[b]
+
+	for {
+		// If bVal is empty, then aVal can't be less than it.
+		if bVal == "" {
+			return false
+		}
+		// If aVal is empty here, then is must be less than bVal.
+		if aVal == "" {
+			return true
+		}
+
+		aPrefix, aNumber, aRemainder := splitAtNumber(aVal)
+		bPrefix, bNumber, bRemainder := splitAtNumber(bVal)
+		if aPrefix != bPrefix {
+			return aPrefix < bPrefix
+		}
+		if aNumber != bNumber {
+			return aNumber < bNumber
+		}
+
+		// Everything is the same so far, try again with the remainer.
+		aVal = aRemainder
+		bVal = bRemainder
 	}
-	return n[a] < n[b]
 }
 
-// splitAtNumber splits given string into prefix and numeric suffix.
-// If no numeric suffix exists, full original string is returned as
-// prefix with -1 as a suffix.
-func splitAtNumber(str string) (string, int) {
-	i := strings.LastIndexFunc(str, func(r rune) bool {
-		return !unicode.IsDigit(r)
-	}) + 1
-	if i == len(str) {
-		// no numeric suffix
-		return str, -1
+// splitAtNumber splits given string at the first digit, returning the
+// prefix before the number, the integer represented by the first
+// series of digits, and the remainder of the string after the first
+// series of digits. If no digits are present, the number is returned
+// as -1 and the remainder is empty.
+func splitAtNumber(str string) (string, int, string) {
+	i := indexOfDigit(str)
+	if i == -1 {
+		// no numbers
+		return str, -1, ""
 	}
-	n, err := strconv.Atoi(str[i:])
+	j := i + indexOfNonDigit(str[i:])
+	n, err := strconv.Atoi(str[i:j])
 	if err != nil {
-		panic(fmt.Sprintf("parsing number %v: %v", str[i:], err)) // should never happen
+		panic(fmt.Sprintf("parsing number %v: %v", str[i:j], err)) // should never happen
 	}
-	return str[:i], n
+	return str[:i], n, str[j:]
+}
+
+func indexOfDigit(str string) int {
+	for i, rune := range str {
+		if unicode.IsDigit(rune) {
+			return i
+		}
+	}
+	return -1
+}
+
+func indexOfNonDigit(str string) int {
+	for i, rune := range str {
+		if !unicode.IsDigit(rune) {
+			return i
+		}
+	}
+	return len(str)
 }

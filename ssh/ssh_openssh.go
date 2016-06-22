@@ -68,10 +68,26 @@ func opensshOptions(options *Options, commandKind opensshCommandKind) []string {
 	}
 	var args []string
 
-	args = append(args, "-o", "StrictHostKeyChecking "+yesNo(options.strictHostKeyChecking))
+	var hostChecks string
+	switch options.strictHostKeyChecking {
+	case StrictHostChecksYes:
+		hostChecks = "yes"
+	case StrictHostChecksNo:
+		hostChecks = "no"
+	case StrictHostChecksAsk:
+		hostChecks = "ask"
+	default:
+		// StrictHostChecksUnset and invalid values are handled the
+		// same way (the option doesn't get included).
+	}
+	if hostChecks != "" {
+		args = append(args, "-o", "StrictHostKeyChecking "+hostChecks)
+	}
+
 	if len(options.proxyCommand) > 0 {
 		args = append(args, "-o", "ProxyCommand "+utils.CommandString(options.proxyCommand...))
 	}
+
 	if !options.passwordAuthAllowed {
 		args = append(args, "-o", "PasswordAuthentication no")
 	}
@@ -194,11 +210,4 @@ func (c *opensshCmd) Kill() error {
 		return errors.Errorf("process has not been started")
 	}
 	return c.Process.Kill()
-}
-
-func yesNo(v bool) string {
-	if v {
-		return "yes"
-	}
-	return "no"
 }

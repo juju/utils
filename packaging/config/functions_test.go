@@ -7,9 +7,9 @@ package config_test
 import (
 	"fmt"
 
+	jc "github.com/juju/testing/checkers"
 	"github.com/juju/utils/packaging"
 	"github.com/juju/utils/packaging/config"
-	jc "github.com/juju/testing/checkers"
 	gc "gopkg.in/check.v1"
 )
 

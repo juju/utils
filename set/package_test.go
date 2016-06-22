@@ -6,8 +6,8 @@ package set_test
 import (
 	"testing"
 
-	"github.com/juju/names"
 	gc "gopkg.in/check.v1"
+	"gopkg.in/juju/names.v2"
 
 	"github.com/juju/utils/set"
 )

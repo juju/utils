@@ -29,20 +29,23 @@ func NewHttpTLSTransport(tlsConfig *tls.Config) *http.Transport {
 }
 
 // knownGoodCipherSuites contains the list of secure cipher suites to use
-// with tls.Config.  This list currently differs from the list in crypto/tls by
-// excluding all RC4 implementations, due to known security vulnerabilities in
-// RC4 - CVE-2013-2566, CVE-2015-2808.  We also exclude ciphersuites which do
-// not provide forward secrecy.
+// with tls.Config. This list matches those that Go 1.6 implements from
+// https://wiki.mozilla.org/Security/Server_Side_TLS#Recommended_configurations.
+//
+// https://tools.ietf.org/html/rfc7525#section-4.2 excludes RSA exchange completely
+// so we could be more strict if all our clients will support
+// TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256/384. Unfortunately Go's crypto library
+// is limited and doesn't support DHE-RSA-AES256-GCM-SHA384 and
+// DHE-RSA-AES256-SHA256, which are part of the recommended set.
+//
+// Unfortunately we can't drop the RSA algorithms because our servers aren't
+// generating ECDHE keys.
 var knownGoodCipherSuites = []uint16{
-	tls.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,
-	tls.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,
-	tls.TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA,
-	tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
-	tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
-	tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
-	tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
-	tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
 	tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+	tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+
+	tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+	tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
 }
 
 // SecureTLSConfig returns a tls.Config that conforms to Juju's security

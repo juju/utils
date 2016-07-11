@@ -1,4 +1,5 @@
 // Copyright 2012, 2013 Canonical Ltd.
+// Copyright 2016 Cloudbase solutions
 // Licensed under the AGPLv3, see LICENCE file for details.
 
 package cert_test
@@ -8,6 +9,9 @@ import (
 	"crypto/rsa"
 	"crypto/tls"
 	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/pem"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -19,9 +23,8 @@ import (
 
 	jc "github.com/juju/testing/checkers"
 	"github.com/juju/utils"
-	gc "gopkg.in/check.v1"
-
 	"github.com/juju/utils/cert"
+	gc "gopkg.in/check.v1"
 )
 
 func TestAll(t *testing.T) {
@@ -46,21 +49,21 @@ func checkNotAfter(c *gc.C, cert *x509.Certificate, expiry time.Time) {
 }
 
 func (certSuite) TestParseCertificate(c *gc.C) {
-	xcert, err := cert.ParseCert(caCertPEM)
+	xcert, err := parseCert(caCertPEM)
 	c.Assert(err, jc.ErrorIsNil)
 	c.Assert(xcert.Subject.CommonName, gc.Equals, `juju-generated CA for model "juju testing"`)
 
-	xcert, err = cert.ParseCert(caKeyPEM)
+	xcert, err = parseCert(caKeyPEM)
 	c.Check(xcert, gc.IsNil)
 	c.Assert(err, gc.ErrorMatches, "no certificates found")
 
-	xcert, err = cert.ParseCert("hello")
+	xcert, err = parseCert("hello")
 	c.Check(xcert, gc.IsNil)
 	c.Assert(err, gc.ErrorMatches, "no certificates found")
 }
 
 func (certSuite) TestParseCertAndKey(c *gc.C) {
-	xcert, key, err := cert.ParseCertAndKey(caCertPEM, caKeyPEM)
+	xcert, key, err := parseCertAndKey(caCertPEM, caKeyPEM)
 	c.Assert(err, jc.ErrorIsNil)
 	c.Assert(xcert.Subject.CommonName, gc.Equals, `juju-generated CA for model "juju testing"`)
 	c.Assert(key, gc.NotNil)
@@ -72,11 +75,12 @@ func (certSuite) TestNewCA(c *gc.C) {
 	now := time.Now()
 	expiry := roundTime(now.AddDate(0, 0, 1))
 	caCertPEM, caKeyPEM, err := cert.NewCA(
-		fmt.Sprintf("juju-generated CA for model %s", "foo"), "1", expiry,
+		fmt.Sprintf("juju-generated CA for model %s", "foo"),
+		"1", expiry, 0,
 	)
 	c.Assert(err, jc.ErrorIsNil)
 
-	caCert, caKey, err := cert.ParseCertAndKey(caCertPEM, caKeyPEM)
+	caCert, caKey, err := parseCertAndKey(caCertPEM, caKeyPEM)
 	c.Assert(err, jc.ErrorIsNil)
 
 	c.Check(caKey, gc.FitsTypeOf, (*rsa.PrivateKey)(nil))
@@ -89,7 +93,7 @@ func (certSuite) TestNewCA(c *gc.C) {
 }
 
 func checkCertificate(c *gc.C, caCert *x509.Certificate, srvCertPEM, srvKeyPEM string, now, expiry time.Time) {
-	srvCert, srvKey, err := cert.ParseCertAndKey(srvCertPEM, srvKeyPEM)
+	srvCert, srvKey, err := parseCertAndKey(srvCertPEM, srvKeyPEM)
 	c.Assert(err, jc.ErrorIsNil)
 	c.Assert(srvCert.Subject.CommonName, gc.Equals, "*")
 	checkNotBefore(c, srvCert, now)
@@ -173,6 +177,85 @@ func (c recordingConn) Write(buf []byte) (int, error) {
 // roundTime returns t rounded to the previous whole second.
 func roundTime(t time.Time) time.Time {
 	return t.Add(time.Duration(-t.Nanosecond()))
+}
+
+var rsaByteSizes = []int{512, 1024, 2048, 4096}
+
+func (certSuite) TestNewClientCertRSASize(c *gc.C) {
+	for _, size := range rsaByteSizes {
+		now := time.Now()
+		expiry := roundTime(now.AddDate(0, 0, 1))
+		certPem, privPem, err := cert.NewClientCert(
+			fmt.Sprintf("juju-generated CA for model %s", "foo"), "1", expiry, size)
+
+		c.Assert(err, jc.ErrorIsNil)
+		c.Assert(certPem, gc.NotNil)
+		c.Assert(privPem, gc.NotNil)
+
+		caCert, caKey, err := parseCertAndKey(certPem, privPem)
+		c.Assert(err, jc.ErrorIsNil)
+		c.Check(caCert.Subject.CommonName, gc.Equals, "juju-generated CA for model foo")
+		c.Check(caCert.Subject.Organization, gc.DeepEquals, []string{"juju"})
+		c.Check(caCert.Subject.SerialNumber, gc.DeepEquals, "1")
+
+		c.Check(caKey, gc.FitsTypeOf, (*rsa.PrivateKey)(nil))
+		c.Check(caCert.Version, gc.Equals, 3)
+
+		value, err := cert.CertGetUPNExtenstionValue(caCert.Subject)
+		c.Assert(err, jc.ErrorIsNil)
+		c.Assert(value, gc.Not(gc.IsNil))
+
+		expected := []pkix.Extension{
+			{
+				Id:       cert.CertSubjAltName,
+				Value:    value,
+				Critical: false,
+			},
+		}
+		c.Assert(caCert.Extensions[4], jc.DeepEquals, expected[0])
+		c.Assert(caCert.PublicKeyAlgorithm, gc.Equals, x509.RSA)
+		c.Assert(caCert.ExtKeyUsage[0], gc.Equals, x509.ExtKeyUsageClientAuth)
+		checkNotBefore(c, caCert, now)
+		checkNotAfter(c, caCert, expiry)
+
+	}
+}
+
+// parseCertAndKey parses the given PEM-formatted X509 certificate
+// and RSA private key.
+func parseCertAndKey(certPEM, keyPEM string) (*x509.Certificate, *rsa.PrivateKey, error) {
+	tlsCert, err := tls.X509KeyPair([]byte(certPEM), []byte(keyPEM))
+	if err != nil {
+		return nil, nil, err
+	}
+
+	cert, err := x509.ParseCertificate(tlsCert.Certificate[0])
+	if err != nil {
+		return nil, nil, err
+	}
+
+	key, ok := tlsCert.PrivateKey.(*rsa.PrivateKey)
+	if !ok {
+		return nil, nil, fmt.Errorf("private key with unexpected type %T", key)
+	}
+	return cert, key, nil
+}
+
+// parseCert parses the given PEM-formatted X509 certificate.
+func parseCert(certPEM string) (*x509.Certificate, error) {
+	certPEMData := []byte(certPEM)
+	for len(certPEMData) > 0 {
+		var certBlock *pem.Block
+		certBlock, certPEMData = pem.Decode(certPEMData)
+		if certBlock == nil {
+			break
+		}
+		if certBlock.Type == "CERTIFICATE" {
+			cert, err := x509.ParseCertificate(certBlock.Bytes)
+			return cert, err
+		}
+	}
+	return nil, errors.New("no certificates found")
 }
 
 var (

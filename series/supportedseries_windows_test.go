@@ -57,3 +57,30 @@ func (s *supportedSeriesWindowsSuite) TestSupportedSeries(c *gc.C) {
 	series := series.SupportedSeries()
 	c.Assert(series, jc.SameContents, expectedSeries)
 }
+
+func (s supportedSeriesWindowsSuite) TestWindowsVersions(c *gc.C) {
+	sir := series.WindowsVersions()
+	lsir := len(sir)
+	wlen := len(WindowsVersionMap)
+	nlen := len(WindowsNanoMap)
+	verify := 0
+
+	for i, ival := range sir {
+		for j, jval := range WindowsVersionMap {
+			if i == j && ival == jval {
+				verify++
+			}
+		}
+	}
+	c.Assert(verify, c.Equals, wlen)
+	verify = 0
+
+	for i, ival := range sir {
+		for j, jval := range WindowsNanoMap {
+			if i == j && ival == jval {
+				verify++
+			}
+		}
+	}
+	c.Assert(verify, c.Equals, nlen)
+}

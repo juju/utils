@@ -164,6 +164,20 @@ var windowsNanoVersions = map[string]string{
 	"Windows Server 2016": "win2016nano",
 }
 
+// WindowsVersions returns all windows versions as a map
+func WindowsVersions() map[string]string {
+	save := make(map[string]string)
+	for i, val := range windowsVersions {
+		save[i] = val
+	}
+
+	for i, val := range windowsNanoVersions {
+		save[i] = val
+	}
+
+	return save
+}
+
 // IsWindowsNano tells us whether the provided series is a
 // nano series. It may seem futile at this point, but more
 // nano series will come up with time.

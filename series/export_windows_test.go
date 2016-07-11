@@ -8,4 +8,6 @@ var (
 	CurrentVersionKey = &currentVersionKey
 	IsNanoKey         = &isNanoKey
 	ReadSeries        = readSeries
+	WindowsVersionMap = windowsVersions
+	WindowsNanoMap    = windowsNanoVersions
 )

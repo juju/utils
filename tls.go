@@ -1,8 +1,6 @@
 // Copyright 2016 Canonical Ltd.
 // Licensed under the LGPLv3, see LICENCE file for details.
 
-// +build go1.3
-
 package utils
 
 import (
@@ -41,11 +39,18 @@ func NewHttpTLSTransport(tlsConfig *tls.Config) *http.Transport {
 // Unfortunately we can't drop the RSA algorithms because our servers aren't
 // generating ECDHE keys.
 var knownGoodCipherSuites = []uint16{
+	// These are technically useless for Juju, since we use an RSA certificate,
+	// but they also don't hurt anything, and supporting an ECDSA certificate
+	// could be useful in the future.
 	tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
 	tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
 
 	tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
 	tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+
+	// Windows doesn't support GCM currently, so we need these for RSA support.
+	tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
+	tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
 }
 
 // SecureTLSConfig returns a tls.Config that conforms to Juju's security

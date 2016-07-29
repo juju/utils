@@ -50,6 +50,9 @@ func FindFile(tarFile io.Reader, filename string) (*tar.Header, io.Reader, error
 // or empty sting and error in case of error.
 // We use a base64 encoded sha1 hash, because this is the hash
 // used by RFC 3230 Digest headers in http responses
+// It is not safe to mutate files passed during this function,
+// however at least the bytes up to the inital size are written
+// successfully if no error is returned.
 func TarFiles(fileList []string, target io.Writer, strip string) (shaSum string, err error) {
 	shahash := sha1.New()
 	if err := tarAndHashFiles(fileList, target, strip, shahash); err != nil {
@@ -111,7 +114,9 @@ func writeContents(fileName, strip string, tarw *tar.Writer) error {
 		return nil
 	}
 	if !fInfo.IsDir() {
-		if _, err := io.Copy(tarw, f); err != nil {
+		// Limit data copied to inital stat size included in tar header
+		// or ErrWriteTooLong is raised by archive/tar Writer.
+		if _, err := io.CopyN(tarw, f, fInfo.Size()); err != nil {
 			return fmt.Errorf("failed to write %q: %v", fileName, err)
 		}
 		return nil

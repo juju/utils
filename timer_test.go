@@ -30,6 +30,10 @@ func (t *TestStdTimer) Reset(d time.Duration) bool {
 	return true
 }
 
+func (t *TestStdTimer) Chan() <-chan time.Time {
+	panic("should not be called")
+}
+
 type timerSuite struct {
 	baseSuite        testing.CleanupSuite
 	timer            *utils.BackoffTimer
@@ -54,6 +58,9 @@ type mockClock struct {
 // These 2 methods are not used here but are needed to satisfy the intergface
 func (c *mockClock) Now() time.Time                         { return time.Now() }
 func (c *mockClock) After(d time.Duration) <-chan time.Time { return time.After(d) }
+func (c *mockClock) NewTimer(d time.Duration) clock.Timer {
+	panic("should not be called")
+}
 
 func (c *mockClock) AfterFunc(d time.Duration, f func()) clock.Timer {
 	*c.afterFuncCalls++

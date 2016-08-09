@@ -10,7 +10,7 @@ import (
 	"os"
 	"time"
 
-	"launchpad.net/tomb"
+	"gopkg.in/tomb.v1"
 )
 
 const (

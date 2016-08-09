@@ -8,7 +8,7 @@ import (
 	"io"
 	"sync"
 
-	"launchpad.net/tomb"
+	"gopkg.in/tomb.v1"
 )
 
 var (

@@ -4,7 +4,8 @@ github.com/juju/gnuflag	git	4e76c56581859c14d9d87e1ddbe29e1c0f10195f	2016-08-09T
 github.com/juju/httpprof	git	14bf14c307672fd2456bdbf35d19cf0ccd3cf565	2014-12-17T16:00:36Z
 github.com/juju/httprequest	git	89d547093c45e293599088cc63e805c6f1205dc0	2016-03-02T10:09:58Z
 github.com/juju/loggo	git	15901ae4de786d05edae84a27c93d3fbef66c91e	2016-08-04T22:15:26Z
-github.com/juju/testing	git	ccf839b5a07a7a05009f8fa3ec41cd05fb2e0b08	2016-06-24T20:35:24Z
+github.com/juju/testing	git	d325c22badd4ba3a5fde01d479b188c7a06df755	2016-08-02T03:47:59Z
+github.com/juju/version	git	4ae6172c00626779a5a462c3e3d22fc0e889431a	2016-06-03T19:49:58Z
 github.com/julienschmidt/httprouter	git	77a895ad01ebc98a4dc95d8355bc825ce80a56f6	2015-10-13T22:55:20Z
 golang.org/x/crypto	git	aedad9a179ec1ea11b7064c57cbc6dc30d7724ec	2015-08-30T18:06:42Z
 golang.org/x/net	git	ea47fc708ee3e20177f3ca3716217c4ab75942cb	2015-08-29T23:03:18Z

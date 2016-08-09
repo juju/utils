@@ -15,6 +15,8 @@ import (
 // after a internally stored duration. The steps as well as min and max
 // durations are declared upon initialization and depend on
 // the particular implementation.
+//
+// TODO(katco): 2016-08-09: This type is deprecated: lp:1611427
 type Countdown interface {
 	// Reset stops the timer and resets its duration to the minimum one.
 	// Start must be called to start the timer again.
@@ -30,6 +32,8 @@ type Countdown interface {
 // A backoff timer starts at min and gets multiplied by factor
 // until it reaches max. Jitter determines whether a small
 // randomization is added to the duration.
+//
+// TODO(katco): 2016-08-09: This type is deprecated: lp:1611427
 func NewBackoffTimer(config BackoffTimerConfig) *BackoffTimer {
 	return &BackoffTimer{
 		config:          config,
@@ -41,6 +45,8 @@ func NewBackoffTimer(config BackoffTimerConfig) *BackoffTimer {
 // A backoff timer starts at min and gets multiplied by factor
 // until it reaches max. Jitter determines whether a small
 // randomization is added to the duration.
+//
+// TODO(katco): 2016-08-09: This type is deprecated: lp:1611427
 type BackoffTimer struct {
 	config BackoffTimerConfig
 
@@ -50,6 +56,8 @@ type BackoffTimer struct {
 
 // BackoffTimerConfig is a helper struct for backoff timer
 // that encapsulates config information.
+//
+// TODO(katco): 2016-08-09: This type is deprecated: lp:1611427
 type BackoffTimerConfig struct {
 	// The minimum duration after which Func is called.
 	Min time.Duration

@@ -10,6 +10,10 @@ import (
 	"github.com/juju/utils/exec"
 )
 
+// 0 is thrown by linux because RunParams.Wait
+// only sets the code if the process exits cleanly
+const cancelErrCode = 0
+
 func (*execSuite) TestRunCommands(c *gc.C) {
 	newDir := c.MkDir()
 

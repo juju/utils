@@ -14,6 +14,9 @@ import (
 	"github.com/juju/utils/exec"
 )
 
+// 1 is thrown by powershell after the a command is cancelled
+const cancelErrCode = 1
+
 // longPath is copied over from the symlink package. This should be removed
 // if we add it to gc or in some other convenience package
 func longPath(path string) ([]uint16, error) {

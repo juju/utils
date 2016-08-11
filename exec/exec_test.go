@@ -38,7 +38,9 @@ func (*execSuite) TestWaitWithCancel(c *gc.C) {
 	cancelChan <- struct{}{}
 	result, err := params.WaitWithCancel(cancelChan)
 	c.Assert(err, gc.Equals, exec.ErrCancelled)
-	c.Assert(result, gc.IsNil)
+	c.Assert(string(result.Stdout), gc.Equals, "")
+	c.Assert(string(result.Stderr), gc.Equals, "")
+	c.Assert(result.Code, gc.Equals, cancelErrCode)
 }
 
 func (s *execSuite) TestKillAbortedIfUnsuccessfull(c *gc.C) {

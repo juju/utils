@@ -19,9 +19,9 @@ func NewHttpTLSTransport(tlsConfig *tls.Config) *http.Transport {
 		Proxy:               http.ProxyFromEnvironment,
 		TLSClientConfig:     tlsConfig,
 		DisableKeepAlives:   true,
-		Dial:                dial,
 		TLSHandshakeTimeout: 10 * time.Second,
 	}
+	installHTTPDialShim(transport)
 	registerFileProtocol(transport)
 	return transport
 }

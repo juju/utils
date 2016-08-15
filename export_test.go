@@ -10,11 +10,11 @@ import (
 var (
 	GOMAXPROCS        = &gomaxprocs
 	NumCPU            = &numCPU
-	Dial              = dial
-	NetDial           = &netDial
 	ResolveSudoByFunc = resolveSudo
 )
 
 func ExposeBackoffTimerDuration(bot *BackoffTimer) time.Duration {
 	return bot.currentDuration
 }
+
+var IsLocalAddr = isLocalAddr

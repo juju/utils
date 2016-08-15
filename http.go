@@ -22,7 +22,7 @@ func init() {
 	// hit the above Go bug.
 	defaultTransport := http.DefaultTransport.(*http.Transport)
 	defaultTransport.DisableKeepAlives = true
-	defaultTransport.Dial = dial
+	installHTTPDialShim(defaultTransport)
 	registerFileProtocol(defaultTransport)
 }
 
@@ -112,21 +112,10 @@ func ParseBasicAuthHeader(h http.Header) (userid, password string, err error) {
 // localhost can be dialled.
 var OutgoingAccessAllowed = true
 
-// Override for tests.
-var netDial = net.Dial
-
-func dial(network, addr string) (net.Conn, error) {
-	if !OutgoingAccessAllowed {
-		host, _, err := net.SplitHostPort(addr)
-		if err != nil {
-			return netDial(network, addr)
-		}
-		if host != "localhost" {
-			ip := net.ParseIP(host)
-			if ip == nil || !ip.IsLoopback() {
-				return nil, fmt.Errorf("access to address %q not allowed", addr)
-			}
-		}
+func isLocalAddr(addr string) bool {
+	host, _, err := net.SplitHostPort(addr)
+	if err != nil {
+		return false
 	}
-	return netDial(network, addr)
+	return host == "localhost" || net.ParseIP(host).IsLoopback()
 }

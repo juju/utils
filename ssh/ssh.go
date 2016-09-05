@@ -1,5 +1,5 @@
 // Copyright 2013 Canonical Ltd.
-// Licensed under the AGPLv3, see LICENCE file for details.
+// Licensed under the LGPLv3, see LICENCE file for details.
 
 // Package ssh contains utilities for dealing with SSH connections,
 // key management, and so on. All SSH-based command executions in

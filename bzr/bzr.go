@@ -1,5 +1,5 @@
 // Copyright 2013 Canonical Ltd.
-// Licensed under the AGPLv3, see LICENCE file for details.
+// Licensed under the LGPLv3, see LICENCE file for details.
 
 // Package bzr offers an interface to manage branches of the Bazaar VCS.
 package bzr

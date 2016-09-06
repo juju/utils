@@ -3,9 +3,9 @@
 
 package utils
 
-import (
-	"os/exec"
-)
+import "os/exec"
+
+type CommandRunner func(string, ...string) (string, error)
 
 // RunCommand executes the command and return the combined output.
 func RunCommand(command string, args ...string) (output string, err error) {

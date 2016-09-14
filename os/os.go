@@ -14,7 +14,7 @@ const (
 	Windows
 	OSX
 	CentOS
-	Arch
+	GenericLinux
 )
 
 func (t OSType) String() string {
@@ -27,8 +27,8 @@ func (t OSType) String() string {
 		return "OSX"
 	case CentOS:
 		return "CentOS"
-	case Arch:
-		return "Arch"
+	case GenericLinux:
+		return "GenericLinux"
 	}
 	return "Unknown"
 }

@@ -22,7 +22,11 @@ func (s *osSuite) TestHostOS(c *gc.C) {
 	case "darwin":
 		c.Assert(os, gc.Equals, OSX)
 	case "linux":
-		if os != Ubuntu && os != CentOS && os != Arch {
+		// TODO(mjs) - this should really do more by patching out
+		// osReleaseFile and testing the corner cases.
+		switch os {
+		case Ubuntu, CentOS, GenericLinux:
+		default:
 			c.Fatalf("unknown linux version: %v", os)
 		}
 	default:

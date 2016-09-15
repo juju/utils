@@ -44,8 +44,8 @@ var getOSFromSeriesTests = []struct {
 	series: "centos7",
 	want:   os.CentOS,
 }, {
-	series: "arch",
-	want:   os.Arch,
+	series: "genericlinux",
+	want:   os.GenericLinux,
 }, {
 	series: "",
 	err:    "series \"\" not valid",
@@ -72,13 +72,13 @@ func (s *supportedSeriesSuite) TestUnknownOSFromSeries(c *gc.C) {
 
 func setSeriesTestData() {
 	series.SetSeriesVersions(map[string]string{
-		"trusty":      "14.04",
-		"utopic":      "14.10",
-		"win7":        "win7",
-		"win81":       "win81",
-		"win2016nano": "win2016nano",
-		"centos7":     "centos7",
-		"arch":        "rolling",
+		"trusty":       "14.04",
+		"utopic":       "14.10",
+		"win7":         "win7",
+		"win81":        "win81",
+		"win2016nano":  "win2016nano",
+		"centos7":      "centos7",
+		"genericlinux": "genericlinux",
 	})
 }
 
@@ -90,8 +90,8 @@ func (s *supportedSeriesSuite) TestOSSupportedSeries(c *gc.C) {
 	c.Assert(supported, jc.SameContents, []string{"win7", "win81", "win2016nano"})
 	supported = series.OSSupportedSeries(os.CentOS)
 	c.Assert(supported, jc.SameContents, []string{"centos7"})
-	supported = series.OSSupportedSeries(os.Arch)
-	c.Assert(supported, jc.SameContents, []string{"arch"})
+	supported = series.OSSupportedSeries(os.GenericLinux)
+	c.Assert(supported, jc.SameContents, []string{"genericlinux"})
 }
 
 func (s *supportedSeriesSuite) TestVersionSeriesValid(c *gc.C) {

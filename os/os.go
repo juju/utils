@@ -14,7 +14,7 @@ const (
 	Windows
 	OSX
 	CentOS
-	Arch
+	GenericLinux
 )
 
 func (t OSType) String() string {
@@ -27,8 +27,26 @@ func (t OSType) String() string {
 		return "OSX"
 	case CentOS:
 		return "CentOS"
-	case Arch:
-		return "Arch"
+	case GenericLinux:
+		return "GenericLinux"
 	}
 	return "Unknown"
+}
+
+// EquivalentTo returns true if the OS type is equivalent to another
+// OS type.
+func (t OSType) EquivalentTo(t2 OSType) bool {
+	if t == t2 {
+		return true
+	}
+	return t.IsLinux() && t2.IsLinux()
+}
+
+// IsLinux returns true if the OS type is a Linux variant.
+func (t OSType) IsLinux() bool {
+	switch t {
+	case Ubuntu, CentOS, GenericLinux:
+		return true
+	}
+	return false
 }

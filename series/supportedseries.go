@@ -47,38 +47,34 @@ func IsUnknownVersionSeriesError(err error) bool {
 	return ok
 }
 
-var defaultVersionIDs = map[string]string{
-	"arch": "rolling",
-}
-
 // seriesVersions provides a mapping between series names and versions.
 // The values here are current as of the time of writing. On Ubuntu systems, we update
 // these values from /usr/share/distro-info/ubuntu.csv to ensure we have the latest values.
 // On non-Ubuntu systems, these values provide a nice fallback option.
 // Exported so tests can change the values to ensure the distro-info lookup works.
 var seriesVersions = map[string]string{
-	"precise":     "12.04",
-	"quantal":     "12.10",
-	"raring":      "13.04",
-	"saucy":       "13.10",
-	"trusty":      "14.04",
-	"utopic":      "14.10",
-	"vivid":       "15.04",
-	"wily":        "15.10",
-	"xenial":      "16.04",
-	"win2008r2":   "win2008r2",
-	"win2012hvr2": "win2012hvr2",
-	"win2012hv":   "win2012hv",
-	"win2012r2":   "win2012r2",
-	"win2012":     "win2012",
-	"win2016":     "win2016",
-	"win2016nano": "win2016nano",
-	"win7":        "win7",
-	"win8":        "win8",
-	"win81":       "win81",
-	"win10":       "win10",
-	"centos7":     "centos7",
-	"arch":        "rolling",
+	"precise":          "12.04",
+	"quantal":          "12.10",
+	"raring":           "13.04",
+	"saucy":            "13.10",
+	"trusty":           "14.04",
+	"utopic":           "14.10",
+	"vivid":            "15.04",
+	"wily":             "15.10",
+	"xenial":           "16.04",
+	"win2008r2":        "win2008r2",
+	"win2012hvr2":      "win2012hvr2",
+	"win2012hv":        "win2012hv",
+	"win2012r2":        "win2012r2",
+	"win2012":          "win2012",
+	"win2016":          "win2016",
+	"win2016nano":      "win2016nano",
+	"win7":             "win7",
+	"win8":             "win8",
+	"win81":            "win81",
+	"win10":            "win10",
+	"centos7":          "centos7",
+	genericLinuxSeries: genericLinuxVersion,
 }
 
 // versionSeries provides a mapping between versions and series names.
@@ -86,10 +82,6 @@ var versionSeries = reverseSeriesVersion()
 
 var centosSeries = map[string]string{
 	"centos7": "centos7",
-}
-
-var archSeries = map[string]string{
-	"arch": "rolling",
 }
 
 var ubuntuSeries = map[string]string{
@@ -189,8 +181,8 @@ func GetOSFromSeries(series string) (os.OSType, error) {
 	if _, ok := centosSeries[series]; ok {
 		return os.CentOS, nil
 	}
-	if _, ok := archSeries[series]; ok {
-		return os.Arch, nil
+	if series == genericLinuxSeries {
+		return os.GenericLinux, nil
 	}
 	for _, val := range windowsVersions {
 		if val == series {

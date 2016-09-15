@@ -14,6 +14,11 @@ import (
 	jujuos "github.com/juju/utils/os"
 )
 
+const (
+	genericLinuxSeries  = "genericlinux"
+	genericLinuxVersion = "genericlinux"
+)
+
 var (
 	// osReleaseFile is the name of the file that is read in order to determine
 	// the linux type release version.
@@ -33,13 +38,11 @@ func seriesFromOSRelease(values map[string]string) (string, error) {
 	switch values["ID"] {
 	case strings.ToLower(jujuos.Ubuntu.String()):
 		return getValue(ubuntuSeries, values["VERSION_ID"])
-	case strings.ToLower(jujuos.Arch.String()):
-		return getValue(archSeries, values["VERSION_ID"])
 	case strings.ToLower(jujuos.CentOS.String()):
 		codename := fmt.Sprintf("%s%s", values["ID"], values["VERSION_ID"])
 		return getValue(centosSeries, codename)
 	default:
-		return "unknown", nil
+		return genericLinuxSeries, nil
 	}
 }
 
@@ -49,7 +52,7 @@ func getValue(from map[string]string, val string) (string, error) {
 			return serie, nil
 		}
 	}
-	return "unknown", errors.New("Could not determine series")
+	return "unknown", errors.New("could not determine series")
 }
 
 // ReleaseVersion looks for the value of VERSION_ID in the content of

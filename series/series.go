@@ -15,11 +15,10 @@ import (
 	"github.com/juju/utils/os"
 )
 
-var logger = loggo.GetLogger("juju.juju.series")
-
-var HostSeries = hostSeries
-
 var (
+	logger     = loggo.GetLogger("juju.juju.series")
+	HostSeries = hostSeries
+
 	seriesOnce sync.Once
 	series     string // filled in by the first call to hostSeries
 )

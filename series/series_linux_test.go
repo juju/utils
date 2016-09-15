@@ -168,17 +168,6 @@ VERSION_ID="7"
 	"centos7",
 	"",
 }, {
-	`NAME="Arch Linux"
-ID=arch
-PRETTY_NAME="Arch Linux"
-ANSI_COLOR="0;36"
-HOME_URL="https://www.archlinux.org/"
-SUPPORT_URL="https://bbs.archlinux.org/"
-BUG_REPORT_URL="https://bugs.archlinux.org/"
-`,
-	"arch",
-	"",
-}, {
 	`NAME="Ubuntu"
 VERSION="14.04.1 LTS, Trusty Tahr"
 ID=ubuntu
@@ -192,6 +181,37 @@ BUG_REPORT_URL="http://bugs.launchpad.net/ubuntu/"
 	"trusty",
 	"",
 }, {
+	`NAME="Arch Linux"
+ID=arch
+PRETTY_NAME="Arch Linux"
+ANSI_COLOR="0;36"
+HOME_URL="https://www.archlinux.org/"
+SUPPORT_URL="https://bbs.archlinux.org/"
+BUG_REPORT_URL="https://bugs.archlinux.org/"
+`,
+	"genericlinux",
+	"",
+}, {
+	`NAME=Fedora
+VERSION="24 (Twenty Four)"
+ID=fedora
+VERSION_ID=24
+PRETTY_NAME="Fedora 24 (Twenty Four)"
+CPE_NAME="cpe:/o:fedoraproject:fedora:24"
+HOME_URL="https://fedoraproject.org/"
+BUG_REPORT_URL="https://bugzilla.redhat.com/"
+`,
+	"genericlinux",
+	"",
+}, {
+	`NAME="SuSE Linux"
+ID="SuSE"
+VERSION_ID="12"
+`,
+	"genericlinux",
+	"",
+}, {
+
 	"",
 	"unknown",
 	"OS release file is missing ID",
@@ -200,14 +220,7 @@ BUG_REPORT_URL="http://bugs.launchpad.net/ubuntu/"
 ID="centos"
 `,
 	"unknown",
-	"OS release file is missing VERSION_ID",
-}, {
-	`NAME="SuSE Linux"
-ID="SuSE"
-VERSION_ID="12"
-`,
-	"unknown",
-	"",
+	"could not determine series",
 },
 }
 

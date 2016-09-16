@@ -15,6 +15,11 @@ import (
 	"github.com/juju/utils/os"
 )
 
+const (
+	genericLinuxSeries  = "genericlinux"
+	genericLinuxVersion = "genericlinux"
+)
+
 var (
 	logger     = loggo.GetLogger("juju.juju.series")
 	HostSeries = hostSeries

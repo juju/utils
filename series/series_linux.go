@@ -14,11 +14,6 @@ import (
 	jujuos "github.com/juju/utils/os"
 )
 
-const (
-	genericLinuxSeries  = "genericlinux"
-	genericLinuxVersion = "genericlinux"
-)
-
 var (
 	// osReleaseFile is the name of the file that is read in order to determine
 	// the linux type release version.

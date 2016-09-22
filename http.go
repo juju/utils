@@ -17,11 +17,7 @@ var insecureClient = (*http.Client)(nil)
 var insecureClientMutex = sync.Mutex{}
 
 func init() {
-	// See https://code.google.com/p/go/issues/detail?id=4677
-	// We need to force the connection to close each time so that we don't
-	// hit the above Go bug.
 	defaultTransport := http.DefaultTransport.(*http.Transport)
-	defaultTransport.DisableKeepAlives = true
 	installHTTPDialShim(defaultTransport)
 	registerFileProtocol(defaultTransport)
 }

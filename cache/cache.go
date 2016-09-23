@@ -40,6 +40,17 @@ type Cache struct {
 	// Instead, we move items from old to new when they're accessed
 	// and throw away the old map at refresh time.
 	old, new map[Key]entry
+
+	inFlight map[Key]*fetchCall
+}
+
+// fetch represents an in-progress fetch call. If a cache Get request
+// is made for an item that is currently being fetched, this will
+// be used to avoid an extra call to the fetch function.
+type fetchCall struct {
+	wg  sync.WaitGroup
+	val interface{}
+	err error
 }
 
 // New returns a new Cache that will cache items for
@@ -50,7 +61,8 @@ func New(maxAge time.Duration) *Cache {
 	// time, so will expire immediately, causing the new
 	// map to be created.
 	return &Cache{
-		maxAge: maxAge,
+		maxAge:   maxAge,
+		inFlight: make(map[Key]*fetchCall),
 	}
 }
 
@@ -91,15 +103,37 @@ func (c *Cache) getAtTime(key Key, fetch func() (interface{}, error), now time.T
 	if val, ok := c.cachedValue(key, now); ok {
 		return val, nil
 	}
+	c.mu.Lock()
+	if f, ok := c.inFlight[key]; ok {
+		// There's already an in-flight request for the key, so wait
+		// for that to complete and use its results.
+		c.mu.Unlock()
+		f.wg.Wait()
+		// The value will have been added to the cache by the first fetch,
+		// so no need to add it here.
+		if f.err == nil {
+			return f.val, nil
+		}
+		return nil, errgo.Mask(f.err, errgo.Any)
+	}
+	var f fetchCall
+	f.wg.Add(1)
+	c.inFlight[key] = &f
+	// Mark the request as done when we return, and after
+	// the value has been added to the cache.
+	defer f.wg.Done()
+
 	// Fetch the data without the mutex held
 	// so that one slow fetch doesn't hold up
 	// all the other cache accesses.
+	c.mu.Unlock()
 	val, err := fetch()
-	if err != nil {
-		// TODO consider caching cache misses.
-		return nil, errgo.Mask(err, errgo.Any)
-	}
-	if c.maxAge < 2*time.Nanosecond {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	// Set the result in the fetchCall so that other calls can see it.
+	f.val, f.err = val, err
+	if err == nil && c.maxAge >= 2*time.Nanosecond {
 		// If maxAge is < 2ns then the expiry code will panic because the
 		// actual expiry time will be maxAge - a random value in the
 		// interval [0, maxAge/2). If maxAge is < 2ns then this requires
@@ -108,22 +142,16 @@ func (c *Cache) getAtTime(key Key, fetch func() (interface{}, error), now time.T
 		// This value is so small that there's no need to cache anyway,
 		// which makes tests more obviously deterministic when using
 		// a zero expiry time.
-		return val, nil
+		c.new[key] = entry{
+			value:  val,
+			expire: now.Add(c.maxAge - time.Duration(rand.Int63n(int64(c.maxAge/2)))),
+		}
 	}
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	// Add the new cache entry. Because it's quite likely that a
-	// large number of cache entries will be initially fetched at
-	// the same time, we want to avoid a thundering herd of fetches
-	// when they all expire at the same time, so we set the expiry
-	// time to a random interval between [now + t.maxAge/2, now +
-	// t.maxAge] and so they'll be spread over time without
-	// compromising the maxAge value.
-	c.new[key] = entry{
-		value:  val,
-		expire: now.Add(c.maxAge - time.Duration(rand.Int63n(int64(c.maxAge/2)))),
+	delete(c.inFlight, key)
+	if err == nil {
+		return f.val, nil
 	}
-	return val, nil
+	return nil, errgo.Mask(f.err, errgo.Any)
 }
 
 // cachedValue returns any cached value for the given key

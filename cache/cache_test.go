@@ -241,6 +241,52 @@ func (*suite) TestRefreshSpread(c *gc.C) {
 	c.Assert(total, gc.Equals, N)
 }
 
+func (*suite) TestSingleFlight(c *gc.C) {
+	p := cache.New(time.Minute)
+	start := make(chan struct{})
+	var wg sync.WaitGroup
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		x, err := p.Get("x", func() (interface{}, error) {
+			start <- struct{}{}
+			<-start
+			return 99, nil
+		})
+		c.Check(x, gc.Equals, 99)
+		c.Check(err, gc.Equals, nil)
+
+	}()
+	// Wait for the fetch to start.
+	<-start
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		x, err := p.Get("x", func() (interface{}, error) {
+			c.Errorf("fetch function unexpectedly called with inflight request")
+			return 55, nil
+		})
+		c.Check(x, gc.Equals, 99)
+		c.Check(err, gc.Equals, nil)
+	}()
+
+	// Check that we can still get other values while the
+	// other fetches are in progress.
+	y, err := p.Get("y", func() (interface{}, error) {
+		return 88, nil
+	})
+	c.Check(y, gc.Equals, 88)
+	c.Check(err, gc.Equals, nil)
+
+	// Let the original fetch proceed, which should let the other one
+	// succeed too, but sleep for a little bit to let the second goroutine
+	// actually initiate its request.
+	time.Sleep(time.Millisecond)
+	start <- struct{}{}
+	wg.Wait()
+}
+
 var errUnexpectedFetch = errgo.New("fetch called unexpectedly")
 
 func fetchError(err error) func() (interface{}, error) {

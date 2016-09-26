@@ -5,7 +5,7 @@ github.com/juju/httpprof	git	14bf14c307672fd2456bdbf35d19cf0ccd3cf565	2014-12-17
 github.com/juju/httprequest	git	89d547093c45e293599088cc63e805c6f1205dc0	2016-03-02T10:09:58Z
 github.com/juju/loggo	git	15901ae4de786d05edae84a27c93d3fbef66c91e	2016-08-04T22:15:26Z
 github.com/juju/retry	git	62c62032529169c7ec02fa48f93349604c345e1f	2015-10-29T02:48:21Z
-github.com/juju/testing	git	40381bc6e42ec364fc6deb8e6978c3ed46bb6a86	2016-09-26T10:48:02Z
+github.com/juju/testing	git	7177264a582e2c00d08277eaa91d88f8eb0fd869	2016-09-26T12:59:16Z
 github.com/juju/version	git	4ae6172c00626779a5a462c3e3d22fc0e889431a	2016-06-03T19:49:58Z
 github.com/julienschmidt/httprouter	git	77a895ad01ebc98a4dc95d8355bc825ce80a56f6	2015-10-13T22:55:20Z
 golang.org/x/crypto	git	aedad9a179ec1ea11b7064c57cbc6dc30d7724ec	2015-08-30T18:06:42Z

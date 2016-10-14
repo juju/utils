@@ -8,7 +8,13 @@ import (
 	"sync"
 
 	"github.com/juju/errors"
+	"github.com/juju/loggo"
 	"github.com/juju/utils/os"
+)
+
+var (
+	// TODO(katco): Remove globals (lp:1633571)
+	logger = loggo.GetLogger("juju.juju.series")
 )
 
 type unknownOSForSeriesError string

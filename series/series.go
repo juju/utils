@@ -11,7 +11,6 @@ import (
 	"sync"
 
 	"github.com/juju/errors"
-	"github.com/juju/loggo"
 	"github.com/juju/utils/os"
 )
 
@@ -21,21 +20,32 @@ const (
 )
 
 var (
-	logger     = loggo.GetLogger("juju.juju.series")
-	HostSeries = hostSeries
-
+	// TODO(katco): Remove globals (lp:1633571)
 	seriesOnce sync.Once
-	series     string // filled in by the first call to hostSeries
+	// These are filled in by the first call to hostSeries
+	series    string
+	seriesErr error
 )
 
-func hostSeries() string {
+// HostSeries returns the series of the machine the current process is
+// running on.
+func HostSeries() (string, error) {
+	var err error
 	seriesOnce.Do(func() {
-		var err error
 		series, err = readSeries()
 		if err != nil {
-			panic("unable to determine host series: " + err.Error())
+			seriesErr = errors.Annotate(err, "cannot determine host series")
 		}
 	})
+	return series, seriesErr
+}
+
+// MustHostSeries calls HostSeries and panics if there is an error.
+func MustHostSeries() string {
+	series, err := HostSeries()
+	if err != nil {
+		panic(err)
+	}
 	return series
 }
 

@@ -68,6 +68,20 @@ func (s *supportedSeriesSuite) TestUpdateSeriesVersions(c *gc.C) {
 	checkSeries()
 }
 
+func (s *supportedSeriesSuite) TestOSSeries(c *gc.C) {
+	cleanup := series.SetUbuntuSeries(make(map[string]string))
+	defer cleanup()
+	d := c.MkDir()
+	filename := filepath.Join(d, "ubuntu.csv")
+	err := ioutil.WriteFile(filename, []byte(distInfoData), 0644)
+	c.Assert(err, jc.ErrorIsNil)
+	s.PatchValue(series.DistroInfo, filename)
+
+	osType, err := series.GetOSFromSeries("raring")
+	c.Assert(err, jc.ErrorIsNil)
+	c.Assert(osType, gc.Equals, os.Ubuntu)
+}
+
 const distInfoData = `version,codename,series,created,release,eol,eol-server
 4.10,Warty Warthog,warty,2004-03-05,2004-10-20,2006-04-30
 5.04,Hoary Hedgehog,hoary,2004-10-20,2005-04-08,2006-10-31

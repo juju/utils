@@ -68,6 +68,8 @@ var seriesVersions = map[string]string{
 	"vivid":            "15.04",
 	"wily":             "15.10",
 	"xenial":           "16.04",
+	"yakkety":          "16.10",
+	"zesty":            "17.04",
 	"win2008r2":        "win2008r2",
 	"win2012hvr2":      "win2012hvr2",
 	"win2012hv":        "win2012hv",
@@ -100,6 +102,8 @@ var ubuntuSeries = map[string]string{
 	"vivid":   "15.04",
 	"wily":    "15.10",
 	"xenial":  "16.04",
+	"yakkety": "16.10",
+	"zesty":   "17.04",
 }
 
 // ubuntuLts provides a lookup for current LTS series.  Like seriesVersions,
@@ -181,6 +185,15 @@ func GetOSFromSeries(series string) (os.OSType, error) {
 	if series == "" {
 		return os.Unknown, errors.NotValidf("series %q", series)
 	}
+	osType, err := getOSFromSeries(series)
+	if err == nil {
+		return osType, nil
+	}
+	updateSeriesVersionsOnce()
+	return getOSFromSeries(series)
+}
+
+func getOSFromSeries(series string) (os.OSType, error) {
 	if _, ok := ubuntuSeries[series]; ok {
 		return os.Ubuntu, nil
 	}

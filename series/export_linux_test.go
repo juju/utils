@@ -8,3 +8,11 @@ var (
 	ReadSeries    = readSeries
 	OSReleaseFile = &osReleaseFile
 )
+
+func SetUbuntuSeries(value map[string]string) func() {
+	origSeries := ubuntuSeries
+	ubuntuSeries = value
+	return func() {
+		ubuntuSeries = origSeries
+	}
+}

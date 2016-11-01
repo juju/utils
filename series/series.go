@@ -21,6 +21,9 @@ const (
 
 var (
 	// TODO(katco): Remove globals (lp:1633571)
+	// Override for testing.
+	MustHostSeries = mustHostSeries
+
 	seriesOnce sync.Once
 	// These are filled in by the first call to hostSeries
 	series    string
@@ -40,8 +43,8 @@ func HostSeries() (string, error) {
 	return series, seriesErr
 }
 
-// MustHostSeries calls HostSeries and panics if there is an error.
-func MustHostSeries() string {
+// mustHostSeries calls HostSeries and panics if there is an error.
+func mustHostSeries() string {
 	series, err := HostSeries()
 	if err != nil {
 		panic(err)

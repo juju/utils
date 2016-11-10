@@ -58,31 +58,9 @@ func ParseCertAndKey(certPEM, keyPEM string) (*x509.Certificate, *rsa.PrivateKey
 	return cert, key, nil
 }
 
-// Verify verifies that the given server certificate is valid with
-// respect to the given CA certificate at the given time.
-func Verify(srvCertPEM, caCertPEM string, when time.Time) error {
-	caCert, err := ParseCert(caCertPEM)
-	if err != nil {
-		return errors.Annotate(err, "cannot parse CA certificate")
-	}
-	srvCert, err := ParseCert(srvCertPEM)
-	if err != nil {
-		return errors.Annotate(err, "cannot parse server certificate")
-	}
-	pool := x509.NewCertPool()
-	pool.AddCert(caCert)
-	opts := x509.VerifyOptions{
-		DNSName:     "anyServer",
-		Roots:       pool,
-		CurrentTime: when,
-	}
-	_, err = srvCert.Verify(opts)
-	return err
-}
-
 // NewCA generates a CA certificate/key pair suitable for signing server
 // keys for an environment with the given name.
-func NewCA(envName, UUID string, expiry time.Time) (certPEM, keyPEM string, err error) {
+func NewCA(commonName, UUID string, expiry time.Time) (certPEM, keyPEM string, err error) {
 	key, err := rsa.GenerateKey(rand.Reader, KeyBits)
 	if err != nil {
 		return "", "", err
@@ -98,7 +76,7 @@ func NewCA(envName, UUID string, expiry time.Time) (certPEM, keyPEM string, err 
 	template := &x509.Certificate{
 		SerialNumber: serialNumber,
 		Subject: pkix.Name{
-			CommonName:   fmt.Sprintf("juju-generated CA for model %q", envName),
+			CommonName:   commonName,
 			Organization: []string{"juju"},
 			SerialNumber: UUID,
 		},
@@ -137,21 +115,8 @@ func newSerialNumber() (*big.Int, error) {
 	return n, nil
 }
 
-// NewDefaultServer generates a certificate/key pair suitable for use by a server, with an
-// expiry time of 10 years.
-func NewDefaultServer(caCertPEM, caKeyPEM string, hostnames []string) (certPEM, keyPEM string, err error) {
-	// TODO(perrito666) 2016-05-02 lp:1558657
-	expiry := time.Now().UTC().AddDate(10, 0, 0)
-	return newLeaf(caCertPEM, caKeyPEM, expiry, hostnames, []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth})
-}
-
-// NewServer generates a certificate/key pair suitable for use by a server.
-func NewServer(caCertPEM, caKeyPEM string, expiry time.Time, hostnames []string) (certPEM, keyPEM string, err error) {
-	return newLeaf(caCertPEM, caKeyPEM, expiry, hostnames, []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth})
-}
-
-// newLeaf generates a certificate/key pair suitable for use by a leaf node.
-func newLeaf(caCertPEM, caKeyPEM string, expiry time.Time, hostnames []string, extKeyUsage []x509.ExtKeyUsage) (certPEM, keyPEM string, err error) {
+// NewLeaf generates a certificate/key pair suitable for use by a leaf node.
+func NewLeaf(commonName, caCertPEM, caKeyPEM string, expiry time.Time, hostnames []string, extKeyUsage []x509.ExtKeyUsage) (certPEM, keyPEM string, err error) {
 	tlsCert, err := tls.X509KeyPair([]byte(caCertPEM), []byte(caKeyPEM))
 	if err != nil {
 		return "", "", errors.Trace(err)
@@ -186,7 +151,7 @@ func newLeaf(caCertPEM, caKeyPEM string, expiry time.Time, hostnames []string, e
 		Subject: pkix.Name{
 			// This won't match host names with dots. The hostname
 			// is hardcoded when connecting to avoid the issue.
-			CommonName:   "*",
+			CommonName:   commonName,
 			Organization: []string{"juju"},
 		},
 		NotBefore: now.UTC().AddDate(0, 0, -7),

@@ -8,6 +8,7 @@ import (
 	"crypto/rsa"
 	"crypto/tls"
 	"crypto/x509"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"math/big"
@@ -70,48 +71,21 @@ func (certSuite) TestParseCertAndKey(c *gc.C) {
 func (certSuite) TestNewCA(c *gc.C) {
 	now := time.Now()
 	expiry := roundTime(now.AddDate(0, 0, 1))
-	caCertPEM, caKeyPEM, err := cert.NewCA("foo", "1", expiry)
+	caCertPEM, caKeyPEM, err := cert.NewCA(
+		fmt.Sprintf("juju-generated CA for model %s", "foo"), "1", expiry,
+	)
 	c.Assert(err, jc.ErrorIsNil)
 
 	caCert, caKey, err := cert.ParseCertAndKey(caCertPEM, caKeyPEM)
 	c.Assert(err, jc.ErrorIsNil)
 
 	c.Check(caKey, gc.FitsTypeOf, (*rsa.PrivateKey)(nil))
-	c.Check(caCert.Subject.CommonName, gc.Equals, `juju-generated CA for model "foo"`)
+	c.Check(caCert.Subject.CommonName, gc.Equals, `juju-generated CA for model foo`)
 	checkNotBefore(c, caCert, now)
 	checkNotAfter(c, caCert, expiry)
 	c.Check(caCert.BasicConstraintsValid, jc.IsTrue)
 	c.Check(caCert.IsCA, jc.IsTrue)
 	//c.Assert(caCert.MaxPathLen, Equals, 0)	TODO it ends up as -1 - check that this is ok.
-}
-
-func (certSuite) TestNewServer(c *gc.C) {
-	now := time.Now()
-	expiry := roundTime(now.AddDate(1, 0, 0))
-	caCertPEM, caKeyPEM, err := cert.NewCA("foo", "1", expiry)
-	c.Assert(err, jc.ErrorIsNil)
-
-	caCert, _, err := cert.ParseCertAndKey(caCertPEM, caKeyPEM)
-	c.Assert(err, jc.ErrorIsNil)
-
-	srvCertPEM, srvKeyPEM, err := cert.NewServer(caCertPEM, caKeyPEM, expiry, nil)
-	c.Assert(err, jc.ErrorIsNil)
-	checkCertificate(c, caCert, srvCertPEM, srvKeyPEM, now, expiry)
-}
-
-func (certSuite) TestNewDefaultServer(c *gc.C) {
-	now := time.Now()
-	expiry := roundTime(now.AddDate(1, 0, 0))
-	caCertPEM, caKeyPEM, err := cert.NewCA("foo", "1", expiry)
-	c.Assert(err, jc.ErrorIsNil)
-
-	caCert, _, err := cert.ParseCertAndKey(caCertPEM, caKeyPEM)
-	c.Assert(err, jc.ErrorIsNil)
-
-	srvCertPEM, srvKeyPEM, err := cert.NewDefaultServer(caCertPEM, caKeyPEM, nil)
-	c.Assert(err, jc.ErrorIsNil)
-	srvCertExpiry := roundTime(time.Now().AddDate(10, 0, 0))
-	checkCertificate(c, caCert, srvCertPEM, srvKeyPEM, now, srvCertExpiry)
 }
 
 func checkCertificate(c *gc.C, caCert *x509.Certificate, srvCertPEM, srvKeyPEM string, now, expiry time.Time) {
@@ -129,100 +103,6 @@ func checkCertificate(c *gc.C, caCert *x509.Certificate, srvCertPEM, srvKeyPEM s
 	}
 
 	checkTLSConnection(c, caCert, srvCert, srvKey)
-}
-
-func (certSuite) TestNewServerHostnames(c *gc.C) {
-	type test struct {
-		hostnames           []string
-		expectedDNSNames    []string
-		expectedIPAddresses []net.IP
-	}
-	tests := []test{{
-		[]string{},
-		nil,
-		nil,
-	}, {
-		[]string{"example.com"},
-		[]string{"example.com"},
-		nil,
-	}, {
-		[]string{"example.com", "127.0.0.1"},
-		[]string{"example.com"},
-		[]net.IP{net.IPv4(127, 0, 0, 1).To4()},
-	}, {
-		[]string{"::1"},
-		nil,
-		[]net.IP{net.IPv6loopback},
-	}}
-	for i, t := range tests {
-		c.Logf("test %d: %v", i, t.hostnames)
-		expiry := roundTime(time.Now().AddDate(1, 0, 0))
-		srvCertPEM, srvKeyPEM, err := cert.NewServer(caCertPEM, caKeyPEM, expiry, t.hostnames)
-		c.Assert(err, jc.ErrorIsNil)
-		srvCert, _, err := cert.ParseCertAndKey(srvCertPEM, srvKeyPEM)
-		c.Assert(err, jc.ErrorIsNil)
-		c.Assert(srvCert.DNSNames, gc.DeepEquals, t.expectedDNSNames)
-		c.Assert(srvCert.IPAddresses, gc.DeepEquals, t.expectedIPAddresses)
-	}
-}
-
-func (certSuite) TestWithNonUTCExpiry(c *gc.C) {
-	expiry, err := time.Parse("2006-01-02 15:04:05.999999999 -0700 MST", "2012-11-28 15:53:57 +0100 CET")
-	c.Assert(err, jc.ErrorIsNil)
-	certPEM, keyPEM, err := cert.NewCA("foo", "1", expiry)
-	xcert, err := cert.ParseCert(certPEM)
-	c.Assert(err, jc.ErrorIsNil)
-	checkNotAfter(c, xcert, expiry)
-
-	var noHostnames []string
-	certPEM, _, err = cert.NewServer(certPEM, keyPEM, expiry, noHostnames)
-	xcert, err = cert.ParseCert(certPEM)
-	c.Assert(err, jc.ErrorIsNil)
-	checkNotAfter(c, xcert, expiry)
-}
-
-func (certSuite) TestNewServerWithInvalidCert(c *gc.C) {
-	var noHostnames []string
-	srvCert, srvKey, err := cert.NewServer(nonCACert, nonCAKey, time.Now(), noHostnames)
-	c.Check(srvCert, gc.Equals, "")
-	c.Check(srvKey, gc.Equals, "")
-	c.Assert(err, gc.ErrorMatches, "CA certificate is not a valid CA")
-}
-
-func (certSuite) TestVerify(c *gc.C) {
-	now := time.Now()
-	caCert, caKey, err := cert.NewCA("foo", "1", now.Add(1*time.Minute))
-	c.Assert(err, jc.ErrorIsNil)
-
-	var noHostnames []string
-	srvCert, _, err := cert.NewServer(caCert, caKey, now.Add(3*time.Minute), noHostnames)
-	c.Assert(err, jc.ErrorIsNil)
-
-	err = cert.Verify(srvCert, caCert, now)
-	c.Assert(err, jc.ErrorIsNil)
-
-	err = cert.Verify(srvCert, caCert, now.Add(55*time.Second))
-	c.Assert(err, jc.ErrorIsNil)
-
-	err = cert.Verify(srvCert, caCert, now.AddDate(0, 0, -8))
-	c.Check(err, gc.ErrorMatches, "x509: certificate has expired or is not yet valid")
-
-	err = cert.Verify(srvCert, caCert, now.Add(2*time.Minute))
-	c.Check(err, gc.ErrorMatches, "x509: certificate has expired or is not yet valid")
-
-	caCert2, caKey2, err := cert.NewCA("bar", "1", now.Add(1*time.Minute))
-	c.Assert(err, jc.ErrorIsNil)
-
-	// Check original server certificate against wrong CA.
-	err = cert.Verify(srvCert, caCert2, now)
-	c.Check(err, gc.ErrorMatches, "x509: certificate signed by unknown authority")
-
-	srvCert2, _, err := cert.NewServer(caCert2, caKey2, now.Add(1*time.Minute), noHostnames)
-	c.Assert(err, jc.ErrorIsNil)
-
-	// Check new server certificate against original CA.
-	err = cert.Verify(srvCert2, caCert, now)
-	c.Check(err, gc.ErrorMatches, "x509: certificate signed by unknown authority")
 }
 
 // checkTLSConnection checks that we can correctly perform a TLS
@@ -322,34 +202,6 @@ xqLnuNUyWRz90Rg8s9XvOtCqNYW7mypGrFECAwEAAQJAMPa+JaUHgO6foxam/LIB
 M/vY0x5mekIYai8/tFSEG9PJ3ZkpEy0CIQCo9B3YxwI1Un777vbs903iQQeiWP+U
 EAHnOQvhLgDxpQIgGkpml+9igW5zoOH+h02aQBLwEoXz7tw/YW0HFrCcE70CIGkS
 ve4WjiEqnQaHNAPy0hY/1DfIgBOSpOfnkFHOk9vX
------END RSA PRIVATE KEY-----
-`
-
-	nonCACert = `
------BEGIN CERTIFICATE-----
-MIIB8jCCAZygAwIBAgIVANueMZWTFEIx6AcNAWsG4VL4sUn5MA0GCSqGSIb3DQEB
-CwUAMGsxDTALBgNVBAoTBGp1anUxMzAxBgNVBAMMKmp1anUtZ2VuZXJhdGVkIENB
-IGZvciBtb2RlbCAianVqdSB0ZXN0aW5nIjElMCMGA1UEBRMcMTIzNC1BQkNELUlT
-LU5PVC1BLVJFQUwtVVVJRDAeFw0xNjA5MjExMDQ4MjdaFw0yNjA5MjgxMDQ4Mjda
-MBsxDTALBgNVBAoTBGp1anUxCjAIBgNVBAMTASowXDANBgkqhkiG9w0BAQEFAANL
-ADBIAkEAwZps3qpPu2FCAhbxolf/BvSa+dMal3AhPMe+lwTuSbtS81W+WSrbwUSI
-ZKSGHYDpFRN6ytNjt1oPbDNKDIR30wIDAQABo2cwZTAOBgNVHQ8BAf8EBAMCA6gw
-EwYDVR0lBAwwCgYIKwYBBQUHAwEwHQYDVR0OBBYEFNNUDrcyP/4RbGBpKeC3gmfL
-kjlwMB8GA1UdIwQYMBaAFHueMLZ1QJ/2sKiPIJ28TzjIMRENMA0GCSqGSIb3DQEB
-CwUAA0EALiurKx//Qh5TQQ0TmT0P5f7OFLIs5XPSS98Lseb92h12CPNO4kB000Yh
-Xa7kZRGngwFbvjzqZ0eOfmo0l8M23A==
------END CERTIFICATE-----
-`
-
-	nonCAKey = `
------BEGIN RSA PRIVATE KEY-----
-MIIBOwIBAAJBAMGabN6qT7thQgIW8aJX/wb0mvnTGpdwITzHvpcE7km7UvNVvlkq
-28FEiGSkhh2A6RUTesrTY7daD2wzSgyEd9MCAwEAAQJBAKfeuOvRjVUSneOl9Vsp
-Je7oBcD9dR8+kPNc1zungN7YVhIuxqvzXJSPeMGsHloPI+BcFFXv3t+eVCDT9sPL
-L+ECIQDq1nqVIEX3k5nn6eI0L5CQbIfEyvWGJ/mOGSo9TWdN+QIhANMMsopPb9ct
-Z61LqPmTtNX4nhHyMEjxbUzqzsZzsRcrAiBeYyhP6fHVSXERopK1kOyU79o+Aalf
-a4/FSl4M16CO2QIgOBQZpNKyvxRbhhqijZ6H4IstRUt7NQahqlyCEQ1Qsv0CIQDQ
-tUzgFwUpd6NVButkqWGqnmBeKUOs97dqSyOzN9Nk8w==
 -----END RSA PRIVATE KEY-----
 `
 )

@@ -154,7 +154,7 @@ func (c *goCryptoCommand) ensureSession() (*ssh.Session, error) {
 	}
 	c.client = client
 	c.sess = sess
-	c.sess.Stdin = c.stdin
+	c.sess.Stdin = WrapStdin(c.stdin)
 	c.sess.Stdout = c.stdout
 	c.sess.Stderr = c.stderr
 	return sess, nil

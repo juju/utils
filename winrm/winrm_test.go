@@ -27,6 +27,56 @@ func (w *WinRMSuite) GetPasswd(password string, c *gc.C) winrm.GetPasswd {
 
 var _ = gc.Suite(&WinRMSuite{})
 
+func (w *WinRMSuite) TestValidateClient(c *gc.C) {
+	config := winrm.ClientConfig{}
+
+	err := config.Validate()
+	// Empty host in client config
+	c.Assert(err, gc.NotNil)
+
+	hostname, err := os.Hostname()
+	c.Assert(err, gc.IsNil)
+	config.Host = hostname
+	err = config.Validate()
+	// Nil password getter, unable to retrive password
+	c.Assert(err, gc.NotNil)
+
+	config.Password = w.GetPasswd("Password123", c)
+	err = config.Validate()
+	c.Assert(err, gc.IsNil)
+
+	config.Password = nil
+	config.Cert = []byte("smth")
+	config.Key = []byte("smth")
+	err = config.Validate()
+	// Cannot use cert auth with http connection
+	c.Assert(err, gc.NotNil)
+
+	config.Secure = true
+	err = config.Validate()
+	// Empty CA cert passed in client config
+	c.Assert(err, gc.NotNil)
+
+	config.Password = w.GetPasswd("Password123", c)
+	err = config.Validate()
+	// Empty CA cert passed in client config
+	c.Assert(err, gc.NotNil)
+
+	config.Cert = nil
+	config.Key = nil
+	config.Password = nil
+	// empty key or cert in client config
+	config.Insecure = false
+	err = config.Validate()
+	// Empty CA cert passed in client config
+	c.Assert(err, gc.NotNil)
+
+	config.Password = w.GetPasswd("Password123", c)
+	config.CACert = []byte("smth")
+	err = config.Validate()
+	c.Assert(err, gc.IsNil)
+
+}
 func (w *WinRMSuite) TestWinrmClient(c *gc.C) {
 	hostname, err := os.Hostname()
 	c.Assert(err, gc.IsNil)

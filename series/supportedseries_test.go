@@ -148,6 +148,7 @@ func (s *supportedSeriesSuite) TestLatestLts(c *gc.C) {
 		c.Assert(got, gc.Equals, test.want)
 	}
 }
+
 func (s *supportedSeriesSuite) TestSetLatestLtsForTesting(c *gc.C) {
 	table := []struct {
 		value, want string

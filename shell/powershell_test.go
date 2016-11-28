@@ -77,3 +77,16 @@ func (s powershellSuite) TestMkdirAll(c *gc.C) {
 		`mkdir 'C:\some\dir'`,
 	})
 }
+
+func (s powershellSuite) TestNewPSEncodedCommand(c *gc.C) {
+	script := `
+	Get-WmiObject win32_processor
+`
+	expected := "powershell.exe -Sta -NonInteractive -ExecutionPolicy RemoteSigned -EncodedCommand CgAJAEcAZQB0AC0AVwBtAGkATwBiAGoAZQBjAHQAIAB3AGkAbgAzADIAXwBwAHIAbwBjAGUAcwBzAG8AcgAKAA=="
+
+	out, err := shell.NewPSEncodedCommand(script)
+	c.Assert(err, gc.IsNil)
+	c.Assert((len(out) > 0), gc.Equals, true)
+	c.Assert(out, jc.DeepEquals, expected)
+
+}

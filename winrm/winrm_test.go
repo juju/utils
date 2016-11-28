@@ -35,6 +35,7 @@ func (w *WinRMSuite) TestWinrmClient(c *gc.C) {
 		User:     "Administrator",
 		Host:     hostname,
 		Password: w.GetPasswd("Password123", c),
+		Secure:   false,
 	}
 
 	cli, err := winrm.NewClient(config)
@@ -53,6 +54,7 @@ func (w *WinRMSuite) TestWinrmSecureClient(c *gc.C) {
 		Cert:     []byte(clientCert),
 		Key:      []byte(clientKey),
 		Insecure: true,
+		Secure:   true,
 	}
 
 	cli, err := winrm.NewClient(config)
@@ -104,6 +106,7 @@ func (w *WinRMSuite) TestDefaultClient(c *gc.C) {
 		Cert:     []byte(clientCert),
 		Key:      []byte(clientKey),
 		Insecure: true,
+		Secure:   true,
 	}
 
 	cli, err = winrm.NewClient(configSecure)

@@ -19,7 +19,6 @@ import (
 )
 
 const (
-	// default http,https winrm ports
 	httpPort            = 5985
 	httpsPort           = 5986
 	defaultWinndowsUser = "Administrator"
@@ -36,15 +35,15 @@ type Client struct {
 	secure bool
 }
 
-// Password returns the winrm connection password
-func (c Client) Password() string {
-	return c.pass
-}
-
 // Secure returns true if the client is using a secure connection or false
 // if it's just a normal http
 func (c Client) Secure() bool {
 	return c.secure
+}
+
+// Password returns the winrm connection password
+func (c Client) Password() string {
+	return c.pass
 }
 
 // ClientConfig used for setting up a secure https client connection
@@ -69,6 +68,8 @@ type ClientConfig struct {
 	Insecure bool
 	// Password callback for returning a password in different ways
 	Password GetPasswd
+	// Secure flag for specifying if the user wants https or http
+	Secure bool
 }
 
 // errNoPasswdFn sentinel for returning unset password callback
@@ -110,20 +111,42 @@ func (c ClientConfig) Validate() error {
 		return fmt.Errorf("Empty host in client config")
 	}
 
-	if c.Password == nil {
-
-		if c.Key == nil || c.Cert == nil {
-			return fmt.Errorf("Empty key or cert in client config")
+	// if the connection is https
+	if c.Secure == true {
+		// check if we we or not the password authentication method
+		if c.Password == nil {
+			// that meas we need to be sure if the cert and key is set
+			// for cert authentication
+			if c.Key == nil || c.Cert == nil {
+				return fmt.Errorf("Empty key or cert in client config")
+			}
+			// everything is set
+			logger.Infof("using https winrm connection with cert authentication")
+		} else { // we are using https with password authentication
+			logger.Infof("Using https winrm connection with password authentication")
 		}
-
+		// extra check if we are dealing with CA cert skip ornot
 		if !c.Insecure {
+			// if the Insecure is not set then we must check if
+			// ca is set also
 			if c.CACert == nil {
 				return fmt.Errorf("Empty CA cert passed in client config")
 			}
+			// we are using Insecure option so we should skip the CA verification
 		} else {
-			logger.Warningf("Skipping CA server verification, using the --insecure option")
+			logger.Warningf("Skipping CA server verification, using Insecure option")
 		}
-
+		// we are using http connection so we can only authenticate using password auth method
+	} else {
+		// if the password is not set
+		if c.Password == nil {
+			if c.Key != nil || c.Cert != nil {
+				return fmt.Errorf("Cannot use cert auth with http connection")
+			}
+			return fmt.Errorf("Nil password getter, unable to retrive password")
+		}
+		// the password is set so we are good.
+		logger.Infof("Using http winrm connection with password authentication")
 	}
 
 	return nil
@@ -144,9 +167,8 @@ func NewClient(config ClientConfig) (*Client, error) {
 	}
 
 	// if we didn't provided a callback password that means
-	// we want to use the https auth method
-	if err == errNoPasswdFn {
-		cli.secure = true
+	// we want to use the https auth method that only works with https
+	if err == errNoPasswdFn && config.Secure {
 		// when creating a new client the winrm.DeafultParameters
 		// will be used to make a new client conneciton to a endpoint
 		// TransportDecorator will enable us to switch transports
@@ -158,13 +180,18 @@ func NewClient(config ClientConfig) (*Client, error) {
 		}
 	}
 
-	endpoint := winrm.NewEndpoint(config.Host, httpsPort,
-		cli.secure, config.Insecure,
+	port := httpPort
+	cli.secure = false
+	if config.Secure {
+		port = httpsPort
+		cli.secure = true
+	}
+
+	endpoint := winrm.NewEndpoint(config.Host, port,
+		config.Secure, config.Insecure,
 		config.CACert, config.Cert,
 		config.Key, config.Timeout,
 	)
-
-	logger.Debugf("Creating WinRM secure client connection on %s %d", config.Host, httpsPort)
 
 	// if the user is empty
 	if config.User == "" {
@@ -174,7 +201,7 @@ func NewClient(config ClientConfig) (*Client, error) {
 
 	cli.conn, err = winrm.NewClientWithParameters(endpoint, config.User, cli.pass, params)
 	if err != nil {
-		return nil, errors.Annotatef(err, "cannot create WinRM secure client conn")
+		return nil, errors.Annotatef(err, "cannot create WinRM https client conn")
 	}
 	return cli, nil
 }

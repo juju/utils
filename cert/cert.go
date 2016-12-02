@@ -49,7 +49,7 @@ type Config struct {
 	Hostnames   []string           // Hostnames , list of hostnames for the certificate
 	ExtKeyUsage []x509.ExtKeyUsage // ExtKeyUsage extra flags for special usage of the cert
 	KeyBits     int                // KeyBits is used to set the lenght of the RSA key, default value 2048 bytes
-
+	Client      bool               // generate client certificate for certificate authentication
 }
 
 // NewLeaf generates a certificate/key pair suitable for use
@@ -103,10 +103,14 @@ func NewLeaf(cfg *Config) (certPEM, keyPEM string, err error) {
 		Organization: []string{"juju"},
 		SerialNumber: cfg.UUID,
 	}
+
+	var value []byte
 	// get asn1 encoded info of the subject pkix
-	value, err := getUPNExtensionValue(subject)
-	if err != nil {
-		return "", "", fmt.Errorf("Can't marshal asn1 encoded %s", err)
+	if cfg.Client {
+		value, err = getUPNExtensionValue(subject)
+		if err != nil {
+			return "", "", fmt.Errorf("Can't marshal asn1 encoded %s", err)
+		}
 	}
 
 	// TODO(perrito666) 2016-05-02 lp:1558657
@@ -120,13 +124,12 @@ func NewLeaf(cfg *Config) (certPEM, keyPEM string, err error) {
 		SubjectKeyId: bigIntHash(key.N),
 		KeyUsage:     x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature | x509.KeyUsageKeyAgreement,
 		ExtKeyUsage:  cfg.ExtKeyUsage,
-		ExtraExtensions: []pkix.Extension{
-			{
-				Id:       subjAltName,
-				Critical: false,
-				Value:    value,
-			},
-		},
+	}
+
+	if cfg.Client {
+		template.ExtraExtensions = []pkix.Extension{
+			{Id: subjAltName, Critical: false, Value: value},
+		}
 	}
 
 	if cfg.IsCA {
@@ -198,6 +201,7 @@ func NewClientCert(commonName, UUID string, expiry time.Time, keyBits int) (cert
 		Expiry:      expiry,
 		ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
 		KeyBits:     keyBits,
+		Client:      true,
 	})
 	if err != nil {
 		return "", "", errors.Annotatef(err, "Cannot generate client certificate")

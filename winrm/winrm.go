@@ -233,7 +233,7 @@ func (c *Client) Ping() error {
 	logger.Debugf("Pinging WinRM listener")
 
 	var stdout, stderr bytes.Buffer
-	if err := c.Run("ECHO"+echoPayload, &stdout, &stderr); err != nil {
+	if err := c.Run("ECHO "+echoPayload, &stdout, &stderr); err != nil {
 		// we should check if winrm returned 401
 		// to know if we have permision to access the remote.
 		if strings.Contains(err.Error(), "401") {

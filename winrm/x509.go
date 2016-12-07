@@ -62,7 +62,7 @@ func (x *X509) LoadClientCert(certFile, keyFile string) error {
 	logger.Debugf("Init winrm path key %s", keyFile)
 	logger.Debugf("Init winrm path cert %s", certFile)
 
-	if err := x.read(base, key, cert); err != nil &&
+	if err = x.read(base, key, cert); err != nil &&
 		err != errNoClientCert &&
 		err != errNoX509Folder &&
 		err != errNoClientPrivateKey {

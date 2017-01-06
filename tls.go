@@ -51,6 +51,10 @@ var knownGoodCipherSuites = []uint16{
 	// Windows doesn't support GCM currently, so we need these for RSA support.
 	tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
 	tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
+
+	// We need this so that we have at least one suite in common
+	// with the default gnutls installed for precise and trusty.
+	tls.TLS_RSA_WITH_AES_256_CBC_SHA,
 }
 
 // SecureTLSConfig returns a tls.Config that conforms to Juju's security

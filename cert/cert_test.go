@@ -219,6 +219,12 @@ func (certSuite) TestNewClientCertRSASize(c *gc.C) {
 	}
 }
 
+func (certSuite) TestComputePublicKey(c *gc.C) {
+	computedPublicKey, err := cert.ComputePublicKey(caCertPEM)
+	c.Assert(err, gc.IsNil)
+	c.Assert(computedPublicKey, gc.Equals, caPubKeyPEM)
+}
+
 var (
 	caCertPEM = `
 -----BEGIN CERTIFICATE-----
@@ -247,5 +253,11 @@ M/vY0x5mekIYai8/tFSEG9PJ3ZkpEy0CIQCo9B3YxwI1Un777vbs903iQQeiWP+U
 EAHnOQvhLgDxpQIgGkpml+9igW5zoOH+h02aQBLwEoXz7tw/YW0HFrCcE70CIGkS
 ve4WjiEqnQaHNAPy0hY/1DfIgBOSpOfnkFHOk9vX
 -----END RSA PRIVATE KEY-----
+`
+
+	caPubKeyPEM = `-----BEGIN RSA PUBLIC KEY-----
+MFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBAL+0X+1zl2vt1wI41Q+RnlltJyaJmtwC
+bHRhREXVGU7t0kTMMNERxqLnuNUyWRz90Rg8s9XvOtCqNYW7mypGrFECAwEAAQ==
+-----END RSA PUBLIC KEY-----
 `
 )

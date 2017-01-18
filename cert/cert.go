@@ -292,3 +292,20 @@ func ParseCertAndKey(certPEM, keyPEM string) (*x509.Certificate, *rsa.PrivateKey
 	}
 	return cert, key, nil
 }
+
+// ComputePublicKey generates a public key from certPEM string
+func ComputePublicKey(certPEM string) (string, error){
+	cert, err := ParseCert(certPEM)
+	if err != nil {
+		return "", err
+	}
+	marshalledPubKey, err := x509.MarshalPKIXPublicKey(cert.PublicKey)
+	if err != nil {
+		return "", err
+	}
+	keyPEMData := pem.EncodeToMemory(&pem.Block{
+		Type:  "RSA PUBLIC KEY",
+		Bytes: marshalledPubKey,
+	})
+	return string(keyPEMData), nil
+}

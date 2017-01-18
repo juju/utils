@@ -16,9 +16,11 @@ import (
 	"fmt"
 	"math/big"
 	"net"
+	"os"
 	"time"
 
 	"github.com/juju/errors"
+	"github.com/juju/utils"
 )
 
 // OtherName type for asn1 encoding
@@ -308,4 +310,19 @@ func ComputePublicKey(certPEM string) (string, error){
 		Bytes: marshalledPubKey,
 	})
 	return string(keyPEMData), nil
+}
+
+// StoreDefaultX509Cert takes a certificate and store it in the given
+// config location, using default names.
+func StoreDefaultX509Cert(location, pem, key, public string) (error) {
+	for file, content := range map[string]string{ "/juju-cert.pem": pem, "/juju-cert.key": key,
+						      "/juju-cert.pub": public } {
+		if _, err := os.Stat(location + file); os.IsNotExist(err) {
+			err := utils.AtomicWriteFile(location + file, []byte(content), 0600)
+			if err != nil {
+				return errors.Annotatef(err, "cannot write x509 certificate file: %s", location + file)
+			}
+		}
+	}
+	return nil
 }

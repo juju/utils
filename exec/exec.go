@@ -6,6 +6,7 @@ package exec
 
 import (
 	"bytes"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -34,6 +35,7 @@ type RunParams struct {
 	Environment []string
 	Clock       clock.Clock
 	KillProcess func(*os.Process) error
+	User        string
 
 	tempDir string
 	stdout  *bytes.Buffer
@@ -80,7 +82,7 @@ func mergeEnvironment(env []string) []string {
 // shellAndArgs returns the name of the shell command and arguments to run the
 // specified script. shellAndArgs may write into the provided temporary
 // directory, which will be maintained until the process exits.
-func shellAndArgs(tempDir, script string) (string, []string, error) {
+func shellAndArgs(tempDir, script, user string) (string, []string, error) {
 	var scriptFile string
 	var cmd string
 	var args []string
@@ -101,10 +103,20 @@ func shellAndArgs(tempDir, script string) (string, []string, error) {
 		script = "trap {Write-Error $_; exit 1}\n" + script
 	default:
 		scriptFile = filepath.Join(tempDir, "script.sh")
-		cmd = "/bin/bash"
-		args = []string{scriptFile}
+		if user == "" {
+			cmd = "/bin/bash"
+			args = []string{scriptFile}
+		} else {
+			// Need to make the tempDir readable by all so the user can see it.
+			err := os.Chmod(tempDir, 0755)
+			if err != nil {
+				return "", nil, errors.Annotatef(err, "making tempdir readable by %q", user)
+			}
+			cmd = "/bin/su"
+			args = []string{user, "--login", "--command", fmt.Sprintf("/bin/bash %s", scriptFile)}
+		}
 	}
-	err := ioutil.WriteFile(scriptFile, []byte(script), 0600)
+	err := ioutil.WriteFile(scriptFile, []byte(script), 0644)
 	if err != nil {
 		return "", nil, err
 	}
@@ -124,7 +136,7 @@ func (r *RunParams) Run() error {
 		return err
 	}
 
-	shell, args, err := shellAndArgs(tempDir, r.Commands)
+	shell, args, err := shellAndArgs(tempDir, r.Commands, r.User)
 	if err != nil {
 		if err := os.RemoveAll(tempDir); err != nil {
 			logger.Warningf("failed to remove temporary directory: %v", err)

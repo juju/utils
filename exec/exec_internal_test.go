@@ -55,7 +55,7 @@ func (*execSuite) TestShellAndArgsAsUser(c *gc.C) {
 
 	c.Assert(cmd, gc.Equals, "/bin/su")
 	command := "/bin/bash " + scriptFile
-	c.Assert(args, jc.DeepEquals, []string{"ubuntu", "-c", command})
+	c.Assert(args, jc.DeepEquals, []string{"ubuntu", "--login", "--command", command})
 
 	// The directory is now readable by everyone.
 	stat, err = os.Stat(dir)

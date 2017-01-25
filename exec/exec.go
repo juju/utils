@@ -113,7 +113,7 @@ func shellAndArgs(tempDir, script, user string) (string, []string, error) {
 				return "", nil, errors.Annotatef(err, "making tempdir readable by %q", user)
 			}
 			cmd = "/bin/su"
-			args = []string{user, "-c", fmt.Sprintf("/bin/bash %s", scriptFile)}
+			args = []string{user, "--login", "--command", fmt.Sprintf("/bin/bash %s", scriptFile)}
 		}
 	}
 	err := ioutil.WriteFile(scriptFile, []byte(script), 0644)

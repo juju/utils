@@ -1,7 +1,7 @@
 // Copyright 2017 Canonical Ltd.
 // Licensed under the LGPLv3, see LICENCE file for details.
 
-package mgopersist_test
+package mgokv_test
 
 import (
 	"sync"
@@ -11,7 +11,7 @@ import (
 	gc "gopkg.in/check.v1"
 	"gopkg.in/errgo.v1"
 
-	"github.com/juju/utils/mgopersist"
+	"github.com/juju/utils/mgokv"
 )
 
 type suite struct {
@@ -24,7 +24,7 @@ func (s *suite) TestPutInitial(c *gc.C) {
 	type val struct {
 		A, B int
 	}
-	store := mgopersist.NewStore(10 * time.Second).Session(s.Session.DB("foo").C("x"))
+	store := mgokv.NewStore(10*time.Second, s.Session.DB("foo").C("x")).Session(s.Session)
 	ok, err := store.PutInitial("key", val{1, 2})
 	c.Assert(err, gc.Equals, nil)
 	c.Assert(ok, gc.Equals, true)
@@ -36,7 +36,7 @@ func (s *suite) TestPutInitial(c *gc.C) {
 
 	// Check that it really is stored in the database by
 	// using a fresh store to access it.
-	store = mgopersist.NewStore(time.Second).Session(s.Session.DB("foo").C("x"))
+	store = mgokv.NewStore(time.Second, s.Session.DB("foo").C("x")).Session(s.Session)
 	v = val{}
 	err = store.Get("key", &v)
 	c.Assert(err, gc.Equals, nil)
@@ -54,7 +54,7 @@ func (s *suite) TestPutInitial(c *gc.C) {
 	c.Assert(v, gc.Equals, val{1, 2})
 
 	// ... or in the database itself.
-	store = mgopersist.NewStore(time.Second).Session(s.Session.DB("foo").C("x"))
+	store = mgokv.NewStore(time.Second, s.Session.DB("foo").C("x")).Session(s.Session)
 	v = val{}
 	err = store.Get("key", &v)
 	c.Assert(err, gc.Equals, nil)
@@ -66,28 +66,28 @@ func (s *suite) TestPutGet(c *gc.C) {
 		A, B int
 	}
 	t0 := time.Now()
-	store := mgopersist.NewStore(time.Second).Session(s.Session.DB("foo").C("x"))
-	err := mgopersist.PutAtTime(store, "key", val{1, 2}, t0)
+	store := mgokv.NewStore(time.Second, s.Session.DB("foo").C("x")).Session(s.Session)
+	err := mgokv.PutAtTime(store, "key", val{1, 2}, t0)
 	c.Assert(err, gc.Equals, nil)
 
 	var v val
-	err = mgopersist.GetAtTime(store, "key", &v, t0.Add(time.Millisecond))
+	err = mgokv.GetAtTime(store, "key", &v, t0.Add(time.Millisecond))
 	c.Assert(err, gc.Equals, nil)
 	c.Assert(v, gc.Equals, val{1, 2})
 
 	// If we put a value into the database in another store, the value
 	// in the original store will persist until the cache expires.
-	store1 := mgopersist.NewStore(time.Second).Session(s.Session.DB("foo").C("x"))
-	err = mgopersist.PutAtTime(store1, "key", val{88, 99}, t0)
+	store1 := mgokv.NewStore(time.Second, s.Session.DB("foo").C("x")).Session(s.Session)
+	err = mgokv.PutAtTime(store1, "key", val{88, 99}, t0)
 	c.Assert(err, gc.Equals, nil)
 
 	// Just before the deadline we still see the original value.
-	err = mgopersist.GetAtTime(store, "key", &v, t0.Add(time.Second-1))
+	err = mgokv.GetAtTime(store, "key", &v, t0.Add(time.Second-1))
 	c.Assert(err, gc.Equals, nil)
 	c.Assert(v, gc.Equals, val{1, 2})
 
 	// After the deadline, we see the new value.
-	err = mgopersist.GetAtTime(store, "key", &v, t0.Add(time.Second))
+	err = mgokv.GetAtTime(store, "key", &v, t0.Add(time.Second))
 	c.Assert(err, gc.Equals, nil)
 	c.Assert(v, gc.Equals, val{88, 99})
 }
@@ -97,24 +97,24 @@ func (s *suite) TestNotFound(c *gc.C) {
 		A, B int
 	}
 	t0 := time.Now()
-	store := mgopersist.NewStore(time.Second).Session(s.Session.DB("foo").C("x"))
+	store := mgokv.NewStore(time.Second, s.Session.DB("foo").C("x")).Session(s.Session)
 	var v val
-	err := mgopersist.GetAtTime(store, "key", &v, t0)
-	c.Assert(errgo.Cause(err), gc.Equals, mgopersist.ErrNotFound)
+	err := mgokv.GetAtTime(store, "key", &v, t0)
+	c.Assert(errgo.Cause(err), gc.Equals, mgokv.ErrNotFound)
 	c.Assert(v, gc.Equals, val{})
 
 	// Use another store to store a value. The original store should
 	// not see the new value until the not-found entry has expired.
-	store1 := mgopersist.NewStore(time.Second).Session(s.Session.DB("foo").C("x"))
-	err = mgopersist.PutAtTime(store1, "key", val{1, 2}, t0)
+	store1 := mgokv.NewStore(time.Second, s.Session.DB("foo").C("x")).Session(s.Session)
+	err = mgokv.PutAtTime(store1, "key", val{1, 2}, t0)
 	c.Assert(err, gc.Equals, nil)
 
 	// Just before the deadline we still see the not-found error.
-	err = mgopersist.GetAtTime(store, "key", &v, t0.Add(time.Second-1))
-	c.Assert(errgo.Cause(err), gc.Equals, mgopersist.ErrNotFound)
+	err = mgokv.GetAtTime(store, "key", &v, t0.Add(time.Second-1))
+	c.Assert(errgo.Cause(err), gc.Equals, mgokv.ErrNotFound)
 	c.Assert(v, gc.Equals, val{})
 
-	err = mgopersist.GetAtTime(store, "key", &v, t0.Add(time.Second))
+	err = mgokv.GetAtTime(store, "key", &v, t0.Add(time.Second))
 	c.Assert(err, gc.Equals, nil)
 	c.Assert(v, gc.Equals, val{1, 2})
 }
@@ -123,7 +123,7 @@ func (s *suite) TestMultipleKeys(c *gc.C) {
 	type val struct {
 		A, B int
 	}
-	store := mgopersist.NewStore(time.Second).Session(s.Session.DB("foo").C("x"))
+	store := mgokv.NewStore(time.Second, s.Session.DB("foo").C("x")).Session(s.Session)
 
 	err := store.Put("key1", val{1, 2})
 	c.Assert(err, gc.Equals, nil)
@@ -148,12 +148,12 @@ func (s *suite) TestConcurrentGet(c *gc.C) {
 		A, B int
 	}
 	// Put a value into the store.
-	store := mgopersist.NewStore(time.Second).Session(s.Session.DB("foo").C("x"))
+	store := mgokv.NewStore(time.Second, s.Session.DB("foo").C("x")).Session(s.Session)
 	err := store.Put("key", val{1, 2})
 	c.Check(err, gc.Equals, nil)
 
 	// Use a new store so that we haven't already got a cache entry.
-	store = mgopersist.NewStore(time.Second).Session(s.Session.DB("foo").C("x"))
+	store = mgokv.NewStore(time.Second, s.Session.DB("foo").C("x")).Session(s.Session)
 	var wg sync.WaitGroup
 	for i := 0; i < 5; i++ {
 		wg.Add(1)
@@ -173,26 +173,26 @@ func (s *suite) TestRefresh(c *gc.C) {
 		A, B int
 	}
 	// Put a value into the store.
-	store := mgopersist.NewStore(time.Second).Session(s.Session.DB("foo").C("x"))
+	store := mgokv.NewStore(time.Second, s.Session.DB("foo").C("x")).Session(s.Session)
 	t0 := time.Now()
-	err := mgopersist.PutAtTime(store, "key", val{1, 2}, t0)
+	err := mgokv.PutAtTime(store, "key", val{1, 2}, t0)
 	c.Check(err, gc.Equals, nil)
 
 	// Put a different value using a different store.
-	store1 := mgopersist.NewStore(time.Second).Session(s.Session.DB("foo").C("x"))
+	store1 := mgokv.NewStore(time.Second, s.Session.DB("foo").C("x")).Session(s.Session)
 	err = store1.Put("key", val{88, 99})
 	c.Check(err, gc.Equals, nil)
 
 	// Sanity check that the first store still retains the cached value.
 	var v val
-	err = mgopersist.GetAtTime(store, "key", &v, t0.Add(time.Millisecond))
+	err = mgokv.GetAtTime(store, "key", &v, t0.Add(time.Millisecond))
 	c.Check(err, gc.Equals, nil)
 	c.Assert(v, gc.Equals, val{1, 2})
 
 	// Refresh the store and we should now see the new value.
 	store.Refresh()
 
-	err = mgopersist.GetAtTime(store, "key", &v, t0.Add(time.Millisecond))
+	err = mgokv.GetAtTime(store, "key", &v, t0.Add(time.Millisecond))
 	c.Check(err, gc.Equals, nil)
 	c.Assert(v, gc.Equals, val{88, 99})
 }

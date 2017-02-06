@@ -1,9 +1,13 @@
 // Copyright 2017 Canonical Ltd.
 // Licensed under the LGPLv3, see LICENCE file for details.
 
-// Package mgopersist defines cached MongoDB-backed global persistent storage for
+// Package mgokv defines cached MongoDB-backed global persistent storage for
 // key-value pairs.
-package mgopersist
+//
+// It is designed to be used when there is a small set of attributes that change infrequently.
+// It shouldn't be used when there's an unbounded set of keys, as key
+// entries are not deleted.
+package mgokv
 
 import (
 	"sync"
@@ -14,6 +18,8 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
+// ErrNotFound is returned as the cause of the error
+// when an entry is not found.
 var ErrNotFound = errgo.New("persistent data entry not found")
 
 type entry struct {
@@ -32,6 +38,7 @@ type Store struct {
 	mu            sync.RWMutex
 	// entries holds all the cached entries.
 	entries map[string]entry
+	coll    *mgo.Collection
 }
 
 // Refresh forgets all cached items.
@@ -41,12 +48,14 @@ func (s *Store) Refresh() {
 	s.mu.Unlock()
 }
 
-// NewStore returns a Store that will cache items for
-// at most the given time.
-func NewStore(cacheLifetime time.Duration) *Store {
+// NewStore returns a Store that will cache items for at most the given
+// time in the given collection. The session in the collection will not
+// be used - the session passed to Store.Session will be used instead.
+func NewStore(cacheLifetime time.Duration, c *mgo.Collection) *Store {
 	return &Store{
 		entries:       make(map[string]entry),
 		cacheLifetime: cacheLifetime,
+		coll:          c,
 	}
 }
 
@@ -65,12 +74,12 @@ type entryDoc struct {
 }
 
 // Session returns a store session that uses the given
-// collection for storage. Each store entry is stored
+// session for storage. Each store entry is stored
 // in a document in the collection.
-func (s *Store) Session(coll *mgo.Collection) *Session {
+func (s *Store) Session(session *mgo.Session) *Session {
 	return &Session{
 		Store: s,
-		coll:  coll,
+		coll:  s.coll.With(session),
 	}
 }
 
@@ -142,49 +151,53 @@ func (s *Session) putInitialAtTime(key string, val interface{}, now time.Time) (
 }
 
 // Get gets the value associated with the given key into the
-// value pointed to by valpt, which should be a pointer to
+// value pointed to by v, which should be a pointer to
 // the same struct type used to put the value originally.
 //
 // If the value is not found, it returns ErrNotFound.
-func (s *Session) Get(key string, valpt interface{}) error {
-	return s.getAtTime(key, valpt, time.Now())
+func (s *Session) Get(key string, v interface{}) error {
+	return s.getAtTime(key, v, time.Now())
 }
 
 // getAtTime is the internal version of Get - it takes the current time
 // as an argument for testing.
-func (s *Session) getAtTime(key string, valpt interface{}, now time.Time) error {
+func (s *Session) getAtTime(key string, v interface{}, now time.Time) error {
+	e, err := s.getEntryAtTime(key, now)
+	if err != nil {
+		return errgo.Mask(err)
+	}
+	if e.value == nil {
+		return ErrNotFound
+	}
+	if err := bson.Unmarshal(e.value, v); err != nil {
+		return errgo.Notef(err, "cannot unmarshal data for key %q into %T", key, v)
+	}
+	return nil
+}
+
+func (s *Session) getEntryAtTime(key string, now time.Time) (entry, error) {
 	s.mu.RLock()
-	foundEntry, ok := s.entries[key]
+	e, ok := s.entries[key]
 	s.mu.RUnlock()
-	if ok {
-		if now.Before(foundEntry.expire) {
-			if foundEntry.value == nil {
-				return ErrNotFound
-			}
-			if err := bson.Unmarshal(foundEntry.value, valpt); err != nil {
-				return errgo.Notef(err, "cannot unmarshal data for key %q into %T", key, valpt)
-			}
-			return nil
-		}
+	if ok && now.Before(e.expire) {
+		return e, nil
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	e, ok = s.entries[key]
+	if ok && now.Before(e.expire) {
+		return e, nil
+	}
 	var doc entryDoc
 	if err := s.coll.FindId(key).One(&doc); err != nil {
-		if err == mgo.ErrNotFound {
-			s.entries[key] = entry{
-				expire: now.Add(s.cacheLifetime),
-			}
-			return ErrNotFound
+		if err != mgo.ErrNotFound {
+			return entry{}, errgo.Notef(err, "cannot retrieve data for key %q", key)
 		}
-		return errgo.Notef(err, "cannot retrieve data for key %q", key)
 	}
-	s.entries[key] = entry{
+	e = entry{
 		value:  doc.Value.Data,
 		expire: now.Add(s.cacheLifetime),
 	}
-	if err := bson.Unmarshal(doc.Value.Data, valpt); err != nil {
-		return errgo.Notef(err, "cannot unmarshal data %q for key %q into %T", doc.Value.Data, key, valpt)
-	}
-	return nil
+	s.entries[key] = e
+	return e, nil
 }

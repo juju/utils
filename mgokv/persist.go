@@ -121,6 +121,34 @@ func (s *Session) PutInitial(key string, val interface{}) (bool, error) {
 	return s.putInitialAtTime(key, val, time.Now())
 }
 
+// Update updates the value using the MongoDB update operation
+// specified in update. The value is stored in the "value" field
+// in the document.
+//
+// For example, if a value of type struct { N int } is associated
+// with a key, then:
+//
+//	s.Update(key, bson.M{"$inc": bson.M{"value.n": 1}})
+//
+// will atomically increment the N value.
+//
+// If there is no value associated with the key, Update
+// returns ErrNotFound.
+func (s *Session) Update(key string, update interface{}) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if err := s.coll.UpdateId(key, update); err != nil {
+		if err == mgo.ErrNotFound {
+			return ErrNotFound
+		}
+		return errgo.Mask(err)
+	}
+	// We can't easily find the new value so just delete the
+	// item from the cache so it will be fetched next time.
+	delete(s.entries, key)
+	return nil
+}
+
 // putInitialAtTime is the internal version of PutInitial - it takes the current time
 // as an argument for testing.
 func (s *Session) putInitialAtTime(key string, val interface{}, now time.Time) (bool, error) {

@@ -10,6 +10,7 @@ import (
 	"github.com/juju/testing"
 	gc "gopkg.in/check.v1"
 	"gopkg.in/errgo.v1"
+	"gopkg.in/mgo.v2/bson"
 
 	"github.com/juju/utils/mgokv"
 )
@@ -195,4 +196,26 @@ func (s *suite) TestRefresh(c *gc.C) {
 	err = mgokv.GetAtTime(store, "key", &v, t0.Add(time.Millisecond))
 	c.Check(err, gc.Equals, nil)
 	c.Assert(v, gc.Equals, val{88, 99})
+}
+
+func (s *suite) TestUpdate(c *gc.C) {
+	type val struct {
+		N int
+	}
+	store := mgokv.NewStore(time.Minute, s.Session.DB("foo").C("x")).Session(s.Session)
+	_, err := store.PutInitial("somekey", val{2})
+	c.Assert(err, gc.Equals, nil)
+	err = store.Update("somekey", bson.M{"$inc": bson.M{"value.n": 1}})
+	c.Assert(err, gc.Equals, nil)
+
+	var v val
+	err = store.Get("somekey", &v)
+	c.Assert(err, gc.IsNil)
+	c.Assert(v, gc.Equals, val{N: 3})
+}
+
+func (s *suite) TestUpdateNotFound(c *gc.C) {
+	store := mgokv.NewStore(time.Minute, s.Session.DB("foo").C("x")).Session(s.Session)
+	err := store.Update("somekey", bson.M{"$inc": bson.M{"value.n": 1}})
+	c.Assert(err, gc.Equals, mgokv.ErrNotFound)
 }

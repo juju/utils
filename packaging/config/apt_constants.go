@@ -37,7 +37,7 @@ const (
 var (
 	// AptProxyConfigFile is the full file path for the proxy settings that are
 	// written by cloudinit and the machine environ worker.
-	AptProxyConfigFile = AptConfigDirectory + "/42-juju-proxy-settings"
+	AptProxyConfigFile = AptConfigDirectory + "/95-juju-proxy-settings"
 
 	// AptPreferenceTemplate is the template specific to an apt preference file.
 	AptPreferenceTemplate = template.Must(template.New("").Parse(`

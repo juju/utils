@@ -7,7 +7,7 @@ package commands
 const (
 	// AptConfFilePath is the full file path for the proxy settings that are
 	// written by cloud-init and the machine environ worker.
-	AptConfFilePath = "/etc/apt/apt.conf.d/42-juju-proxy-settings"
+	AptConfFilePath = "/etc/apt/apt.conf.d/95-juju-proxy-settings"
 
 	// the basic command for all dpkg calls:
 	dpkg = "dpkg"

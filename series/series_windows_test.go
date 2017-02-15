@@ -7,7 +7,7 @@ package series_test
 import (
 	"fmt"
 
-	"github.com/gabriel-samfira/sys/windows/registry"
+	"golang.org/x/sys/windows/registry"
 	"github.com/juju/testing"
 	jc "github.com/juju/testing/checkers"
 	gc "gopkg.in/check.v1"

@@ -8,7 +8,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/gabriel-samfira/sys/windows/registry"
+	"golang.org/x/sys/windows/registry"
 	"github.com/juju/errors"
 )
 

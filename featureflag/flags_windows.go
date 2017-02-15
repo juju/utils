@@ -7,7 +7,7 @@
 package featureflag
 
 import (
-	"github.com/gabriel-samfira/sys/windows/registry"
+	"golang.org/x/sys/windows/registry"
 )
 
 // SetFlagsFromRegistry populates the global set from the registry keys on

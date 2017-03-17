@@ -62,9 +62,9 @@ var RunCommandWithRetry = func(cmd string, getFatalError func(string) error) (ou
 	for a := AttemptStrategy.Start(); a.Next(); {
 		// Create the command for each attempt, because we need to
 		// call cmd.CombinedOutput only once. See http://pad.lv/1394524.
-		cmd := exec.Command(args[0], args[1:]...)
+		command := exec.Command(args[0], args[1:]...)
 
-		out, err = CommandOutput(cmd)
+		out, err = CommandOutput(command)
 
 		if err == nil {
 			return string(out), 0, nil

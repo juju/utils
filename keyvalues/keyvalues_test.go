@@ -119,7 +119,7 @@ var testCases = []struct {
 
 func (keyValuesSuite) TestMapParsing(c *gc.C) {
 	for i, t := range testCases {
-		c.Log("test %d: %s", i, t.about)
+		c.Logf("test %d: %s", i, t.about)
 		result, err := keyvalues.Parse(t.input, t.allowEmptyVal)
 		c.Check(result, gc.DeepEquals, t.output)
 		if t.error == "" {

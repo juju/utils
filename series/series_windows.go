@@ -8,8 +8,8 @@ import (
 	"os"
 	"strings"
 
-	"golang.org/x/sys/windows/registry"
 	"github.com/juju/errors"
+	"golang.org/x/sys/windows/registry"
 )
 
 var (

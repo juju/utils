@@ -99,7 +99,6 @@ func NewPackageCommander(series string) (PackageCommander, error) {
 	default:
 		return NewAptPackageCommander(), nil
 	}
-	return nil, nil
 }
 
 // NewAptPackageCommander returns a PackageCommander for apt-based systems.

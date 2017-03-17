@@ -42,8 +42,6 @@ func (c *baseConfigurer) GetPackageNameForSeries(pack, series string) (string, e
 		}
 		return res, nil
 	}
-
-	return pack, nil
 }
 
 // IsCloudArchivePackage is defined on the PackagingConfigurer interface.

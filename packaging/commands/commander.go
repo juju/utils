@@ -15,23 +15,25 @@ import (
 // the operations that may be required of a package management system.
 // It implements the PackageCommander interface.
 type packageCommander struct {
-	prereq              string // installs prerequisite repo management package
-	update              string // updates the local package list
-	upgrade             string // upgrades all packages
-	install             string // installs the given packages
-	remove              string // removes the given packages
-	purge               string // removes the given packages along with all data
-	search              string // searches for the given package
-	isInstalled         string // checks if a given package is installed
-	listAvailable       string // lists all packes available
-	listInstalled       string // lists all installed packages
-	listRepositories    string // lists all currently configured repositories
-	addRepository       string // adds the given repository
-	removeRepository    string // removes the given repository
-	cleanup             string // cleans up orhaned packages and the package cache
-	getProxy            string // command for getting the currently set packagemanager proxy
-	proxySettingsFormat string // format for proxy setting in package manager config file
-	setProxy            string // command for adding a proxy setting to the config file
+	prereq                string // installs prerequisite repo management package
+	update                string // updates the local package list
+	upgrade               string // upgrades all packages
+	install               string // installs the given packages
+	remove                string // removes the given packages
+	purge                 string // removes the given packages along with all data
+	search                string // searches for the given package
+	isInstalled           string // checks if a given package is installed
+	listAvailable         string // lists all packes available
+	listInstalled         string // lists all installed packages
+	listRepositories      string // lists all currently configured repositories
+	addRepository         string // adds the given repository
+	removeRepository      string // removes the given repository
+	cleanup               string // cleans up orhaned packages and the package cache
+	getProxy              string // command for getting the currently set packagemanager proxy
+	proxySettingsFormat   string // format for proxy setting in package manager config file
+	setProxy              string // command for adding a proxy setting to the config file
+	setNoProxy            string // command for adding a no-proxy setting to the config file
+	noProxySettingsFormat string // format for no-proxy setting in package manager config file
 }
 
 // InstallPrerequisiteCmd is defined on the PackageCommander interface.
@@ -115,8 +117,13 @@ func (p *packageCommander) giveProxyOption(setting, proxy string) string {
 	return fmt.Sprintf(p.proxySettingsFormat, setting, proxy)
 }
 
-// ProxyConfigContents is defined on the PackageCommander interface.
-func (p *packageCommander) ProxyConfigContents(settings proxy.Settings) string {
+// giveNoProxyOptions is a helper function which takes protocol and hostname
+// and returns formatted options for NoProxy setting
+func (p *packageCommander) giveNoProxyOption(protocol, hostname string) string {
+	return fmt.Sprintf(p.noProxySettingsFormat, protocol, hostname)
+}
+
+func (p *packageCommander) proxyConfigLines(settings proxy.Settings) []string {
 	options := []string{}
 
 	addOption := func(setting, proxy string) {
@@ -129,22 +136,33 @@ func (p *packageCommander) ProxyConfigContents(settings proxy.Settings) string {
 	addOption("https", settings.Https)
 	addOption("ftp", settings.Ftp)
 
-	return strings.Join(options, "\n")
+	addNoProxyCmd := func(protocol, host string) {
+		options = append(options, p.giveNoProxyOption(protocol, host))
+	}
+
+	if p.noProxySettingsFormat != "" {
+		for _, host := range strings.Split(settings.NoProxy, ",") {
+			if host != "" {
+				addNoProxyCmd("http", host)
+				addNoProxyCmd("https", host)
+				addNoProxyCmd("ftp", host)
+			}
+		}
+	}
+	return options
+}
+
+// ProxyConfigContents is defined on the PackageCommander interface.
+func (p *packageCommander) ProxyConfigContents(settings proxy.Settings) string {
+	return strings.Join(p.proxyConfigLines(settings), "\n")
 }
 
 // SetProxyCmds is defined on the PackageCommander interface.
 func (p *packageCommander) SetProxyCmds(settings proxy.Settings) []string {
+	options := p.proxyConfigLines(settings)
 	cmds := []string{}
-
-	addProxyCmd := func(setting, proxy string) {
-		if proxy != "" {
-			cmds = append(cmds, fmt.Sprintf(p.setProxy, p.giveProxyOption(setting, proxy)))
-		}
+	for _, option := range options {
+		cmds = append(cmds, fmt.Sprintf(p.setProxy, option))
 	}
-
-	addProxyCmd("http", settings.Http)
-	addProxyCmd("https", settings.Https)
-	addProxyCmd("ftp", settings.Ftp)
-
 	return cmds
 }

@@ -4,9 +4,9 @@
 package featureflag_test
 
 import (
-	"golang.org/x/sys/windows/registry"
 	"github.com/juju/testing"
 	jc "github.com/juju/testing/checkers"
+	"golang.org/x/sys/windows/registry"
 	gc "gopkg.in/check.v1"
 
 	"github.com/juju/utils/featureflag"

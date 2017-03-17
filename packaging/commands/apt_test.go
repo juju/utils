@@ -36,13 +36,20 @@ func (s *AptSuite) TestProxyConfigContentsPartial(c *gc.C) {
 
 func (s *AptSuite) TestProxyConfigContentsFull(c *gc.C) {
 	sets := proxy.Settings{
-		Http:  "dat-proxy.zone:8080",
-		Https: "https://much-security.com",
-		Ftp:   "gimme-files.zone",
+		Http:    "dat-proxy.zone:8080",
+		Https:   "https://much-security.com",
+		Ftp:     "gimme-files.zone",
+		NoProxy: "local1,local2",
 	}
 	expected := `Acquire::http::Proxy "dat-proxy.zone:8080";
 Acquire::https::Proxy "https://much-security.com";
-Acquire::ftp::Proxy "gimme-files.zone";`
+Acquire::ftp::Proxy "gimme-files.zone";
+Acquire::http::Proxy::"local1" "DIRECT";
+Acquire::https::Proxy::"local1" "DIRECT";
+Acquire::ftp::Proxy::"local1" "DIRECT";
+Acquire::http::Proxy::"local2" "DIRECT";
+Acquire::https::Proxy::"local2" "DIRECT";
+Acquire::ftp::Proxy::"local2" "DIRECT";`
 
 	output := s.paccmder.ProxyConfigContents(sets)
 	c.Assert(output, gc.Equals, expected)

@@ -33,25 +33,30 @@ const (
 
 	// the basic format for specifying a proxy option for apt:
 	aptProxySettingFormat = "Acquire::%s::Proxy %q;"
+
+	// disable proxy for a specific host
+	aptNoProxySettingFormat = "Acquire::%s::Proxy::%q \"DIRECT\";"
 )
 
 // aptCmder is the packageCommander instantiation for apt-based systems.
 var aptCmder = packageCommander{
-	prereq:              buildCommand(aptget, "install python-software-properties"),
-	update:              buildCommand(aptget, "update"),
-	upgrade:             buildCommand(aptget, "upgrade"),
-	install:             buildCommand(aptget, "install"),
-	remove:              buildCommand(aptget, "remove"),
-	purge:               buildCommand(aptget, "purge"),
-	search:              buildCommand(aptcache, "search --names-only ^%s$"),
-	isInstalled:         buildCommand(dpkgquery, "-s %s"),
-	listAvailable:       buildCommand(aptcache, "pkgnames"),
-	listInstalled:       buildCommand(dpkg, "--get-selections"),
-	addRepository:       buildCommand(addaptrepo, "%q"),
-	listRepositories:    buildCommand(`sed -r -n "s|^deb(-src)? (.*)|\2|p"`, "/etc/apt/sources.list"),
-	removeRepository:    buildCommand(addaptrepo, "--remove ppa:%s"),
-	cleanup:             buildCommand(aptget, "autoremove"),
-	getProxy:            buildCommand(aptconfig, "Acquire::http::Proxy Acquire::https::Proxy Acquire::ftp::Proxy"),
-	proxySettingsFormat: aptProxySettingFormat,
-	setProxy:            buildCommand("echo %s >> ", AptConfFilePath),
+	prereq:                buildCommand(aptget, "install python-software-properties"),
+	update:                buildCommand(aptget, "update"),
+	upgrade:               buildCommand(aptget, "upgrade"),
+	install:               buildCommand(aptget, "install"),
+	remove:                buildCommand(aptget, "remove"),
+	purge:                 buildCommand(aptget, "purge"),
+	search:                buildCommand(aptcache, "search --names-only ^%s$"),
+	isInstalled:           buildCommand(dpkgquery, "-s %s"),
+	listAvailable:         buildCommand(aptcache, "pkgnames"),
+	listInstalled:         buildCommand(dpkg, "--get-selections"),
+	addRepository:         buildCommand(addaptrepo, "%q"),
+	listRepositories:      buildCommand(`sed -r -n "s|^deb(-src)? (.*)|\2|p"`, "/etc/apt/sources.list"),
+	removeRepository:      buildCommand(addaptrepo, "--remove ppa:%s"),
+	cleanup:               buildCommand(aptget, "autoremove"),
+	getProxy:              buildCommand(aptconfig, "Acquire::http::Proxy Acquire::https::Proxy Acquire::ftp::Proxy"),
+	proxySettingsFormat:   aptProxySettingFormat,
+	setProxy:              buildCommand("echo %s >> ", AptConfFilePath),
+	noProxySettingsFormat: aptNoProxySettingFormat,
+	setNoProxy:            buildCommand("echo %s >> ", AptConfFilePath),
 }

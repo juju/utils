@@ -188,5 +188,4 @@ func UntarFiles(tarFile io.Reader, outputFolder string) error {
 			}
 		}
 	}
-	return nil
 }

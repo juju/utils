@@ -49,8 +49,6 @@ func NewPackagingConfigurer(series string) (PackagingConfigurer, error) {
 	default:
 		return NewAptPackagingConfigurer(series), nil
 	}
-
-	return nil, nil
 }
 
 // NewAptPackagingConfigurer returns a PackagingConfigurer for apt-based systems.

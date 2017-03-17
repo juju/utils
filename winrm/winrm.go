@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -250,7 +251,7 @@ func (c *Client) Ping() error {
 		)
 	}
 
-	logger.Debugf("Output of the ping maches %q", strings.Contains(stdout.String(), "HI!"))
+	logger.Debugf("Output of the ping matches: %s", strconv.FormatBool(strings.Contains(stdout.String(), "HI!")))
 	if stdout.String() == echoPayload {
 		return errors.Errorf("unexpected response: expected %q, got %q", echoPayload, stdout.String())
 	}

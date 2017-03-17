@@ -79,8 +79,6 @@ func NewPackageManager(series string) (PackageManager, error) {
 	default:
 		return NewAptPackageManager(), nil
 	}
-
-	return nil, nil
 }
 
 // NewAptPackageManager returns a PackageManager for apt-based systems.

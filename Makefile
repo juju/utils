@@ -1,4 +1,10 @@
 PROJECT := github.com/juju/utils
+GOFMT := $(shell gofmt -l .| sed -e "s/^/ /g")
+
+.PHONY: check-licence check-go check
+
+check: check-licence check-go
+	go test $(PROJECT)/...
 
 check-licence:
 	@(fgrep -rl "Licensed under the LGPLv3" .;\
@@ -7,10 +13,8 @@ check-licence:
 		xargs -I {} echo FAIL: licence missed: {}
 
 check-go:
-ifneq ($(strip $(shell gofmt -l .)),)
-	$(error go fmt is sad)
+ifneq ($(strip $(GOFMT)),)
+	$(error go fmt is sad: $(GOFMT))
 endif
 	@(go tool vet -all -composites=false -copylocks=false .)
 
-check: check-licence check-go
-	go test $(PROJECT)/...

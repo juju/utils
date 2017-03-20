@@ -6,5 +6,11 @@ check-licence:
 		find . -name "*.go") | sed -e 's,\./,,' | sort | uniq -u | \
 		xargs -I {} echo FAIL: licence missed: {}
 
-check: check-licence
+check-go:
+ifneq ($(strip $(shell gofmt -l .)),)
+	$(error go fmt is sad)
+endif
+	@(go tool vet -all -composites=false -copylocks=false .)
+
+check: check-licence check-go
 	go test $(PROJECT)/...

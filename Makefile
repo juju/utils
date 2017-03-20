@@ -1,5 +1,4 @@
 PROJECT := github.com/juju/utils
-GOFMT := $(shell gofmt -l .| sed -e "s/^/ /g")
 
 .PHONY: check-licence check-go check
 
@@ -13,8 +12,9 @@ check-licence:
 		xargs -I {} echo FAIL: licence missed: {}
 
 check-go:
-ifneq ($(strip $(GOFMT)),)
-	$(error go fmt is sad: $(GOFMT))
-endif
+	$(eval GOFMT := $(strip $(shell gofmt -l .| sed -e "s/^/ /g")))
+	@(if [ x$(GOFMT) != x"" ]; then \
+		echo go fmt is sad: $(GOFMT); \
+		exit 1; \
+	fi )
 	@(go tool vet -all -composites=false -copylocks=false .)
-

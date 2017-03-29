@@ -83,6 +83,7 @@ var seriesVersions = map[string]string{
 	"win81":            "win81",
 	"win10":            "win10",
 	"centos7":          "centos7",
+	"opensuseleap":     "opensuse42",
 	genericLinuxSeries: genericLinuxVersion,
 }
 
@@ -91,6 +92,10 @@ var versionSeries = reverseSeriesVersion()
 
 var centosSeries = map[string]string{
 	"centos7": "centos7",
+}
+
+var opensuseSeries = map[string]string{
+	"opensuseleap": "opensuse42",
 }
 
 var ubuntuSeries = map[string]string{
@@ -219,6 +224,9 @@ func getOSFromSeries(series string) (os.OSType, error) {
 	if _, ok := centosSeries[series]; ok {
 		return os.CentOS, nil
 	}
+	if _, ok := opensuseSeries[series]; ok {
+		return os.OpenSUSE, nil
+	}
 	if series == genericLinuxSeries {
 		return os.GenericLinux, nil
 	}
@@ -237,6 +245,7 @@ func getOSFromSeries(series string) (os.OSType, error) {
 			return os.OSX, nil
 		}
 	}
+
 	return os.Unknown, errors.Trace(unknownOSForSeriesError(series))
 }
 

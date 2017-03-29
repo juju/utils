@@ -112,7 +112,8 @@ func (s *proxySuite) TestAsScriptEnvironmentOneValue(c *gc.C) {
 	}
 	expected := `
 export http_proxy=some-value
-export HTTP_PROXY=some-value`[1:]
+export HTTP_PROXY=some-value
+`[1:]
 	c.Assert(proxies.AsScriptEnvironment(), gc.Equals, expected)
 }
 
@@ -131,7 +132,8 @@ export HTTPS_PROXY=special
 export ftp_proxy=who uses this?
 export FTP_PROXY=who uses this?
 export no_proxy=10.0.3.1,localhost
-export NO_PROXY=10.0.3.1,localhost`[1:]
+export NO_PROXY=10.0.3.1,localhost
+`[1:]
 	c.Assert(proxies.AsScriptEnvironment(), gc.Equals, expected)
 }
 
@@ -171,6 +173,20 @@ func (s *proxySuite) TestAsEnvironmentValuesAllValue(c *gc.C) {
 	c.Assert(proxies.AsEnvironmentValues(), gc.DeepEquals, expected)
 }
 
+func (s *proxySuite) TestAsSystemdDefaultEnv(c *gc.C) {
+	proxies := proxy.Settings{
+		Http:    "some-value",
+		Https:   "special",
+		Ftp:     "who uses this?",
+		NoProxy: "10.0.3.1,localhost",
+	}
+	expected := `
+[Manager]
+DefaultEnvironment="http_proxy=some-value" "HTTP_PROXY=some-value" "https_proxy=special" "HTTPS_PROXY=special" "ftp_proxy=who uses this?" "FTP_PROXY=who uses this?" "no_proxy=10.0.3.1,localhost" "NO_PROXY=10.0.3.1,localhost" 
+`[1:]
+	c.Assert(proxies.AsSystemdDefaultEnv(), gc.DeepEquals, expected)
+}
+
 func (s *proxySuite) TestSetEnvironmentValues(c *gc.C) {
 	s.PatchEnvironment("http_proxy", "initial")
 	s.PatchEnvironment("HTTP_PROXY", "initial")
@@ -201,4 +217,23 @@ func (s *proxySuite) TestSetEnvironmentValues(c *gc.C) {
 	c.Assert(os.Getenv("FTP_PROXY"), gc.Equals, "")
 	c.Assert(os.Getenv("no_proxy"), gc.Equals, "10.0.3.1,localhost")
 	c.Assert(os.Getenv("NO_PROXY"), gc.Equals, "10.0.3.1,localhost")
+}
+
+func (s *proxySuite) TestAutoNoProxy(c *gc.C) {
+	proxies := proxy.Settings{
+		NoProxy: "10.0.3.1,localhost",
+	}
+
+	expectedFirst := []string{
+		"no_proxy=10.0.3.1,localhost",
+		"NO_PROXY=10.0.3.1,localhost",
+	}
+	expectedSecond := []string{
+		"no_proxy=10.0.3.1,10.0.3.2,localhost",
+		"NO_PROXY=10.0.3.1,10.0.3.2,localhost",
+	}
+
+	c.Assert(proxies.AsEnvironmentValues(), gc.DeepEquals, expectedFirst)
+	proxies.AutoNoProxy = "10.0.3.1,10.0.3.2"
+	c.Assert(proxies.AsEnvironmentValues(), gc.DeepEquals, expectedSecond)
 }

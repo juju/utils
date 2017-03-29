@@ -44,6 +44,9 @@ var getOSFromSeriesTests = []struct {
 	series: "centos7",
 	want:   os.CentOS,
 }, {
+	series: "opensuseleap",
+	want:   os.OpenSUSE,
+}, {
 	series: "genericlinux",
 	want:   os.GenericLinux,
 }, {
@@ -78,6 +81,7 @@ func setSeriesTestData() {
 		"win81":        "win81",
 		"win2016nano":  "win2016nano",
 		"centos7":      "centos7",
+		"opensuseleap": "opensuse42",
 		"genericlinux": "genericlinux",
 	})
 }
@@ -90,6 +94,8 @@ func (s *supportedSeriesSuite) TestOSSupportedSeries(c *gc.C) {
 	c.Assert(supported, jc.SameContents, []string{"win7", "win81", "win2016nano"})
 	supported = series.OSSupportedSeries(os.CentOS)
 	c.Assert(supported, jc.SameContents, []string{"centos7"})
+	supported = series.OSSupportedSeries(os.OpenSUSE)
+	c.Assert(supported, jc.SameContents, []string{"opensuseleap"})
 	supported = series.OSSupportedSeries(os.GenericLinux)
 	c.Assert(supported, jc.SameContents, []string{"genericlinux"})
 }

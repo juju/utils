@@ -10,3 +10,4 @@ import (
 
 var _ manager.PackageManager = manager.NewAptPackageManager()
 var _ manager.PackageManager = manager.NewYumPackageManager()
+var _ manager.PackageManager = manager.NewZypperPackageManager()

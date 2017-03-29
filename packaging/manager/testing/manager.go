@@ -71,7 +71,7 @@ func (pm *MockPackageManager) Cleanup() error {
 
 // GetProxySettings is defined on the PackageManager interface.
 func (pm *MockPackageManager) GetProxySettings() (proxy.Settings, error) {
-	return proxy.Settings{"http proxy", "https proxy", "ftp proxy", "no proxy"}, nil
+	return proxy.Settings{"http proxy", "https proxy", "ftp proxy", "no proxy", "auto no proxy"}, nil
 }
 
 // SetProxy is defined on the PackageManager interface.

@@ -36,6 +36,11 @@ func seriesFromOSRelease(values map[string]string) (string, error) {
 	case strings.ToLower(jujuos.CentOS.String()):
 		codename := fmt.Sprintf("%s%s", values["ID"], values["VERSION_ID"])
 		return getValue(centosSeries, codename)
+	case strings.ToLower(jujuos.OpenSUSE.String()):
+		codename := fmt.Sprintf("%s%s",
+			values["ID"],
+			strings.Split(values["VERSION_ID"], ".")[0])
+		return getValue(opensuseSeries, codename)
 	default:
 		return genericLinuxSeries, nil
 	}

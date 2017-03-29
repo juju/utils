@@ -13,6 +13,9 @@ var (
 	// testedSeriesCentOS is simply the series we use in CentOS tests.
 	testedSeriesCentOS = "centos7"
 
+	// testedSeriesOpenSUSE is simply the series we use in OpenSUSE tests.
+	testedSeriesOpenSUSE = "opensuseleap"
+
 	// testedPackages is a slice of random package tests to run tests on.
 	testedPackages = []string{
 		"awesome-wm",

@@ -113,3 +113,13 @@ func (s *Settings) SetEnvironmentValues() {
 	setenv(ftp_proxy, s.Ftp)
 	setenv(no_proxy, s.NoProxy)
 }
+
+// AddNoProxyAddresses adds addresses to NoProxy list, usually for controllers
+func (s *Settings) AddNoProxyAddresses(newAddrs []string) {
+	addrs := strings.Split(s.NoProxy, ",")
+	if len(addrs) == 1 && addrs[0] == "" {
+		addrs = addrs[:0]
+	}
+	addrs = append(addrs, newAddrs...)
+	s.NoProxy = strings.Join(addrs, ",")
+}

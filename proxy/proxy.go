@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"os"
 	"strings"
+
+	"github.com/juju/utils/set"
 )
 
 const (
@@ -20,10 +22,11 @@ const (
 // Settings holds the values for the HTTP, HTTPS and FTP proxies as well as the
 // no_proxy value found by Detect Proxies.
 type Settings struct {
-	Http    string
-	Https   string
-	Ftp     string
-	NoProxy string
+	Http        string
+	Https       string
+	Ftp         string
+	NoProxy     string
+	AutoNoProxy string
 }
 
 func getSetting(key string) string {
@@ -60,7 +63,7 @@ func (s *Settings) AsScriptEnvironment() string {
 	addLine(http_proxy, s.Http)
 	addLine(https_proxy, s.Https)
 	addLine(ftp_proxy, s.Ftp)
-	addLine(no_proxy, s.NoProxy)
+	addLine(no_proxy, s.FullNoProxy())
 	return strings.Join(lines, "\n")
 }
 
@@ -80,7 +83,7 @@ func (s *Settings) AsEnvironmentValues() []string {
 	addLine(http_proxy, s.Http)
 	addLine(https_proxy, s.Https)
 	addLine(ftp_proxy, s.Ftp)
-	addLine(no_proxy, s.NoProxy)
+	addLine(no_proxy, s.FullNoProxy())
 	return lines
 }
 
@@ -111,15 +114,18 @@ func (s *Settings) SetEnvironmentValues() {
 	setenv(http_proxy, s.Http)
 	setenv(https_proxy, s.Https)
 	setenv(ftp_proxy, s.Ftp)
-	setenv(no_proxy, s.NoProxy)
+	setenv(no_proxy, s.FullNoProxy())
 }
 
-// AddNoProxyAddresses adds addresses to NoProxy list, usually for controllers
-func (s *Settings) AddNoProxyAddresses(newAddrs []string) {
-	addrs := strings.Split(s.NoProxy, ",")
-	if len(addrs) == 1 && addrs[0] == "" {
-		addrs = addrs[:0]
+// FullNoProxy merges NoProxy and AutoNoProxyList
+func (s *Settings) FullNoProxy() string {
+	var allNoProxy []string
+	if s.NoProxy != "" {
+		allNoProxy = strings.Split(s.NoProxy, ",")
 	}
-	addrs = append(addrs, newAddrs...)
-	s.NoProxy = strings.Join(addrs, ",")
+	if s.AutoNoProxy != "" {
+		allNoProxy = append(allNoProxy, strings.Split(s.AutoNoProxy, ",")...)
+	}
+	noProxySet := set.NewStrings(allNoProxy...)
+	return strings.Join(noProxySet.SortedValues(), ",")
 }

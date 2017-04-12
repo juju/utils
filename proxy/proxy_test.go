@@ -215,22 +215,21 @@ func (s *proxySuite) TestSetEnvironmentValues(c *gc.C) {
 	c.Assert(os.Getenv("NO_PROXY"), gc.Equals, "10.0.3.1,localhost")
 }
 
-func (s *proxySuite) TestAddNoProxyAddresses(c *gc.C) {
-	proxies := proxy.Settings{}
-
-	expectedFirst := []string{}
-	expectedSecond := []string{
-		"no_proxy=second",
-		"NO_PROXY=second",
+func (s *proxySuite) TestAutoNoProxy(c *gc.C) {
+	proxies := proxy.Settings{
+		NoProxy: "10.0.3.1,localhost",
 	}
-	expectedThird := []string{
-		"no_proxy=second,third,fourth",
-		"NO_PROXY=second,third,fourth",
+
+	expectedFirst := []string{
+		"no_proxy=10.0.3.1,localhost",
+		"NO_PROXY=10.0.3.1,localhost",
+	}
+	expectedSecond := []string{
+		"no_proxy=10.0.3.1,10.0.3.2,localhost",
+		"NO_PROXY=10.0.3.1,10.0.3.2,localhost",
 	}
 
 	c.Assert(proxies.AsEnvironmentValues(), gc.DeepEquals, expectedFirst)
-	proxies.AddNoProxyAddresses([]string{"second"})
+	proxies.AutoNoProxy = "10.0.3.1,10.0.3.2"
 	c.Assert(proxies.AsEnvironmentValues(), gc.DeepEquals, expectedSecond)
-	proxies.AddNoProxyAddresses([]string{"third", "fourth"})
-	c.Assert(proxies.AsEnvironmentValues(), gc.DeepEquals, expectedThird)
 }

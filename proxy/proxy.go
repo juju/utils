@@ -84,6 +84,18 @@ func (s *Settings) AsEnvironmentValues() []string {
 	return lines
 }
 
+// AsSystemdEnvSettings returns a string in the format understood by systemd:
+// DefaultEnvironment="http_proxy=...." "HTTP_PROXY=..." ...
+func (s *Settings) AsSystemdDefaultEnv() string {
+	lines := s.AsEnvironmentValues()
+	rv := `[Manager]
+DefaultEnvironment=`
+	for _, line := range lines {
+		rv += fmt.Sprintf(`"%s" `, line)
+	}
+	return rv
+}
+
 // SetEnvironmentValues updates the process environment with the
 // proxy values stored in the settings object.  Both the lower-case
 // and upper-case variants are set.

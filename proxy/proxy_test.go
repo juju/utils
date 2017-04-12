@@ -171,6 +171,18 @@ func (s *proxySuite) TestAsEnvironmentValuesAllValue(c *gc.C) {
 	c.Assert(proxies.AsEnvironmentValues(), gc.DeepEquals, expected)
 }
 
+func (s *proxySuite) TestAsSystemdDefaultEnv(c *gc.C) {
+	proxies := proxy.Settings{
+		Http:    "some-value",
+		Https:   "special",
+		Ftp:     "who uses this?",
+		NoProxy: "10.0.3.1,localhost",
+	}
+	expected := `[Manager]
+DefaultEnvironment="http_proxy=some-value" "HTTP_PROXY=some-value" "https_proxy=special" "HTTPS_PROXY=special" "ftp_proxy=who uses this?" "FTP_PROXY=who uses this?" "no_proxy=10.0.3.1,localhost" "NO_PROXY=10.0.3.1,localhost" `
+	c.Assert(proxies.AsSystemdDefaultEnv(), gc.DeepEquals, expected)
+}
+
 func (s *proxySuite) TestSetEnvironmentValues(c *gc.C) {
 	s.PatchEnvironment("http_proxy", "initial")
 	s.PatchEnvironment("HTTP_PROXY", "initial")

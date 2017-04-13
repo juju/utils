@@ -21,6 +21,7 @@ const (
 
 // Settings holds the values for the HTTP, HTTPS and FTP proxies as well as the
 // no_proxy value found by Detect Proxies.
+// AutoNoProxy is filled with addresses of controllers, we never want to proxy those
 type Settings struct {
 	Http        string
 	Https       string
@@ -64,7 +65,10 @@ func (s *Settings) AsScriptEnvironment() string {
 	addLine(https_proxy, s.Https)
 	addLine(ftp_proxy, s.Ftp)
 	addLine(no_proxy, s.FullNoProxy())
-	return strings.Join(lines, "\n")
+	if len(lines) == 0 {
+		return ""
+	}
+	return strings.Join(lines, "\n") + "\n"
 }
 
 // AsEnvironmentValues returns a slice of strings of the format "key=value"
@@ -96,7 +100,7 @@ DefaultEnvironment=`
 	for _, line := range lines {
 		rv += fmt.Sprintf(`"%s" `, line)
 	}
-	return rv
+	return rv + "\n"
 }
 
 // SetEnvironmentValues updates the process environment with the

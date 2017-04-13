@@ -112,7 +112,8 @@ func (s *proxySuite) TestAsScriptEnvironmentOneValue(c *gc.C) {
 	}
 	expected := `
 export http_proxy=some-value
-export HTTP_PROXY=some-value`[1:]
+export HTTP_PROXY=some-value
+`[1:]
 	c.Assert(proxies.AsScriptEnvironment(), gc.Equals, expected)
 }
 
@@ -131,7 +132,8 @@ export HTTPS_PROXY=special
 export ftp_proxy=who uses this?
 export FTP_PROXY=who uses this?
 export no_proxy=10.0.3.1,localhost
-export NO_PROXY=10.0.3.1,localhost`[1:]
+export NO_PROXY=10.0.3.1,localhost
+`[1:]
 	c.Assert(proxies.AsScriptEnvironment(), gc.Equals, expected)
 }
 
@@ -178,8 +180,10 @@ func (s *proxySuite) TestAsSystemdDefaultEnv(c *gc.C) {
 		Ftp:     "who uses this?",
 		NoProxy: "10.0.3.1,localhost",
 	}
-	expected := `[Manager]
-DefaultEnvironment="http_proxy=some-value" "HTTP_PROXY=some-value" "https_proxy=special" "HTTPS_PROXY=special" "ftp_proxy=who uses this?" "FTP_PROXY=who uses this?" "no_proxy=10.0.3.1,localhost" "NO_PROXY=10.0.3.1,localhost" `
+	expected := `
+[Manager]
+DefaultEnvironment="http_proxy=some-value" "HTTP_PROXY=some-value" "https_proxy=special" "HTTPS_PROXY=special" "ftp_proxy=who uses this?" "FTP_PROXY=who uses this?" "no_proxy=10.0.3.1,localhost" "NO_PROXY=10.0.3.1,localhost" 
+`[1:]
 	c.Assert(proxies.AsSystemdDefaultEnv(), gc.DeepEquals, expected)
 }
 

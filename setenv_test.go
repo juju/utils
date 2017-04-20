@@ -2,6 +2,7 @@
 // Licensed under the LGPLv3, see LICENCE file for details.
 
 package utils_test
+
 import (
 	gc "gopkg.in/check.v1"
 
@@ -20,6 +21,7 @@ var setenvTests = []struct {
 	{"foo=", []string{"foo=", "arble="}},
 	{"arble=23", []string{"foo=bar", "arble=23"}},
 	{"zaphod=42", []string{"foo=bar", "arble=", "zaphod=42"}},
+	{"bar", []string{"foo=bar", "arble="}},
 }
 
 func (*SetenvSuite) TestSetenv(c *gc.C) {
@@ -31,10 +33,4 @@ func (*SetenvSuite) TestSetenv(c *gc.C) {
 		env = utils.Setenv(env, t.set)
 		c.Check(env, gc.DeepEquals, t.expect)
 	}
-}
-
-func (*SetenvSuite) TestSetenvWithBadFormatPanics(c *gc.C) {
-	c.Assert(func() {
-		utils.Setenv(nil, "foo")
-	}, gc.PanicMatches, "no = in environment entry")
 }

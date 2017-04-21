@@ -31,6 +31,7 @@ func (s *supportedSeriesWindowsSuite) TestSupportedSeries(c *gc.C) {
 	expectedSeries := []string{
 		"genericlinux",
 		"centos7",
+		"opensuseleap",
 
 		"precise",
 		"quantal",

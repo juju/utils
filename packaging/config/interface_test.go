@@ -10,3 +10,4 @@ import (
 
 var _ config.PackagingConfigurer = config.NewAptPackagingConfigurer("some-series")
 var _ config.PackagingConfigurer = config.NewYumPackagingConfigurer("some-series")
+var _ config.PackagingConfigurer = config.NewZypperPackagingConfigurer("some-series")

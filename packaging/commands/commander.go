@@ -34,6 +34,7 @@ type packageCommander struct {
 	setProxy              string // command for adding a proxy setting to the config file
 	setNoProxy            string // command for adding a no-proxy setting to the config file
 	noProxySettingsFormat string // format for no-proxy setting in package manager config file
+	proxyLabelInCapital   bool   // true: proxy labels are in capital letter (e.g. HTTP_PROXY)
 }
 
 // InstallPrerequisiteCmd is defined on the PackageCommander interface.
@@ -132,9 +133,21 @@ func (p *packageCommander) proxyConfigLines(settings proxy.Settings) []string {
 		}
 	}
 
-	addOption("http", settings.Http)
-	addOption("https", settings.Https)
-	addOption("ftp", settings.Ftp)
+	// OpenSUSE uses proxy labels in capital letter (e.g HTTP_PROXY)
+	// For backward compatibility I included a flag in packageCommander.
+	var http_label, https_label, ftp_label string
+	if p.proxyLabelInCapital {
+		http_label = "HTTP"
+		https_label = "HTTPS"
+		ftp_label = "FTP"
+	} else {
+		http_label = "http"
+		https_label = "https"
+		ftp_label = "ftp"
+	}
+	addOption(http_label, settings.Http)
+	addOption(https_label, settings.Https)
+	addOption(ftp_label, settings.Ftp)
 
 	addNoProxyCmd := func(protocol, host string) {
 		options = append(options, p.giveNoProxyOption(protocol, host))
@@ -143,9 +156,9 @@ func (p *packageCommander) proxyConfigLines(settings proxy.Settings) []string {
 	if p.noProxySettingsFormat != "" {
 		for _, host := range strings.Split(settings.NoProxy, ",") {
 			if host != "" {
-				addNoProxyCmd("http", host)
-				addNoProxyCmd("https", host)
-				addNoProxyCmd("ftp", host)
+				addNoProxyCmd(http_label, host)
+				addNoProxyCmd(https_label, host)
+				addNoProxyCmd(ftp_label, host)
 			}
 		}
 	}

@@ -168,6 +168,13 @@ VERSION_ID="7"
 	"centos7",
 	"",
 }, {
+	`NAME="openSUSE Leap"
+ID=opensuse
+VERSION_ID="42.2"
+`,
+	"opensuseleap",
+	"",
+}, {
 	`NAME="Ubuntu"
 VERSION="14.04.1 LTS, Trusty Tahr"
 ID=ubuntu
@@ -221,6 +228,12 @@ ID="centos"
 `,
 	"unknown",
 	"could not determine series",
+}, {
+	`NAME=openSUSE
+ID=opensuse
+VERSION_ID="42.3"`,
+	"opensuseleap",
+	"",
 },
 }
 

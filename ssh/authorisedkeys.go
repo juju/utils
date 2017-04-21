@@ -167,13 +167,13 @@ func writeAuthorisedKeys(username string, keys []string) error {
 // We need a mutex because updates to the authorised keys file are done by
 // reading the contents, updating, and writing back out. So only one caller
 // at a time can use either Add, Delete, List.
-var mutex sync.Mutex
+var keysMutex sync.Mutex
 
 // AddKeys adds the specified ssh keys to the authorized_keys file for user.
 // Returns an error if there is an issue with *any* of the supplied keys.
 func AddKeys(user string, newKeys ...string) error {
-	mutex.Lock()
-	defer mutex.Unlock()
+	keysMutex.Lock()
+	defer keysMutex.Unlock()
 	existingKeys, err := readAuthorisedKeys(user)
 	if err != nil {
 		return err
@@ -211,8 +211,8 @@ func AddKeys(user string, newKeys ...string) error {
 // keyIds may be either key comments or fingerprints.
 // Returns an error if there is an issue with *any* of the keys to delete.
 func DeleteKeys(user string, keyIds ...string) error {
-	mutex.Lock()
-	defer mutex.Unlock()
+	keysMutex.Lock()
+	defer keysMutex.Unlock()
 	existingKeyData, err := readAuthorisedKeys(user)
 	if err != nil {
 		return err
@@ -261,8 +261,8 @@ func DeleteKeys(user string, keyIds ...string) error {
 // replacing any that are already there.
 // Returns an error if there is an issue with *any* of the supplied keys.
 func ReplaceKeys(user string, newKeys ...string) error {
-	mutex.Lock()
-	defer mutex.Unlock()
+	keysMutex.Lock()
+	defer keysMutex.Unlock()
 
 	existingKeyData, err := readAuthorisedKeys(user)
 	if err != nil {
@@ -280,8 +280,8 @@ func ReplaceKeys(user string, newKeys ...string) error {
 
 // ListKeys returns either the full keys or key comments from the authorized ssh keys file for user.
 func ListKeys(user string, mode ListMode) ([]string, error) {
-	mutex.Lock()
-	defer mutex.Unlock()
+	keysMutex.Lock()
+	defer keysMutex.Unlock()
 	keyData, err := readAuthorisedKeys(user)
 	if err != nil {
 		return nil, err

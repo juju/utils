@@ -52,7 +52,7 @@ func DetectProxies() Settings {
 // that specifies exported key=value lines. There are two lines for each non-
 // empty proxy value, one lower-case and one upper-case.
 func (s *Settings) AsScriptEnvironment() string {
-	lines := []string{}
+	var lines []string
 	addLine := func(proxy, value string) {
 		if value != "" {
 			lines = append(
@@ -65,10 +65,7 @@ func (s *Settings) AsScriptEnvironment() string {
 	addLine(https_proxy, s.Https)
 	addLine(ftp_proxy, s.Ftp)
 	addLine(no_proxy, s.FullNoProxy())
-	if len(lines) == 0 {
-		return ""
-	}
-	return strings.Join(lines, "\n") + "\n"
+	return strings.Join(lines, "\n")
 }
 
 // AsEnvironmentValues returns a slice of strings of the format "key=value"

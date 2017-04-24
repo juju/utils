@@ -76,6 +76,8 @@ func NewPackageManager(series string) (PackageManager, error) {
 	switch series {
 	case "centos7":
 		return NewYumPackageManager(), nil
+	case "opensuseleap":
+		return NewZypperPackageManager(), nil
 	default:
 		return NewAptPackageManager(), nil
 	}
@@ -89,4 +91,8 @@ func NewAptPackageManager() PackageManager {
 // NewYumPackageManager returns a PackageManager for yum-based systems.
 func NewYumPackageManager() PackageManager {
 	return &yum{basePackageManager{commands.NewYumPackageCommander()}}
+}
+
+func NewZypperPackageManager() PackageManager {
+	return &zypper{basePackageManager{commands.NewZypperPackageCommander()}}
 }

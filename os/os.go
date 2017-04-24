@@ -15,6 +15,7 @@ const (
 	OSX
 	CentOS
 	GenericLinux
+	OpenSUSE
 )
 
 func (t OSType) String() string {
@@ -29,6 +30,8 @@ func (t OSType) String() string {
 		return "CentOS"
 	case GenericLinux:
 		return "GenericLinux"
+	case OpenSUSE:
+		return "OpenSUSE"
 	}
 	return "Unknown"
 }
@@ -45,7 +48,7 @@ func (t OSType) EquivalentTo(t2 OSType) bool {
 // IsLinux returns true if the OS type is a Linux variant.
 func (t OSType) IsLinux() bool {
 	switch t {
-	case Ubuntu, CentOS, GenericLinux:
+	case Ubuntu, CentOS, GenericLinux, OpenSUSE:
 		return true
 	}
 	return false

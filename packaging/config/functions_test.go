@@ -27,6 +27,7 @@ func (s *FunctionsSuite) TestSeriesRequiresCloudArchiveTools(c *gc.C) {
 		"mint",
 		"makulu",
 		"rhel lol",
+		"opensuseleap",
 	}
 
 	for i, series := range testedSeries {
@@ -41,6 +42,13 @@ func (s *FunctionsSuite) TestSeriesRequiresCloudArchiveTools(c *gc.C) {
 
 func (s *FunctionsSuite) TestGetCloudArchiveSourceCentOS(c *gc.C) {
 	src, prefs := config.GetCloudArchiveSource("centos7")
+
+	c.Assert(src, gc.Equals, packaging.PackageSource{})
+	c.Assert(prefs, gc.Equals, packaging.PackagePreferences{})
+}
+
+func (s *FunctionsSuite) TestGetCloudArchiveSourceOpenSUSE(c *gc.C) {
+	src, prefs := config.GetCloudArchiveSource("opensuseleap")
 
 	c.Assert(src, gc.Equals, packaging.PackageSource{})
 	c.Assert(prefs, gc.Equals, packaging.PackagePreferences{})

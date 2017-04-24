@@ -8,5 +8,6 @@ var (
 	ConfigureCloudArchiveSourceUbuntu = configureCloudArchiveSourceUbuntu
 	CloudArchivePackagesUbuntu        = cloudArchivePackagesUbuntu
 	CloudArchivePackagesCentOS        = cloudArchivePackagesCentOS
+	CloudArchivePackagesOpenSUSE      = cloudArchivePackagesOpenSUSE
 	SeriesRequiringCloudTools         = seriesRequiringCloudTools
 )

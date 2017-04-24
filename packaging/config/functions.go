@@ -23,6 +23,9 @@ func GetCloudArchiveSource(series string) (packaging.PackageSource, packaging.Pa
 	case "centos7":
 		// NOTE: as of yet, the below function does nothing for CentOS.
 		return configureCloudArchiveSourceCentOS(series)
+	case "opensuseleap":
+		// NOTE: do the sam that CentOS case
+		return configureCloudArchiveSourceOpenSUSE(series)
 	default:
 		return configureCloudArchiveSourceUbuntu(series)
 	}

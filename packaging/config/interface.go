@@ -46,6 +46,8 @@ func NewPackagingConfigurer(series string) (PackagingConfigurer, error) {
 	// without importing version from core.
 	case "centos7":
 		return NewYumPackagingConfigurer(series), nil
+	case "opensuseleap":
+		return NewZypperPackagingConfigurer(series), nil
 	default:
 		return NewAptPackagingConfigurer(series), nil
 	}
@@ -66,5 +68,13 @@ func NewYumPackagingConfigurer(series string) PackagingConfigurer {
 		series:               series,
 		defaultPackages:      CentOSDefaultPackages,
 		cloudArchivePackages: cloudArchivePackagesCentOS,
+	}}
+}
+
+func NewZypperPackagingConfigurer(series string) PackagingConfigurer {
+	return &zypperConfigurer{&baseConfigurer{
+		series:               series,
+		defaultPackages:      OpenSUSEDefaultPackages,
+		cloudArchivePackages: cloudArchivePackagesOpenSUSE,
 	}}
 }

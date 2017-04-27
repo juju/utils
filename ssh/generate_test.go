@@ -4,6 +4,7 @@
 package ssh_test
 
 import (
+	"crypto/dsa"
 	"crypto/rsa"
 	"io"
 
@@ -20,7 +21,10 @@ type GenerateSuite struct {
 
 var _ = gc.Suite(&GenerateSuite{})
 
-var pregeneratedKey *rsa.PrivateKey
+var (
+	pregeneratedKey   *rsa.PrivateKey
+	alternativeRSAKey *rsa.PrivateKey
+)
 
 // overrideGenerateKey patches out rsa.GenerateKey to create a single testing
 // key which is saved and used between tests to save computation time.
@@ -29,16 +33,35 @@ func overrideGenerateKey(c *gc.C) testing.Restorer {
 		if pregeneratedKey != nil {
 			return pregeneratedKey, nil
 		}
-		// Ignore requested bits and just use 512 bits for speed
-		key, err := rsa.GenerateKey(random, 512)
+		key, err := generateRSAKey(random)
 		if err != nil {
 			return nil, err
 		}
-		key.Precompute()
 		pregeneratedKey = key
 		return key, nil
 	})
 	return restorer
+}
+
+func generateRSAKey(random io.Reader) (*rsa.PrivateKey, error) {
+	// Ignore requested bits and just use 512 bits for speed
+	key, err := rsa.GenerateKey(random, 512)
+	if err != nil {
+		return nil, err
+	}
+	key.Precompute()
+	return key, nil
+}
+
+func generateDSAKey(random io.Reader) (*dsa.PrivateKey, error) {
+	var privKey dsa.PrivateKey
+	if err := dsa.GenerateParameters(&privKey.Parameters, random, dsa.L1024N160); err != nil {
+		return nil, err
+	}
+	if err := dsa.GenerateKey(&privKey, random); err != nil {
+		return nil, err
+	}
+	return &privKey, nil
 }
 
 func (s *GenerateSuite) TestGenerate(c *gc.C) {

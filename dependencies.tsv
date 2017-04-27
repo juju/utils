@@ -4,6 +4,7 @@ github.com/juju/gnuflag	git	4e76c56581859c14d9d87e1ddbe29e1c0f10195f	2016-08-09T
 github.com/juju/httpprof	git	14bf14c307672fd2456bdbf35d19cf0ccd3cf565	2014-12-17T16:00:36Z
 github.com/juju/httprequest	git	89d547093c45e293599088cc63e805c6f1205dc0	2016-03-02T10:09:58Z
 github.com/juju/loggo	git	15901ae4de786d05edae84a27c93d3fbef66c91e	2016-08-04T22:15:26Z
+github.com/juju/mutex	git	59c26ee163447c5c57f63ff71610d433862013de	2016-06-17T01:09:07Z
 github.com/juju/retry	git	62c62032529169c7ec02fa48f93349604c345e1f	2015-10-29T02:48:21Z
 github.com/juju/testing	git	7177264a582e2c00d08277eaa91d88f8eb0fd869	2016-09-26T12:59:16Z
 github.com/juju/version	git	4ae6172c00626779a5a462c3e3d22fc0e889431a	2016-06-03T19:49:58Z
@@ -13,7 +14,7 @@ github.com/masterzen/simplexml	git	4572e39b1ab9fe03ee513ce6fc7e289e98482190	2016
 github.com/masterzen/winrm	git	7a535cd943fccaeed196718896beec3fb51aff41	2016-08-04T09:38:27Z
 github.com/masterzen/xmlpath	git	13f4951698adc0fa9c1dda3e275d489a24201161	2014-02-18T18:59:01Z
 github.com/nu7hatch/gouuid	git	179d4d0c4d8d407a32af483c2354df1d2c91e6c3	2016-02-18t18:59:01Z
-golang.org/x/crypto	git	aedad9a179ec1ea11b7064c57cbc6dc30d7724ec	2015-08-30T18:06:42Z
+golang.org/x/crypto	git	96846453c37f0876340a66a47f3f75b1f3a6cd2d	2017-04-21T04:31:20Z
 golang.org/x/net	git	ea47fc708ee3e20177f3ca3716217c4ab75942cb	2015-08-29T23:03:18Z
 golang.org/x/sys	git	7a6e5648d140666db5d920909e082ca00a87ba2c	2017-02-01T05:12:45Z
 golang.org/x/text	git	b01949dc0793a9af5e4cb3fce4d42999e76e8ca1	2016-05-25T23:07:23Z

@@ -9,13 +9,12 @@ package ssh
 
 import (
 	"bytes"
-	"errors"
 	"io"
 	"os/exec"
 	"syscall"
 
 	"github.com/juju/cmd"
-	je "github.com/juju/errors"
+	"github.com/juju/errors"
 )
 
 // StrictHostChecksOption defines the possible values taken by
@@ -23,9 +22,19 @@ import (
 type StrictHostChecksOption int
 
 const (
-	// StrictHostChecksNo disables strict host key checking. This is
-	// the default.
-	StrictHostChecksNo StrictHostChecksOption = iota
+	// StrictHostChecksDefault configures the default,
+	// implementation-specific, behaviour.
+	//
+	// For the OpenSSH implementation, this elides the
+	// StrictHostKeyChecking option, which means the
+	// user's personal configuration will be used.
+	//
+	// For the go.crypto implementation, the default is
+	// the equivalent of "ask".
+	StrictHostChecksDefault StrictHostChecksOption = iota
+
+	// StrictHostChecksNo disables strict host key checking.
+	StrictHostChecksNo
 
 	// StrictHostChecksYes enabled strict host key checking
 	// enabled. Target hosts must appear in known_hosts file or
@@ -35,12 +44,6 @@ const (
 	// StrictHostChecksAsk will cause openssh to ask the user about
 	// hosts that don't appear in known_hosts file.
 	StrictHostChecksAsk
-
-	// StrictHostChecksUnset will prevent the addition of a
-	// StrictHostKeyChecking option to the openssh command line. The
-	// StrictHostKeyChecking setting from user's personal
-	// configuration will be used.
-	StrictHostChecksUnset
 )
 
 // Options is a client-implementation independent SSH options set.
@@ -48,16 +51,21 @@ type Options struct {
 	// proxyCommand specifies the command to
 	// execute to proxy SSH traffic through.
 	proxyCommand []string
+
 	// ssh server port; zero means use the default (22)
 	port int
+
 	// no PTY forced by default
 	allocatePTY bool
+
 	// password authentication is disallowed by default
 	passwordAuthAllowed bool
+
 	// identities is a sequence of paths to private key/identity files
 	// to use when attempting to login. A client implementaton may attempt
 	// with additional identities, but must give preference to these
 	identities []string
+
 	// knownHostsFile is a path to a file in which to save the host's
 	// fingerprint.
 	knownHostsFile string
@@ -65,6 +73,11 @@ type Options struct {
 	// strictHostKeyChecking sets that the host being connected to must
 	// exist in the known_hosts file, and with a matching public key.
 	strictHostKeyChecking StrictHostChecksOption
+
+	// hostKeyAlgorithms sets the host key types that the client will
+	// accept from the server, in order of preference. By default the
+	// client implementation will specify a set of reasonable types.
+	hostKeyAlgorithms []string
 }
 
 // SetProxyCommand sets a command to execute to proxy traffic through.
@@ -92,13 +105,6 @@ func (o *Options) SetKnownHostsFile(file string) {
 	o.knownHostsFile = file
 }
 
-// EnableStrictHostKeyChecking requires that the host being connected
-// to must exist in the known_hosts file, and with a matching public
-// key. See also SetStrictHostKeyChecking.
-func (o *Options) EnableStrictHostKeyChecking() {
-	o.strictHostKeyChecking = StrictHostChecksYes
-}
-
 // SetStrictHostKeyChecking sets the desired host key checking
 // behaviour. It takes one of the StrictHostChecksOption constants.
 // See also EnableStrictHostKeyChecking.
@@ -120,6 +126,13 @@ func (o *Options) AllowPasswordAuthentication() {
 // specified here.
 func (o *Options) SetIdentities(identityFiles ...string) {
 	o.identities = append([]string{}, identityFiles...)
+}
+
+// SetHostKeyAlgorithms sets the host key types that the client will
+// accept from the server, in order of preference. If not specified,
+// the client implementation may choose its own defaults.
+func (o *Options) SetHostKeyAlgorithms(algos ...string) {
+	o.hostKeyAlgorithms = algos
 }
 
 // Client is an interface for SSH clients to implement
@@ -308,5 +321,5 @@ func CopyReader(host, filename string, r io.Reader, options *Options) error {
 func copyReader(client Client, host, filename string, r io.Reader, options *Options) error {
 	cmd := client.Command(host, []string{"cat - > " + filename}, options)
 	cmd.Stdin = r
-	return je.Trace(cmd.Run())
+	return errors.Trace(cmd.Run())
 }

@@ -203,14 +203,11 @@ func (certSuite) TestNewClientCertRSASize(c *gc.C) {
 		c.Assert(err, jc.ErrorIsNil)
 		c.Assert(value, gc.Not(gc.IsNil))
 
-		expected := []pkix.Extension{
-			{
-				Id:       cert.CertSubjAltName,
-				Value:    value,
-				Critical: false,
-			},
-		}
-		c.Assert(caCert.Extensions[4], jc.DeepEquals, expected[0])
+		c.Assert(caCert.Extensions[len(caCert.Extensions)-1], jc.DeepEquals, pkix.Extension{
+			Id:       cert.CertSubjAltName,
+			Value:    value,
+			Critical: false,
+		})
 		c.Assert(caCert.PublicKeyAlgorithm, gc.Equals, x509.RSA)
 		c.Assert(caCert.ExtKeyUsage[0], gc.Equals, x509.ExtKeyUsageClientAuth)
 		checkNotBefore(c, caCert, now)

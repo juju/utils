@@ -4,6 +4,8 @@
 package ssh
 
 import (
+	"bytes"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net"
@@ -12,10 +14,16 @@ import (
 	"os/user"
 	"strconv"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/juju/errors"
+	"github.com/juju/mutex"
 	"github.com/juju/utils"
+	"github.com/juju/utils/clock"
 	"golang.org/x/crypto/ssh"
+	"golang.org/x/crypto/ssh/knownhosts"
+	"golang.org/x/crypto/ssh/terminal"
 )
 
 const sshDefaultPort = 22
@@ -49,19 +57,28 @@ func (c *GoCryptoClient) Command(host string, command []string, options *Options
 	user, host := splitUserHost(host)
 	port := sshDefaultPort
 	var proxyCommand []string
+	var knownHostsFile string
+	var strictHostKeyChecking StrictHostChecksOption
+	var hostKeyAlgorithms []string
 	if options != nil {
 		if options.port != 0 {
 			port = options.port
 		}
 		proxyCommand = options.proxyCommand
+		knownHostsFile = options.knownHostsFile
+		strictHostKeyChecking = options.strictHostKeyChecking
+		hostKeyAlgorithms = options.hostKeyAlgorithms
 	}
 	logger.Tracef(`running (equivalent of): ssh "%s@%s" -p %d '%s'`, user, host, port, shellCommand)
 	return &Cmd{impl: &goCryptoCommand{
-		signers:      signers,
-		user:         user,
-		addr:         net.JoinHostPort(host, strconv.Itoa(port)),
-		command:      shellCommand,
-		proxyCommand: proxyCommand,
+		signers:               signers,
+		user:                  user,
+		addr:                  net.JoinHostPort(host, strconv.Itoa(port)),
+		command:               shellCommand,
+		proxyCommand:          proxyCommand,
+		knownHostsFile:        knownHostsFile,
+		strictHostKeyChecking: strictHostKeyChecking,
+		hostKeyAlgorithms:     hostKeyAlgorithms,
 	}}
 }
 
@@ -73,16 +90,19 @@ func (c *GoCryptoClient) Copy(args []string, options *Options) error {
 }
 
 type goCryptoCommand struct {
-	signers      []ssh.Signer
-	user         string
-	addr         string
-	command      string
-	proxyCommand []string
-	stdin        io.Reader
-	stdout       io.Writer
-	stderr       io.Writer
-	client       *ssh.Client
-	sess         *ssh.Session
+	signers               []ssh.Signer
+	user                  string
+	addr                  string
+	command               string
+	proxyCommand          []string
+	knownHostsFile        string
+	strictHostKeyChecking StrictHostChecksOption
+	hostKeyAlgorithms     []string
+	stdin                 io.Reader
+	stdout                io.Writer
+	stderr                io.Writer
+	client                *ssh.Client
+	sess                  *ssh.Session
 }
 
 var sshDial = ssh.Dial
@@ -136,7 +156,9 @@ func (c *goCryptoCommand) ensureSession() (*ssh.Session, error) {
 		c.user = currentUser.Username
 	}
 	config := &ssh.ClientConfig{
-		User: c.user,
+		User:              c.user,
+		HostKeyCallback:   c.hostKeyCallback,
+		HostKeyAlgorithms: c.hostKeyAlgorithms,
 		Auth: []ssh.AuthMethod{
 			ssh.PublicKeysCallback(func() ([]ssh.Signer, error) {
 				return c.signers, nil
@@ -234,10 +256,250 @@ func (c *goCryptoCommand) StderrPipe() (io.ReadCloser, io.Writer, error) {
 	return ioutil.NopCloser(wc), sess.Stderr, err
 }
 
+func (c *goCryptoCommand) hostKeyCallback(hostname string, remote net.Addr, key ssh.PublicKey) error {
+	knownHostsFile := c.knownHostsFile
+	if knownHostsFile == "" {
+		knownHostsFile = GoCryptoKnownHostsFile()
+		if knownHostsFile == "" {
+			return errors.New("known_hosts file not configured")
+		}
+	}
+
+	var printError func(string) error
+	term, cleanupTerm, err := getTerminal()
+	if err != nil {
+		return errors.Trace(err)
+	} else if term != nil {
+		defer cleanupTerm()
+		printError = func(message string) error {
+			_, err := fmt.Fprintln(term, message)
+			return err
+		}
+	} else {
+		printError = func(message string) error {
+			logger.Errorf("%s", message)
+			return nil
+		}
+	}
+
+	matched, err := checkHostKey(hostname, remote, key, knownHostsFile, printError)
+	if err != nil || matched {
+		return errors.Trace(err)
+	}
+	// We did not find a matching key, so what we do next depends on the
+	// strict host key checking configuration.
+
+	var warnAdd bool
+	switch c.strictHostKeyChecking {
+	case StrictHostChecksNo:
+		// Don't ask, just add.
+		warnAdd = true
+	case StrictHostChecksDefault, StrictHostChecksAsk:
+		message := fmt.Sprintf(`The authenticity of host '%s (%s)' can't be established.
+%s key fingerprint is %s.
+`,
+			hostname,
+			remote,
+			key.Type(),
+			ssh.FingerprintSHA256(key),
+		)
+		if term == nil {
+			// If we're not running in a terminal,
+			// we can't ask the user if they want
+			// to accept.
+			logger.Errorf("%s", message)
+			return errors.New("not running in a terminal, cannot prompt for verification")
+		}
+
+		// Prompt user, asking if they trust the key.
+		fmt.Fprint(term, message+"Are you sure you want to continue connecting (yes/no)? ")
+		for {
+			line, err := term.ReadLine()
+			if err != nil {
+				return errors.Trace(err)
+			}
+			var yes bool
+			switch strings.ToLower(line) {
+			case "yes":
+				yes = true
+			case "no":
+				return errors.New("Host key verification failed.")
+			default:
+				fmt.Fprint(term, "Please type 'yes' or 'no': ")
+			}
+			if yes {
+				break
+			}
+		}
+	default:
+		return errors.Errorf(
+			`no %s host key is known for %s and you have requested strict checking`,
+			key.Type(), hostname,
+		)
+	}
+
+	if knownHostsFile != os.DevNull {
+		// Make sure no other process modifies the file.
+		releaser, err := mutex.Acquire(mutex.Spec{
+			Name:  "juju-ssh-client",
+			Clock: clock.WallClock,
+			Delay: time.Second,
+		})
+		if err != nil {
+			return errors.Trace(err)
+		}
+		defer releaser.Release()
+
+		// Write the file atomically, so the initial ReadAll above
+		// doesn't have to hold the mutex.
+		knownHostsData, err := ioutil.ReadFile(knownHostsFile)
+		if err != nil && !os.IsNotExist(err) {
+			return errors.Trace(err)
+		}
+		buf := bytes.NewBuffer(knownHostsData)
+		if len(knownHostsData) > 0 && !bytes.HasSuffix(knownHostsData, []byte("\n")) {
+			buf.WriteRune('\n')
+		}
+		buf.WriteString(knownhosts.Line([]string{hostname}, key))
+		buf.WriteRune('\n')
+		if err := utils.AtomicWriteFile(knownHostsFile, buf.Bytes(), 0600); err != nil {
+			return errors.Trace(err)
+		}
+	}
+	if warnAdd {
+		printError(fmt.Sprintf(
+			"Warning: permanently added '%s' (%s) to the list of known hosts.",
+			hostname, key.Type(),
+		))
+	}
+	return nil
+}
+
+type readLineWriter interface {
+	io.Writer
+	ReadLine() (string, error)
+}
+
+var getTerminal = func() (readLineWriter, func(), error) {
+	if fd := int(os.Stdin.Fd()); terminal.IsTerminal(fd) {
+		oldState, err := terminal.MakeRaw(fd)
+		if err != nil {
+			return nil, nil, errors.Trace(err)
+		}
+		cleanup := func() { terminal.Restore(fd, oldState) }
+		return terminal.NewTerminal(os.Stdin, ""), cleanup, nil
+	}
+	return nil, nil, nil
+}
+
+// checkHostKey checks the given (hostname, address, public key) tuple
+// against the local known-hosts database, if it exists, and returns a
+// boolean indicating whether a match was found, and any errors encountered.
+func checkHostKey(
+	hostname string,
+	remote net.Addr,
+	key ssh.PublicKey,
+	knownHostsFile string,
+	printError func(string) error,
+) (bool, error) {
+	// NOTE(axw) the knownhosts code is incomplete, but enough for
+	// our limited use cases. We do not support parsing a known_hosts
+	// file managed by OpenSSH (due to hashed hosts, etc.), but that
+	// is OK since this client exists only to support systems that
+	// do not have access to OpenSSH.
+	callback, err := knownhosts.New(knownHostsFile)
+	if err != nil {
+		if os.IsNotExist(err) {
+			// The known_hosts file does not exist.
+			return false, nil
+		}
+		return false, errors.Trace(err)
+	}
+	err = callback(hostname, remote, key)
+	switch err := err.(type) {
+	case nil:
+		// Known host with matching key.
+		return true, nil
+	case *knownhosts.KeyError:
+		if len(err.Want) == 0 {
+			// Unknown host.
+			return false, nil
+		}
+		head := fmt.Sprintf(`
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@    WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!     @
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+IT IS POSSIBLE THAT SOMEONE IS DOING SOMETHING NASTY!
+Someone could be eavesdropping on you right now (man-in-the-middle attack)!
+It is also possible that a host key has just been changed.
+The fingerprint for the %s key sent by the remote host is
+%s.
+Please contact your system administrator.
+Add correct host key in %s to get rid of this message.
+`[1:], key.Type(), ssh.FingerprintSHA256(key), knownHostsFile)
+
+		var typeKey *knownhosts.KnownKey
+		for i, knownKey := range err.Want {
+			if knownKey.Key.Type() == key.Type() {
+				typeKey = &err.Want[i]
+			}
+		}
+
+		var tail string
+		if typeKey != nil {
+			tail = fmt.Sprintf(
+				"Offending %s key in %s:%d",
+				typeKey.Key.Type(),
+				typeKey.Filename,
+				typeKey.Line,
+			)
+		} else {
+			tail = "Host was previously using different host key algorithms:"
+			for _, knownKey := range err.Want {
+				tail += fmt.Sprintf(
+					"\n - %s key in %s:%d",
+					knownKey.Key.Type(),
+					knownKey.Filename,
+					knownKey.Line,
+				)
+			}
+		}
+		if err := printError(head + tail); err != nil {
+			// Not being able to display the warning
+			// should be considered fatal.
+			return false, errors.Annotate(
+				err, "failed to print host key mismatch warning",
+			)
+		}
+	}
+	return false, errors.Trace(err)
+}
+
 func splitUserHost(s string) (user, host string) {
 	userHost := strings.SplitN(s, "@", 2)
 	if len(userHost) == 2 {
 		return userHost[0], userHost[1]
 	}
 	return "", userHost[0]
+}
+
+var (
+	goCryptoKnownHostsMutex sync.Mutex
+	goCryptoKnownHostsFile  string
+)
+
+// GoCryptoKnownHostsFile returns the known_hosts file used
+// by the golang.org/x/crypto/ssh-based client by default.
+func GoCryptoKnownHostsFile() string {
+	goCryptoKnownHostsMutex.Lock()
+	defer goCryptoKnownHostsMutex.Unlock()
+	return goCryptoKnownHostsFile
+}
+
+// SetGoCryptoKnownHostsFile returns the known_hosts file used
+// by the golang.org/x/crypto/ssh-based client.
+func SetGoCryptoKnownHostsFile(file string) {
+	goCryptoKnownHostsMutex.Lock()
+	defer goCryptoKnownHostsMutex.Unlock()
+	goCryptoKnownHostsFile = file
 }

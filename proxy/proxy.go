@@ -92,7 +92,10 @@ func (s *Settings) AsEnvironmentValues() []string {
 // DefaultEnvironment="http_proxy=...." "HTTP_PROXY=..." ...
 func (s *Settings) AsSystemdDefaultEnv() string {
 	lines := s.AsEnvironmentValues()
-	rv := `[Manager]
+	rv := `# To allow juju to control the global systemd proxy settings,
+# create symbolic links to this file from within /etc/systemd/system.conf.d/
+# and /etc/systemd/users.conf.d/.
+[Manager]
 DefaultEnvironment=`
 	for _, line := range lines {
 		rv += fmt.Sprintf(`"%s" `, line)

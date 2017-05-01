@@ -179,6 +179,9 @@ func (s *proxySuite) TestAsSystemdDefaultEnv(c *gc.C) {
 		NoProxy: "10.0.3.1,localhost",
 	}
 	expected := `
+# To allow juju to control the global systemd proxy settings,
+# create symbolic links to this file from within /etc/systemd/system.conf.d/
+# and /etc/systemd/users.conf.d/.
 [Manager]
 DefaultEnvironment="http_proxy=some-value" "HTTP_PROXY=some-value" "https_proxy=special" "HTTPS_PROXY=special" "ftp_proxy=who uses this?" "FTP_PROXY=who uses this?" "no_proxy=10.0.3.1,localhost" "NO_PROXY=10.0.3.1,localhost" 
 `[1:]

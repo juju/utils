@@ -52,9 +52,9 @@ var knownGoodCipherSuites = []uint16{
 	tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
 	tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
 
-	// We need this so that we have at least one suite in common
-	// with the default gnutls installed for precise and trusty.
-	tls.TLS_RSA_WITH_AES_256_CBC_SHA,
+        // Need to support non-EC cipher suites as well for backwards compatibility.
+	tls.TLS_DHE_RSA_WITH_AES_256_CBC_SHA256,
+	tls.TLS_DHE_RSA_WITH_AES_128_CBC_SHA256,
 }
 
 // SecureTLSConfig returns a tls.Config that conforms to Juju's security

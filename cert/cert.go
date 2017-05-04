@@ -16,9 +16,11 @@ import (
 	"fmt"
 	"math/big"
 	"net"
+	"os"
 	"time"
 
 	"github.com/juju/errors"
+	"github.com/juju/utils"
 )
 
 // OtherName type for asn1 encoding
@@ -291,4 +293,36 @@ func ParseCertAndKey(certPEM, keyPEM string) (*x509.Certificate, *rsa.PrivateKey
 		return nil, nil, fmt.Errorf("private key with unexpected type %T", key)
 	}
 	return cert, key, nil
+}
+
+// ComputePublicKey generates a public key from certPEM string
+func ComputePublicKey(certPEM string) (string, error){
+	cert, err := ParseCert(certPEM)
+	if err != nil {
+		return "", err
+	}
+	marshalledPubKey, err := x509.MarshalPKIXPublicKey(cert.PublicKey)
+	if err != nil {
+		return "", err
+	}
+	keyPEMData := pem.EncodeToMemory(&pem.Block{
+		Type:  "RSA PUBLIC KEY",
+		Bytes: marshalledPubKey,
+	})
+	return string(keyPEMData), nil
+}
+
+// StoreDefaultX509Cert takes a certificate and store it in the given
+// config location, using default names.
+func StoreDefaultX509Cert(location, pem, key, public string) (error) {
+	for file, content := range map[string]string{ "/juju-cert.pem": pem, "/juju-cert.key": key,
+						      "/juju-cert.pub": public } {
+		if _, err := os.Stat(location + file); os.IsNotExist(err) {
+			err := utils.AtomicWriteFile(location + file, []byte(content), 0600)
+			if err != nil {
+				return errors.Annotatef(err, "cannot write x509 certificate file: %s", location + file)
+			}
+		}
+	}
+	return nil
 }

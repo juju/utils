@@ -15,6 +15,7 @@ import (
 	"io/ioutil"
 	"math/big"
 	"net"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -23,6 +24,7 @@ import (
 	"github.com/juju/utils"
 	"github.com/juju/utils/cert"
 	gc "gopkg.in/check.v1"
+	"github.com/juju/juju/juju/osenv"
 )
 
 func TestAll(t *testing.T) {
@@ -216,6 +218,30 @@ func (certSuite) TestNewClientCertRSASize(c *gc.C) {
 	}
 }
 
+func (certSuite) TestComputePublicKey(c *gc.C) {
+	computedPublicKey, err := cert.ComputePublicKey(caCertPEM)
+	c.Assert(err, gc.IsNil)
+	c.Assert(computedPublicKey, gc.Equals, caPubKeyPEM)
+}
+
+func (certSuite) TestStoreDefaultX509Cert(c *gc.C) {
+	certdir := osenv.JujuXDGDataHomePath("x509")
+	c.Assert(cert.StoreDefaultX509Cert(certdir, caCertPEM, caKeyPEM, caPubKeyPEM), gc.IsNil)
+	_, err := os.Stat(certdir)
+	c.Assert(err, gc.IsNil)
+	_, err = os.Stat(certdir + "/juju-cert.pem")
+	c.Assert(err, gc.IsNil)
+	_, err = os.Stat(certdir + "/juju-cert.key")
+	c.Assert(err, gc.IsNil)
+	_, err = os.Stat(certdir + "/juju-cert.pub")
+	c.Assert(err, gc.IsNil)
+	_, _, err = cert.ParseCertAndKey(caCertPEM, caKeyPEM)
+	c.Assert(err, gc.IsNil)
+	pubkey, err := cert.ComputePublicKey(caCertPEM)
+	c.Assert(err, gc.IsNil)
+	c.Assert(pubkey, gc.Equals, caPubKeyPEM)
+}
+
 var (
 	caCertPEM = `
 -----BEGIN CERTIFICATE-----
@@ -244,5 +270,11 @@ M/vY0x5mekIYai8/tFSEG9PJ3ZkpEy0CIQCo9B3YxwI1Un777vbs903iQQeiWP+U
 EAHnOQvhLgDxpQIgGkpml+9igW5zoOH+h02aQBLwEoXz7tw/YW0HFrCcE70CIGkS
 ve4WjiEqnQaHNAPy0hY/1DfIgBOSpOfnkFHOk9vX
 -----END RSA PRIVATE KEY-----
+`
+
+	caPubKeyPEM = `-----BEGIN RSA PUBLIC KEY-----
+MFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBAL+0X+1zl2vt1wI41Q+RnlltJyaJmtwC
+bHRhREXVGU7t0kTMMNERxqLnuNUyWRz90Rg8s9XvOtCqNYW7mypGrFECAwEAAQ==
+-----END RSA PUBLIC KEY-----
 `
 )

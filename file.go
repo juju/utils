@@ -125,10 +125,15 @@ func AtomicWriteFileAndChange(filename string, contents []byte, change func(*os.
 	if _, err := f.Write(contents); err != nil {
 		return fmt.Errorf("cannot write %q contents: %v", filename, err)
 	}
+	if err := f.Sync(); err != nil {
+		return err
+	}
+	if err := f.Close(); err != nil {
+		return err
+	}
 	if err := change(f); err != nil {
 		return err
 	}
-	f.Close()
 	if err := ReplaceFile(f.Name(), filename); err != nil {
 		return fmt.Errorf("cannot replace %q with %q: %v", f.Name(), filename, err)
 	}

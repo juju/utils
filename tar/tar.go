@@ -155,6 +155,12 @@ func createAndFill(filePath string, mode int64, content io.Reader) error {
 	if err != nil {
 		return fmt.Errorf("cannot set proper mode on file %q: %v", filePath, err)
 	}
+	if err := fh.Sync(); err != nil {
+		return fmt.Errorf("failed to sync contents of file %v: %v", filePath, err)
+	}
+	if err := fh.Close(); err != nil {
+		return fmt.Errorf("failed to close file %v: %v", filePath, err)
+	}
 	return nil
 }
 

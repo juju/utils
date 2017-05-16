@@ -142,7 +142,19 @@ func (x extractor) writeFile(targetPath string, zipFile *zip.File, modePerm os.F
 		return err
 	}
 	defer writer.Close()
-	return copyTo(writer, zipFile)
+
+	if err := copyTo(writer, zipFile); err != nil {
+		return err
+	}
+
+	if err := writer.Sync(); err != nil {
+		return err
+	}
+
+	if err := writer.Close(); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (x extractor) writeSymlink(targetPath string, zipFile *zip.File) error {

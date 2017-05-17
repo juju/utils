@@ -105,9 +105,9 @@ var atomicWriteFileTests = []struct {
 }, {
 	summary: "atomic file write and change",
 	change: func(filename string, contents []byte) error {
-		chmodChange := func(f *os.File) error {
+		chmodChange := func(f string) error {
 			// FileMod.Chmod() is not implemented on Windows, however, os.Chmod() is
-			return os.Chmod(f.Name(), 0700)
+			return os.Chmod(f, 0700)
 		}
 		return utils.AtomicWriteFileAndChange(filename, contents, chmodChange)
 	},
@@ -117,7 +117,7 @@ var atomicWriteFileTests = []struct {
 }, {
 	summary: "atomic file write empty contents",
 	change: func(filename string, contents []byte) error {
-		nopChange := func(*os.File) error {
+		nopChange := func(string) error {
 			return nil
 		}
 		return utils.AtomicWriteFileAndChange(filename, contents, nopChange)
@@ -125,7 +125,7 @@ var atomicWriteFileTests = []struct {
 }, {
 	summary: "atomic file write and failing change func",
 	change: func(filename string, contents []byte) error {
-		errChange := func(*os.File) error {
+		errChange := func(string) error {
 			return fmt.Errorf("pow!")
 		}
 		return utils.AtomicWriteFileAndChange(filename, contents, errChange)

@@ -106,7 +106,7 @@ func CopyFile(dest, source string) error {
 // AtomicWriteFileAndChange atomically writes the filename with the
 // given contents and calls the given function after the contents were
 // written, but before the file is renamed.
-func AtomicWriteFileAndChange(filename string, contents []byte, change func(*os.File) error) (err error) {
+func AtomicWriteFileAndChange(filename string, contents []byte, change func(string) error) (err error) {
 	dir, file := filepath.Split(filename)
 	f, err := ioutil.TempFile(dir, file)
 	if err != nil {
@@ -125,10 +125,15 @@ func AtomicWriteFileAndChange(filename string, contents []byte, change func(*os.
 	if _, err := f.Write(contents); err != nil {
 		return fmt.Errorf("cannot write %q contents: %v", filename, err)
 	}
-	if err := change(f); err != nil {
+	if err := f.Sync(); err != nil {
 		return err
 	}
-	f.Close()
+	if err := f.Close(); err != nil {
+		return err
+	}
+	if err := change(f.Name()); err != nil {
+		return err
+	}
 	if err := ReplaceFile(f.Name(), filename); err != nil {
 		return fmt.Errorf("cannot replace %q with %q: %v", f.Name(), filename, err)
 	}
@@ -139,9 +144,9 @@ func AtomicWriteFileAndChange(filename string, contents []byte, change func(*os.
 // contents and permissions, replacing any existing file at the same
 // path.
 func AtomicWriteFile(filename string, contents []byte, perms os.FileMode) (err error) {
-	return AtomicWriteFileAndChange(filename, contents, func(f *os.File) error {
+	return AtomicWriteFileAndChange(filename, contents, func(f string) error {
 		// FileMod.Chmod() is not implemented on Windows, however, os.Chmod() is
-		if err := os.Chmod(f.Name(), perms); err != nil {
+		if err := os.Chmod(f, perms); err != nil {
 			return fmt.Errorf("cannot set permissions: %v", err)
 		}
 		return nil

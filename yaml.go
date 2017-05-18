@@ -31,6 +31,12 @@ func WriteYaml(path string, obj interface{}) error {
 		os.Remove(tmp) // don't leak half written files on disk
 		return errors.Trace(err)
 	}
+
+	if err := f.Sync(); err != nil {
+		f.Close()      // don't leak file handle
+		os.Remove(tmp) // don't leak half written files on disk
+		return errors.Trace(err)
+	}
 	// Explicitly close the file before moving it. This is needed on Windows
 	// where the OS will not allow us to move a file that still has an open
 	// file handle. Must check the error on close because filesystems can delay

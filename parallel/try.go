@@ -12,8 +12,9 @@ import (
 )
 
 var (
-	ErrStopped = errors.New("try was stopped")
-	ErrClosed  = errors.New("try was closed")
+	ErrStopped        = errors.New("try was stopped")
+	ErrClosed         = errors.New("try was closed")
+	ErrNothingStarted = errors.New("no try attempts were started")
 )
 
 // Try represents an attempt made concurrently
@@ -79,10 +80,12 @@ func (t *Try) loop() (io.Closer, error) {
 	var err error
 	close := t.close
 	nrunning := 0
+	started := false
 	for {
 		select {
 		case f := <-t.start:
 			nrunning++
+			started = true
 			go f()
 		case r := <-t.result:
 			if r.err == nil {
@@ -101,6 +104,9 @@ func (t *Try) loop() (io.Closer, error) {
 		case <-close:
 			close = nil
 			if nrunning == 0 {
+				if !started {
+					err = ErrNothingStarted
+				}
 				return nil, err
 			}
 		}
@@ -188,6 +194,8 @@ func (t *Try) Wait() error {
 // If no function succeeded, the last error returned by
 // combineErrors is returned. If there were no errors or
 // combineErrors returned nil, ErrStopped is returned.
+//
+// If Start was never called, ErrNothingStarted is returned.
 func (t *Try) Result() (io.Closer, error) {
 	err := t.tomb.Wait()
 	return t.endResult, err

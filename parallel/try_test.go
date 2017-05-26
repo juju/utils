@@ -227,6 +227,14 @@ func (*trySuite) TestAllConcurrent(c *gc.C) {
 	}
 }
 
+func (*trySuite) TestNoTries(c *gc.C) {
+	try := parallel.NewTry(0, nil)
+	try.Close()
+	r, err := try.Result()
+	c.Assert(r, gc.Equals, nil)
+	c.Assert(err, gc.Equals, parallel.ErrNothingStarted)
+}
+
 type gradedError int
 
 func (e gradedError) Error() string {
@@ -294,11 +302,14 @@ func (*trySuite) TestTriesAreStopped(c *gc.C) {
 
 func (*trySuite) TestCloseTwice(c *gc.C) {
 	try := parallel.NewTry(0, nil)
+	try.Start(func(<-chan struct{}) (io.Closer, error) {
+		return result("hello"), nil
+	})
 	try.Close()
 	try.Close()
 	val, err := try.Result()
-	c.Assert(val, gc.IsNil)
-	c.Assert(err, gc.IsNil)
+	c.Assert(val, gc.Equals, result("hello"))
+	c.Assert(err, gc.Equals, nil)
 }
 
 type closeResult struct {

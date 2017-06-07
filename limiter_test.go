@@ -23,19 +23,19 @@ type limiterSuite struct {
 var _ = gc.Suite(&limiterSuite{})
 
 func (*limiterSuite) TestAcquireUntilFull(c *gc.C) {
-	l := utils.NewLimiter(2, 0, nil)
+	l := utils.NewLimiter(2)
 	c.Check(l.Acquire(), jc.IsTrue)
 	c.Check(l.Acquire(), jc.IsTrue)
 	c.Check(l.Acquire(), jc.IsFalse)
 }
 
 func (*limiterSuite) TestBadRelease(c *gc.C) {
-	l := utils.NewLimiter(2, 0, nil)
+	l := utils.NewLimiter(2)
 	c.Check(l.Release(), gc.ErrorMatches, "Release without an associated Acquire")
 }
 
 func (*limiterSuite) TestAcquireAndRelease(c *gc.C) {
-	l := utils.NewLimiter(2, 0, nil)
+	l := utils.NewLimiter(2)
 	c.Check(l.Acquire(), jc.IsTrue)
 	c.Check(l.Acquire(), jc.IsTrue)
 	c.Check(l.Acquire(), jc.IsFalse)
@@ -47,7 +47,7 @@ func (*limiterSuite) TestAcquireAndRelease(c *gc.C) {
 }
 
 func (*limiterSuite) TestAcquireWaitBlocksUntilRelease(c *gc.C) {
-	l := utils.NewLimiter(2, 0, nil)
+	l := utils.NewLimiter(2)
 	calls := make([]string, 0, 10)
 	start := make(chan bool, 0)
 	waiting := make(chan bool, 0)
@@ -81,29 +81,29 @@ func (*limiterSuite) TestAcquireWaitBlocksUntilRelease(c *gc.C) {
 }
 
 func (*limiterSuite) TestAcquirePauses(c *gc.C) {
-	clk := testing.NewClock(time.Time{})
-	l := utils.NewLimiter(2, 10*time.Millisecond, clk)
-	acquired := make(chan bool)
+	clk := testing.NewClock(time.Now())
+	l := utils.NewLimiterWithPause(2, 10*time.Millisecond, 20*time.Millisecond, clk)
+	acquired := make(chan bool, 1)
+	start := make(chan bool, 0)
 	go func() {
+		<-start
+		defer l.Release()
 		acquired <- l.Acquire()
 	}()
 
-	// Pause time not exceeded, acquire should not happen.
+	start <- true
+	// Minimum pause time not exceeded, acquire should not happen.
+	clk.Advance(9 * time.Millisecond)
 	select {
 	case <-acquired:
 		c.Fail()
 	case <-time.After(50 * time.Millisecond):
 	}
 
-	// Acquire should happen any time up to the maximum pause time.
-	gotAcquired := false
-	for i := 0; i < 10 && !gotAcquired; i++ {
-		clk.Advance(time.Millisecond)
-		select {
-		case <-acquired:
-			gotAcquired = true
-		default:
-		}
+	clk.Advance(11 * time.Millisecond)
+	select {
+	case <-acquired:
+	case <-time.After(50 * time.Millisecond):
+		c.Fatal("acquire failed")
 	}
-	c.Assert(gotAcquired, jc.IsTrue)
 }

@@ -14,6 +14,7 @@ import (
 type empty struct{}
 type limiter struct {
 	wait     chan empty
+	minPause time.Duration
 	maxPause time.Duration
 	clock    clock.Clock
 }
@@ -32,14 +33,21 @@ type Limiter interface {
 	Release() error
 }
 
-// NewLimiter creates a limiter. If maxPause is > 0, there will be a random delay
-// up to that duration before attempting an Acquire.
-func NewLimiter(maxAllowed int, maxPause time.Duration, clk clock.Clock) Limiter {
+// NewLimiter creates a limiter.
+func NewLimiter(maxAllowed int) Limiter {
+	return NewLimiterWithPause(maxAllowed, 0, 0, nil)
+}
+
+// NewLimiterWithPause creates a limiter. If minpause and maxPause is > 0,
+// there will be a random delay in that duration range before attempting an Acquire.
+func NewLimiterWithPause(maxAllowed int, minPause, maxPause time.Duration, clk clock.Clock) Limiter {
+	rand.Seed(time.Now().UTC().UnixNano())
 	if clk == nil {
 		clk = clock.WallClock
 	}
 	return limiter{
 		wait:     make(chan empty, maxAllowed),
+		minPause: minPause,
 		maxPause: maxPause,
 		clock:    clk,
 	}
@@ -81,11 +89,13 @@ func (l limiter) Release() error {
 }
 
 func (l limiter) pause() {
-	if l.maxPause <= 0 {
+	if l.minPause <= 0 || l.maxPause <= 0 {
 		return
 	}
-	pauseTime := rand.Intn(int(l.maxPause / time.Millisecond))
+	pauseRange := int((l.maxPause - l.minPause) / time.Millisecond)
+	pauseTime := time.Duration(rand.Intn(pauseRange)) * time.Millisecond
+	pauseTime += l.minPause
 	select {
-	case <-l.clock.After(time.Duration(pauseTime) * time.Millisecond):
+	case <-l.clock.After(pauseTime):
 	}
 }

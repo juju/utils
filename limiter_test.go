@@ -79,3 +79,31 @@ func (*limiterSuite) TestAcquireWaitBlocksUntilRelease(c *gc.C) {
 	}
 	c.Check(calls, gc.DeepEquals, []string{"true", "true", "false", "waited", "false"})
 }
+
+func (*limiterSuite) TestAcquirePauses(c *gc.C) {
+	clk := testing.NewClock(time.Now())
+	l := utils.NewLimiterWithPause(2, 10*time.Millisecond, 20*time.Millisecond, clk)
+	acquired := make(chan bool, 1)
+	start := make(chan bool, 0)
+	go func() {
+		<-start
+		defer l.Release()
+		acquired <- l.Acquire()
+	}()
+
+	start <- true
+	// Minimum pause time not exceeded, acquire should not happen.
+	clk.Advance(9 * time.Millisecond)
+	select {
+	case <-acquired:
+		c.Fail()
+	case <-time.After(50 * time.Millisecond):
+	}
+
+	clk.Advance(11 * time.Millisecond)
+	select {
+	case <-acquired:
+	case <-time.After(50 * time.Millisecond):
+		c.Fatal("acquire failed")
+	}
+}

@@ -5,10 +5,18 @@ package utils
 
 import (
 	"fmt"
+	"math/rand"
+	"time"
+
+	"github.com/juju/utils/clock"
 )
 
 type empty struct{}
-type limiter chan empty
+type limiter struct {
+	wait     chan empty
+	maxPause time.Duration
+	clock    clock.Clock
+}
 
 // Limiter represents a limited resource (eg a semaphore).
 type Limiter interface {
@@ -24,8 +32,17 @@ type Limiter interface {
 	Release() error
 }
 
-func NewLimiter(max int) Limiter {
-	return make(limiter, max)
+// NewLimiter creates a limiter. If maxPause is > 0, there will be a random delay
+// up to that duration before attempting an Acquire.
+func NewLimiter(maxAllowed int, maxPause time.Duration, clk clock.Clock) Limiter {
+	if clk == nil {
+		clk = clock.WallClock
+	}
+	return limiter{
+		wait:     make(chan empty, maxAllowed),
+		maxPause: maxPause,
+		clock:    clk,
+	}
 }
 
 // Acquire requests some resources that you can return later
@@ -33,9 +50,14 @@ func NewLimiter(max int) Limiter {
 // not. Callers are responsible for calling Release if this returns true, but
 // should not release if this returns false.
 func (l limiter) Acquire() bool {
+	// Pause before attempting to grab a slot.
+	// This is optional depending on what was used to
+	// construct this limiter, and is used to throttle
+	// incoming connections.
+	l.pause()
 	e := empty{}
 	select {
-	case l <- e:
+	case l.wait <- e:
 		return true
 	default:
 		return false
@@ -45,15 +67,25 @@ func (l limiter) Acquire() bool {
 // AcquireWait waits for the resource to become available before returning.
 func (l limiter) AcquireWait() {
 	e := empty{}
-	l <- e
+	l.wait <- e
 }
 
 // Release returns the resource to the available pool.
 func (l limiter) Release() error {
 	select {
-	case <-l:
+	case <-l.wait:
 		return nil
 	default:
 		return fmt.Errorf("Release without an associated Acquire")
+	}
+}
+
+func (l limiter) pause() {
+	if l.maxPause <= 0 {
+		return
+	}
+	pauseTime := rand.Intn(int(l.maxPause / time.Millisecond))
+	select {
+	case <-l.clock.After(time.Duration(pauseTime) * time.Millisecond):
 	}
 }

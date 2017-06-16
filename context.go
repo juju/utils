@@ -88,6 +88,7 @@ func ContextWithDeadline(parent context.Context, clk clock.Clock, deadline time.
 	if d <= 0 {
 		// deadline has already passed
 		ctx.cancel(context.DeadlineExceeded)
+		return ctx, func() {}
 	}
 	ctx.timer = clk.NewTimer(d)
 	go func() {

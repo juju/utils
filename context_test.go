@@ -1,9 +1,10 @@
 package utils_test
 
 import (
-	"context"
 	"fmt"
 	"time"
+
+	"golang.org/x/net/context"
 
 	"github.com/juju/testing"
 	jc "github.com/juju/testing/checkers"

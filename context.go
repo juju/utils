@@ -1,10 +1,11 @@
 package utils
 
 import (
-	"context"
 	"fmt"
 	"sync"
 	"time"
+
+	"golang.org/x/net/context"
 
 	"github.com/juju/utils/clock"
 )

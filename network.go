@@ -4,8 +4,10 @@
 package utils
 
 import (
+	"bufio"
 	"fmt"
 	"net"
+	"os"
 
 	"github.com/juju/loggo"
 )
@@ -43,4 +45,46 @@ func GetAddressForInterface(interfaceName string) (string, error) {
 		return "", err
 	}
 	return GetIPv4Address(addrs)
+}
+
+// Function to concat alternative IPv4 hostnames to /etc/hosts
+// returns whether operation succeded or not.
+func AddHostnames(hostnames []byte) bool {
+	var newhostsfile []byte
+	hostsfile, err := os.Open("/etc/hosts")
+	if err != nil {
+		logger.Errorf("cannot open hosts file: %v", err)
+		return false
+	}
+
+	stat, err := hostsfile.Stat()
+	if err != nil {
+		logger.Errorf("cannot get hosts file stats: %v", err)
+		return false
+	}
+
+	reader := bufio.NewReader(hostsfile)
+	line, _, err := reader.ReadLine()
+	if err != nil {
+		logger.Errorf("error reading hosts file: %v", err)
+		return false
+	}
+
+	restoffile := make([]byte, int(stat.Size())-len(line)-1)
+	line = []byte(string(line) + fmt.Sprintf(" %s\n", hostnames))
+	newhostsfile = append(newhostsfile, line...)
+	_, err = reader.Read(restoffile)
+	if err != nil {
+		logger.Errorf("error reading hosts file: %v", err)
+		return false
+	}
+
+	newhostsfile = append(newhostsfile, restoffile...)
+	ok := AtomicWriteFile("/etc/hosts", newhostsfile, os.FileMode(0755))
+	if ok != nil {
+		logger.Errorf("error rewriting hosts file: %v", err)
+		return false
+	}
+
+	return true
 }

@@ -67,11 +67,61 @@ func (*networkSuite) TestGetIPv4Address(c *gc.C) {
 	}} {
 		ip, err := utils.GetIPv4Address(test.addresses)
 		if test.errorString == "" {
-			c.Assert(err, gc.IsNil)
-			c.Assert(ip, gc.Equals, test.expected)
+			c.Check(err, gc.IsNil)
+			c.Check(ip, gc.Equals, test.expected)
 		} else {
-			c.Assert(err, gc.ErrorMatches, test.errorString)
-			c.Assert(ip, gc.Equals, "")
+			c.Check(err, gc.ErrorMatches, test.errorString)
+			c.Check(ip, gc.Equals, "")
+		}
+	}
+}
+
+func (*networkSuite) TestGetIPv6Address(c *gc.C) {
+	for _, test := range []struct {
+		addresses   []net.Addr
+		expected    string
+		errorString string
+	}{{
+		addresses: makeAddresses(
+			"complete",
+			"nonsense"),
+		errorString: "invalid CIDR address: complete",
+	}, {
+		addresses: makeAddresses(
+			"fe80::90cf:9dff:fe6e:ece/64",
+		),
+		errorString: "no addresses match",
+	}, {
+		addresses: makeAddresses(
+			"fe80::90cf:9dff:fe6e:ece/64",
+			"10.0.3.1/24",
+		),
+		errorString: "no addresses match",
+	}, {
+		addresses: makeAddresses(
+			"10.0.3.1/24",
+		),
+		errorString: "no addresses match",
+	}, {
+		addresses: makeAddresses(
+			"10.0.3.1/24",
+			"2001:db8::90cf:9dff:fe6e:ece/64",
+		),
+		expected: "2001:db8::90cf:9dff:fe6e:ece",
+	}, {
+		addresses: makeAddresses(
+			"2001:db8::90cf:9dff:fe6e:ece/64",
+			"10.0.3.1/24",
+		),
+		expected: "2001:db8::90cf:9dff:fe6e:ece",
+	}} {
+		ip, err := utils.GetIPv6Address(test.addresses)
+		if test.errorString == "" {
+			c.Check(err, gc.IsNil)
+			c.Check(ip, gc.Equals, test.expected)
+		} else {
+			c.Check(err, gc.ErrorMatches, test.errorString)
+			c.Check(ip, gc.Equals, "")
 		}
 	}
 }

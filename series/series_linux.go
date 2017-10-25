@@ -4,13 +4,13 @@
 package series
 
 import (
-	"bufio"
-	"errors"
+	"encoding/csv"
 	"fmt"
-	"io"
 	"os"
 	"strings"
+	"time"
 
+	"github.com/juju/errors"
 	jujuos "github.com/juju/utils/os"
 )
 
@@ -82,36 +82,64 @@ func updateDistroInfo() error {
 		return nil
 	}
 	defer f.Close()
-	bufRdr := bufio.NewReader(f)
-	// Only find info for precise or later.
-	// TODO: only add in series that are supported (i.e. before end of life)
-	preciseOrLaterFound := false
-	for {
-		line, err := bufRdr.ReadString('\n')
-		if err == io.EOF {
-			break
+
+	csvReader := csv.NewReader(f)
+	csvReader.FieldsPerRecord = -1
+	records, err := csvReader.ReadAll()
+	if err != nil {
+		return errors.Annotatef(err, "reading %s", distroInfo)
+	}
+	fieldNames := records[0]
+	records = records[1:]
+
+	// We ignore all series prior to precise.
+	//
+	// TODO(axw) only add in series that are supported? (i.e. before end of life)
+	// Can we really do this? Users might have Extended Security Maintenance.
+
+	now := time.Now()
+	var foundPrecise bool
+	for _, fields := range records {
+		var version, series string
+		var release string
+		for i, field := range fields {
+			if i >= len(fieldNames) {
+				break
+			}
+			switch fieldNames[i] {
+			case "version":
+				version = field
+			case "series":
+				series = field
+			case "release":
+				release = field
+			}
 		}
+		if version == "" || series == "" || release == "" {
+			// Ignore malformed line.
+			continue
+		}
+		if !foundPrecise {
+			if series != "precise" {
+				continue
+			}
+			foundPrecise = true
+		}
+
+		releaseDate, err := time.Parse("2006-01-02", release)
 		if err != nil {
-			return fmt.Errorf("reading distro info file file: %v", err)
-		}
-		// lines are of the form: "12.04 LTS,Precise Pangolin,precise,2011-10-13,2012-04-26,2017-04-26"
-		parts := strings.Split(line, ",")
-		// Ignore any malformed lines.
-		if len(parts) < 3 {
+			// Ignore lines with invalid release dates.
 			continue
 		}
-		series := parts[2]
-		if series == "precise" {
-			preciseOrLaterFound = true
-		}
-		if series != "precise" && !preciseOrLaterFound {
-			continue
-		}
-		// the numeric version may contain a LTS moniker so strip that out.
-		seriesInfo := strings.Split(parts[0], " ")
-		seriesVersions[series] = seriesInfo[0]
-		ubuntuSeries[series] = seriesInfo[0]
-		if len(seriesInfo) == 2 && seriesInfo[1] == "LTS" {
+
+		// The numeric version may contain a LTS moniker so strip that out.
+		trimmedVersion := strings.TrimSuffix(version, " LTS")
+		seriesVersions[series] = trimmedVersion
+		ubuntuSeries[series] = trimmedVersion
+		if trimmedVersion != version && !now.Before(releaseDate) {
+			// We only record that a series is LTS if its release
+			// date has passed. This allows the series to be tested
+			// pre-release, without affecting default series.
 			ubuntuLts[series] = true
 		}
 	}

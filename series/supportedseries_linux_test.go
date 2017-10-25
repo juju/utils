@@ -63,6 +63,7 @@ func (s *supportedSeriesSuite) TestUpdateSeriesVersions(c *gc.C) {
 	c.Assert(err, jc.ErrorIsNil)
 	checkSeries()
 
+	expectedSeries = append([]string{"ornery"}, expectedSeries...)
 	expectedSeries = append(expectedSeries, "trusty")
 	series.UpdateSeriesVersions()
 	checkSeries()
@@ -106,4 +107,5 @@ const distInfoData = `version,codename,series,created,release,eol,eol-server
 
 const distInfoData2 = distInfoData + `
 14.04 LTS,Trusty Tahr,trusty,2013-10-17,2014-04-17,2019-04-17
+94.04 LTS,Ornery Omega,ornery,2094-10-17,2094-04-17,2099-04-17
 `

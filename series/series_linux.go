@@ -140,7 +140,7 @@ func updateDistroInfo() error {
 			// We only record that a series is LTS if its release
 			// date has passed. This allows the series to be tested
 			// pre-release, without affecting default series.
-			ubuntuLts[series] = true
+			ubuntuLTS[series] = true
 		}
 	}
 	return nil

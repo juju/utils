@@ -70,6 +70,8 @@ var seriesVersions = map[string]string{
 	"xenial":           "16.04",
 	"yakkety":          "16.10",
 	"zesty":            "17.04",
+	"artful":           "17.10",
+	"bionic":           "18.04",
 	"win2008r2":        "win2008r2",
 	"win2012hvr2":      "win2012hvr2",
 	"win2012hv":        "win2012hv",
@@ -110,17 +112,20 @@ var ubuntuSeries = map[string]string{
 	"xenial":  "16.04",
 	"yakkety": "16.10",
 	"zesty":   "17.04",
+	"artful":  "17.10",
+	"bionic":  "18.04",
 }
 
-// ubuntuLts provides a lookup for current LTS series.  Like seriesVersions,
+// ubuntuLTS provides a lookup for current LTS series.  Like seriesVersions,
 // the values here are current at the time of writing. On Ubuntu systems this
 // map is updated by updateDistroInfo, using data from
 // /usr/share/distro-info/ubuntu.csv to ensure we have the latest values.  On
 // non-Ubuntu systems, these values provide a nice fallback option.
-var ubuntuLts = map[string]bool{
+var ubuntuLTS = map[string]bool{
 	"precise": true,
 	"trusty":  true,
 	"xenial":  true,
+	// TODO(rogpeppe) add bionic when it's released.
 }
 
 // Windows versions come in various flavors:
@@ -295,7 +300,7 @@ func SupportedLts() []string {
 	updateSeriesVersionsOnce()
 
 	versions := []string{}
-	for k := range ubuntuLts {
+	for k := range ubuntuLTS {
 		versions = append(versions, ubuntuSeries[k])
 	}
 	sort.Strings(versions)
@@ -321,7 +326,7 @@ func LatestLts() string {
 	updateSeriesVersionsOnce()
 
 	var latest string
-	for k := range ubuntuLts {
+	for k := range ubuntuLTS {
 		if ubuntuSeries[k] > ubuntuSeries[latest] {
 			latest = k
 		}

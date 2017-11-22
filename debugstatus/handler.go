@@ -10,7 +10,7 @@ import (
 	"gopkg.in/errgo.v1"
 
 	pprof "github.com/juju/httpprof"
-	"github.com/juju/httprequest"
+	"gopkg.in/httprequest.v1"
 )
 
 // Version describes the current version of the code being run.

@@ -11,16 +11,19 @@ import (
 	"github.com/juju/testing/httptesting"
 	"github.com/juju/utils/debugstatus"
 	"github.com/julienschmidt/httprouter"
+	"golang.org/x/net/context"
 	gc "gopkg.in/check.v1"
 	"gopkg.in/errgo.v1"
 
-	"github.com/juju/httprequest"
+	"gopkg.in/httprequest.v1"
 )
 
-var errorMapper httprequest.ErrorMapper = func(err error) (httpStatus int, errorBody interface{}) {
-	return http.StatusInternalServerError, httprequest.RemoteError{
-		Message: err.Error(),
-	}
+var reqServer = httprequest.Server{
+	ErrorMapper: func(ctx context.Context, err error) (httpStatus int, errorBody interface{}) {
+		return http.StatusInternalServerError, httprequest.RemoteError{
+			Message: err.Error(),
+		}
+	},
 }
 
 type handlerSuite struct {
@@ -31,7 +34,7 @@ var _ = gc.Suite(&handlerSuite{})
 var errUnauthorized = errgo.New("you shall not pass!")
 
 func newHTTPHandler(h *debugstatus.Handler) http.Handler {
-	errMapper := httprequest.ErrorMapper(func(err error) (httpStatus int, errorBody interface{}) {
+	errMapper := func(ctx context.Context, err error) (httpStatus int, errorBody interface{}) {
 		code, status := "", http.StatusInternalServerError
 		switch errgo.Cause(err) {
 		case errUnauthorized:
@@ -45,10 +48,13 @@ func newHTTPHandler(h *debugstatus.Handler) http.Handler {
 			Code:    code,
 			Message: err.Error(),
 		}
-	})
+	}
+	srv := httprequest.Server{
+		ErrorMapper: errMapper,
+	}
 
-	handlers := errMapper.Handlers(func(httprequest.Params) (*debugstatus.Handler, error) {
-		return h, nil
+	handlers := srv.Handlers(func(p httprequest.Params) (*debugstatus.Handler, context.Context, error) {
+		return h, p.Context, nil
 	})
 	r := httprouter.New()
 	for _, h := range handlers {

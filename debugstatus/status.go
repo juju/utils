@@ -10,11 +10,13 @@ import (
 	"sync"
 	"time"
 
+	"golang.org/x/net/context"
+
 	"gopkg.in/mgo.v2"
 )
 
 // Check collects the status check results from the given checkers.
-func Check(checkers ...CheckerFunc) map[string]CheckResult {
+func Check(ctx context.Context, checkers ...CheckerFunc) map[string]CheckResult {
 	var mu sync.Mutex
 	results := make(map[string]CheckResult, len(checkers))
 
@@ -25,7 +27,7 @@ func Check(checkers ...CheckerFunc) map[string]CheckResult {
 		go func() {
 			defer wg.Done()
 			t0 := time.Now()
-			key, result := c()
+			key, result := c(ctx)
 			result.Duration = time.Since(t0)
 			mu.Lock()
 			results[key] = result
@@ -54,13 +56,13 @@ type CheckResult struct {
 
 // CheckerFunc represents a function returning the check machine friendly key
 // and the result.
-type CheckerFunc func() (key string, result CheckResult)
+type CheckerFunc func(ctx context.Context) (key string, result CheckResult)
 
 // StartTime holds the time that the code started running.
 var StartTime = time.Now().UTC()
 
 // ServerStartTime reports the time when the application was started.
-func ServerStartTime() (key string, result CheckResult) {
+func ServerStartTime(context.Context) (key string, result CheckResult) {
 	return "server_started", CheckResult{
 		Name:   "Server started",
 		Value:  StartTime.String(),
@@ -71,7 +73,7 @@ func ServerStartTime() (key string, result CheckResult) {
 // Connection returns a status checker reporting whether the given Pinger is
 // connected.
 func Connection(p Pinger) CheckerFunc {
-	return func() (key string, result CheckResult) {
+	return func(context.Context) (key string, result CheckResult) {
 		result.Name = "MongoDB is connected"
 		if err := p.Ping(); err != nil {
 			result.Value = "Ping error: " + err.Error()
@@ -94,7 +96,7 @@ var _ Pinger = (*mgo.Session)(nil)
 // MongoCollections returns a status checker checking that all the
 // expected Mongo collections are present in the database.
 func MongoCollections(c Collector) CheckerFunc {
-	return func() (key string, result CheckResult) {
+	return func(context.Context) (key string, result CheckResult) {
 		key = "mongo_collections"
 		result.Name = "MongoDB collections"
 		names, err := c.CollectionNames()
@@ -143,8 +145,8 @@ type Collector interface {
 // It is possible to pass an empty string to avoid changing one of the values.
 // This means that if both key are name are empty, this closure is a no-op.
 func Rename(newKey, newName string, check CheckerFunc) CheckerFunc {
-	return func() (key string, result CheckResult) {
-		key, result = check()
+	return func(ctx context.Context) (key string, result CheckResult) {
+		key, result = check(ctx)
 		if newKey == "" {
 			newKey = key
 		}

@@ -10,6 +10,7 @@ import (
 	"gopkg.in/errgo.v1"
 
 	pprof "github.com/juju/httpprof"
+	"golang.org/x/net/context"
 	"gopkg.in/httprequest.v1"
 )
 
@@ -28,7 +29,7 @@ type Handler struct {
 	// system. It should return a map as returned from the
 	// Check function. If this is nil, an empty result will
 	// always be returned from /debug/status.
-	Check func() map[string]CheckResult
+	Check func(context.Context) map[string]CheckResult
 
 	// Version should hold the current version
 	// of the binary running the server, served
@@ -59,11 +60,11 @@ type DebugStatusRequest struct {
 }
 
 // DebugStatus returns the current status of the server.
-func (h *Handler) DebugStatus(*DebugStatusRequest) (map[string]CheckResult, error) {
+func (h *Handler) DebugStatus(p httprequest.Params, _ *DebugStatusRequest) (map[string]CheckResult, error) {
 	if h.Check == nil {
 		return map[string]CheckResult{}, nil
 	}
-	return h.Check(), nil
+	return h.Check(p.Context), nil
 }
 
 // DebugInfoRequest describes the /debug/info endpoint.

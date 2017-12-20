@@ -65,8 +65,8 @@ func newHTTPHandler(h *debugstatus.Handler) http.Handler {
 
 func (s *handlerSuite) TestServeDebugStatus(c *gc.C) {
 	httpHandler := newHTTPHandler(&debugstatus.Handler{
-		Check: func() map[string]debugstatus.CheckResult {
-			return debugstatus.Check(debugstatus.ServerStartTime)
+		Check: func(ctx context.Context) map[string]debugstatus.CheckResult {
+			return debugstatus.Check(ctx, debugstatus.ServerStartTime)
 		},
 	})
 	httptesting.AssertJSONCall(c, httptesting.JSONCallParams{

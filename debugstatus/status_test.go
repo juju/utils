@@ -9,6 +9,7 @@ import (
 
 	jujutesting "github.com/juju/testing"
 	jc "github.com/juju/testing/checkers"
+	"golang.org/x/net/context"
 	gc "gopkg.in/check.v1"
 	"gopkg.in/mgo.v2"
 
@@ -22,7 +23,7 @@ type statusSuite struct {
 var _ = gc.Suite(&statusSuite{})
 
 func makeCheckerFunc(key, name, value string, passed bool) debugstatus.CheckerFunc {
-	return func() (string, debugstatus.CheckResult) {
+	return func(context.Context) (string, debugstatus.CheckResult) {
 		time.Sleep(time.Microsecond)
 		return key, debugstatus.CheckResult{
 			Name:   name,
@@ -34,6 +35,7 @@ func makeCheckerFunc(key, name, value string, passed bool) debugstatus.CheckerFu
 
 func (s *statusSuite) TestCheck(c *gc.C) {
 	results := debugstatus.Check(
+		context.Background(),
 		makeCheckerFunc("check1", "check1 name", "value1", true),
 		makeCheckerFunc("check2", "check2 name", "value2", false),
 		makeCheckerFunc("check3", "check3 name", "value3", true),
@@ -68,7 +70,7 @@ func (s *statusSuite) TestCheck(c *gc.C) {
 func (s *statusSuite) TestServerStartTime(c *gc.C) {
 	startTime := time.Now()
 	s.PatchValue(&debugstatus.StartTime, startTime)
-	key, result := debugstatus.ServerStartTime()
+	key, result := debugstatus.ServerStartTime(context.Background())
 	c.Assert(key, gc.Equals, "server_started")
 	c.Assert(result, jc.DeepEquals, debugstatus.CheckResult{
 		Name:   "Server started",
@@ -80,7 +82,7 @@ func (s *statusSuite) TestServerStartTime(c *gc.C) {
 func (s *statusSuite) TestConnection(c *gc.C) {
 	// Ensure a connection established is properly reported.
 	check := debugstatus.Connection(pinger{nil})
-	key, result := check()
+	key, result := check(context.Background())
 	c.Assert(key, gc.Equals, "mongo_connected")
 	c.Assert(result, jc.DeepEquals, debugstatus.CheckResult{
 		Name:   "MongoDB is connected",
@@ -90,7 +92,7 @@ func (s *statusSuite) TestConnection(c *gc.C) {
 
 	// An error is reported if ping fails.
 	check = debugstatus.Connection(pinger{errors.New("bad wolf")})
-	key, result = check()
+	key, result = check(context.Background())
 	c.Assert(key, gc.Equals, "mongo_connected")
 	c.Assert(result, jc.DeepEquals, debugstatus.CheckResult{
 		Name:   "MongoDB is connected",
@@ -146,7 +148,7 @@ func (s *statusSuite) TestMongoCollections(c *gc.C) {
 
 		// Ensure a connection established is properly reported.
 		check := debugstatus.MongoCollections(test.collector)
-		key, result := check()
+		key, result := check(context.Background())
 		c.Assert(key, gc.Equals, "mongo_collections")
 		c.Assert(result, jc.DeepEquals, debugstatus.CheckResult{
 			Name:   "MongoDB collections",
@@ -199,7 +201,7 @@ func (s *statusSuite) TestRename(c *gc.C) {
 		c.Logf("test %d: %s", i, test.about)
 
 		// Rename and run the check.
-		key, result := debugstatus.Rename(test.key, test.name, check)()
+		key, result := debugstatus.Rename(test.key, test.name, check)(context.Background())
 
 		// Ensure the results are successfully renamed.
 		expectKey := test.key

@@ -10,7 +10,7 @@ package utils
 // that may be returned in case of failed calls to the system.
 // Any extra leading/trailing regex-es are left to be added by the developer.
 const (
-	NoSuchUserErrRegexp = `user: unknown user [a-z0-9_-]*`
+	NoSuchUserErrRegexp = `no such user`
 	NoSuchFileErrRegexp = `no such file or directory`
 	MkdirFailErrRegexp  = `.* not a directory`
 )

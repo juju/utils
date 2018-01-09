@@ -60,7 +60,7 @@ func (*fileSuite) TestNormalizePath(c *gc.C) {
 		expected: filepath.FromSlash("foo~bar/baz"),
 	}, {
 		path: "~foobar/path",
-		err:  ".*" + utils.NoSuchUserErrRegexp,
+		err:  utils.NoSuchUserErrRegexp + ".*",
 	}} {
 		c.Logf("test %d: %s", i, test.path)
 		actual, err := utils.NormalizePath(test.path)

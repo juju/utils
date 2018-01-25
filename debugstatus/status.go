@@ -12,7 +12,7 @@ import (
 
 	"golang.org/x/net/context"
 
-	"gopkg.in/mgo.v2"
+	"github.com/juju/mgo"
 )
 
 // Check collects the status check results from the given checkers.

@@ -73,6 +73,67 @@ func (*fileSuite) TestNormalizePath(c *gc.C) {
 	}
 }
 
+func (*fileSuite) TestExpandPath(c *gc.C) {
+	home := filepath.FromSlash(c.MkDir())
+	err := utils.SetHome(home)
+	c.Assert(err, gc.IsNil)
+	currentUser, err := user.Current()
+	c.Assert(err, gc.IsNil)
+	cwd, err := os.Getwd()
+	c.Assert(err, gc.IsNil)
+	for i, test := range []struct {
+		path     string
+		expected string
+		err      string
+	}{{
+		path:     filepath.FromSlash("/var/lib/juju"),
+		expected: filepath.FromSlash("/var/lib/juju"),
+	}, {
+		path:     "~/foo",
+		expected: filepath.Join(home, "foo"),
+	}, {
+		path:     "~/foo//../bar",
+		expected: filepath.Join(home, "bar"),
+	}, {
+		path:     "~",
+		expected: home,
+	}, {
+		path:     "~" + currentUser.Username,
+		expected: currentUser.HomeDir,
+	}, {
+		path:     "~" + currentUser.Username + "/foo",
+		expected: filepath.Join(currentUser.HomeDir, "foo"),
+	}, {
+		path:     "~" + currentUser.Username + "/foo//../bar",
+		expected: filepath.Join(currentUser.HomeDir, "bar"),
+	}, {
+		path:     filepath.FromSlash("foo~bar/baz"),
+		expected: filepath.Join(cwd, "foo~bar/baz"),
+	}, {
+		path:     filepath.FromSlash("foo/bar"),
+		expected: filepath.Join(cwd, "foo", "bar"),
+	}, {
+		path:     filepath.FromSlash("foo/../bar"),
+		expected: filepath.Join(cwd, "bar"),
+	}, {
+		path:     filepath.FromSlash("foo/./bar"),
+		expected: filepath.Join(cwd, "foo", "bar"),
+	}, {
+		path: "~foobar/path",
+		err:  ".*" + utils.NoSuchUserErrRegexp,
+	}} {
+		c.Logf("test %d: %s", i, test.path)
+		actual, err := utils.ExpandPath(test.path)
+		if test.err != "" {
+			c.Check(err, gc.ErrorMatches, test.err)
+		} else {
+			c.Check(err, gc.IsNil)
+			c.Check(actual, gc.Equals, test.expected)
+			c.Check(filepath.IsAbs(actual), jc.IsTrue)
+		}
+	}
+}
+
 func (*fileSuite) TestCopyFile(c *gc.C) {
 	dir := c.MkDir()
 	f, err := ioutil.TempFile(dir, "source")

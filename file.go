@@ -53,21 +53,13 @@ func NormalizePath(dir string) (string, error) {
 	return filepath.Clean(dir), nil
 }
 
-// ExpandPath normalises a path and expands it to an absolute form (if it's
-// not already an absolute path).
+// ExpandPath normalises (via Normalize) a path returning an absolute path.
 func ExpandPath(path string) (string, error) {
 	normPath, err := NormalizePath(path)
 	if err != nil {
 		return "", errors.Annotate(err, "unable to normalise file path")
 	}
-	if !filepath.IsAbs(normPath) {
-		cwd, err := os.Getwd()
-		if err != nil {
-			return "", errors.Trace(err)
-		}
-		return filepath.Clean(filepath.Join(cwd, normPath)), nil
-	}
-	return normPath, nil
+	return filepath.Abs(normPath)
 }
 
 // EnsureBaseDir ensures that path is always prefixed by baseDir,

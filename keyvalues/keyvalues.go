@@ -8,6 +8,7 @@ package keyvalues
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 )
 
@@ -38,4 +39,15 @@ func Parse(src []string, allowEmptyValues bool) (map[string]string, error) {
 		results[key] = value
 	}
 	return results, nil
+}
+
+// Join returns a sorted slice containing each item in the given map, as
+// "key=value" strings.
+func Join(m map[string]string) []string {
+	var result []string
+	for k, v := range m {
+		result = append(result, fmt.Sprintf("%s=%s", k, v))
+	}
+	sort.Strings(result)
+	return result
 }

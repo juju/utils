@@ -129,3 +129,10 @@ func (keyValuesSuite) TestMapParsing(c *gc.C) {
 		}
 	}
 }
+
+func (keyValuesSuite) TestJoin(c *gc.C) {
+	c.Assert(keyvalues.Join(map[string]string{}), gc.HasLen, 0)
+	c.Assert(keyvalues.Join(map[string]string{"foo": "bar"}), gc.DeepEquals, []string{"foo=bar"})
+	c.Assert(keyvalues.Join(map[string]string{"abc": "123", "foo": "bar", "quux": "baz"}),
+		gc.DeepEquals, []string{"abc=123", "foo=bar", "quux=baz"})
+}

@@ -146,7 +146,7 @@ func (s *supportedSeriesSuite) TestLatestLts(c *gc.C) {
 		latest, want string
 	}{
 		{"testseries", "testseries"},
-		{"", "xenial"},
+		{"", "bionic"},
 	}
 	for _, test := range table {
 		series.SetLatestLtsForTesting(test.latest)
@@ -159,7 +159,7 @@ func (s *supportedSeriesSuite) TestSetLatestLtsForTesting(c *gc.C) {
 	table := []struct {
 		value, want string
 	}{
-		{"1", "xenial"}, {"2", "1"}, {"3", "2"}, {"4", "3"},
+		{"1", "bionic"}, {"2", "1"}, {"3", "2"}, {"4", "3"},
 	}
 	for _, test := range table {
 		got := series.SetLatestLtsForTesting(test.value)
@@ -169,6 +169,6 @@ func (s *supportedSeriesSuite) TestSetLatestLtsForTesting(c *gc.C) {
 
 func (s *supportedSeriesSuite) TestSupportedLts(c *gc.C) {
 	got := series.SupportedLts()
-	want := []string{"precise", "trusty", "xenial"}
+	want := []string{"precise", "trusty", "xenial", "bionic"}
 	c.Assert(got, gc.DeepEquals, want)
 }

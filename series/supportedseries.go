@@ -125,7 +125,7 @@ var ubuntuLTS = map[string]bool{
 	"precise": true,
 	"trusty":  true,
 	"xenial":  true,
-	// TODO(rogpeppe) add bionic when it's released.
+	"bionic":  true,
 }
 
 // Windows versions come in various flavors:

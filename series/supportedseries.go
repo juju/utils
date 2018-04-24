@@ -5,6 +5,7 @@ package series
 
 import (
 	"sort"
+	"strings"
 	"sync"
 
 	"github.com/juju/errors"
@@ -291,6 +292,33 @@ func VersionSeries(version string) (string, error) {
 		return series, nil
 	}
 	return "", errors.Trace(unknownVersionSeriesError(version))
+}
+
+// WindowsVersionSeries returns the series (eg: win2012r2) for the specified version
+// (eg: Windows Server 2012 R2 Standard)
+func WindowsVersionSeries(version string) (string, error) {
+	if version == "" {
+		return "", errors.Trace(unknownVersionSeriesError(""))
+	}
+	for _, val := range windowsVersionMatchOrder {
+		if strings.HasPrefix(version, val) {
+			return windowsVersions[val], nil
+		}
+	}
+	return "", errors.Trace(unknownVersionSeriesError(""))
+}
+
+// CentOSVersionSeries validates that the supplied series (eg: centos7)
+// is supported.
+func CentOSVersionSeries(version string) (string, error) {
+	if version == "" {
+		return "", errors.Trace(unknownVersionSeriesError(""))
+	}
+	if series, ok := centosSeries[version]; ok {
+		return series, nil
+	}
+	return "", errors.Trace(unknownVersionSeriesError(""))
+
 }
 
 // SupportedLts are the current supported LTS series in ascending order.

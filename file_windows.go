@@ -140,3 +140,8 @@ func ChownPath(path, username string) error {
 	// way and hasn't yet been implemented.
 	return nil
 }
+
+// IsFileOwner is not implemented for Windows.
+func IsFileOwner(path, username string) (bool, error) {
+	return true, nil
+}

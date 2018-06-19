@@ -80,7 +80,7 @@ func ChownPath(path, username string) error {
 func IsFileOwner(path, username string) (bool, error) {
 	u, err := user.Lookup(username)
 	if err != nil {
-		return false, fmt.Errorf("cannot lookup %q user id: %v", username, err)
+		return false, errors.Annotatef(err, "cannot lookup %q user id", username)
 	}
 	info, err := os.Stat(path)
 	if err != nil {

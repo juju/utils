@@ -11,6 +11,7 @@ import (
 	"os/user"
 	"strconv"
 	"strings"
+	"syscall"
 
 	"github.com/juju/errors"
 )
@@ -72,4 +73,23 @@ func ChownPath(path, username string) error {
 		return fmt.Errorf("invalid group id %q: %v", u.Gid, err)
 	}
 	return os.Chown(path, uid, gid)
+}
+
+// IsFileOwner checks to see if the ownership of the file corresponds to
+// the same username
+func IsFileOwner(path, username string) (bool, error) {
+	u, err := user.Lookup(username)
+	if err != nil {
+		return false, errors.Annotatef(err, "cannot lookup %q user id", username)
+	}
+	info, err := os.Stat(path)
+	if err != nil {
+		return false, errors.Trace(err)
+	}
+	stat, ok := info.Sys().(*syscall.Stat_t)
+	if !ok {
+		return false, fmt.Errorf("cannot lookup %q file", path)
+	}
+	return (strconv.Itoa(int(stat.Uid)) == u.Uid &&
+		strconv.Itoa(int(stat.Gid)) == u.Gid), nil
 }

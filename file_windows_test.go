@@ -48,3 +48,7 @@ func (s *windowsFileSuite) TestEnsureBaseDir(c *gc.C) {
 	c.Assert(utils.EnsureBaseDir(`C:`, `\a\b`), gc.Equals, `C:\a\b`)
 	c.Assert(utils.EnsureBaseDir(``, `C:\a\b`), gc.Equals, `C:\a\b`)
 }
+
+func (s *windowsFileSuite) TestFileOwner(c *gc.C) {
+	c.Assert(utils.IsFileOwner("file://C:\\foo\\baz", "timmy"), gc.Equals, true)
+}

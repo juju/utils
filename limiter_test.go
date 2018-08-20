@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/juju/clock/testclock"
 	"github.com/juju/testing"
 	jc "github.com/juju/testing/checkers"
 	gc "gopkg.in/check.v1"
@@ -81,7 +82,7 @@ func (*limiterSuite) TestAcquireWaitBlocksUntilRelease(c *gc.C) {
 }
 
 func (*limiterSuite) TestAcquirePauses(c *gc.C) {
-	clk := testing.NewClock(time.Now())
+	clk := testclock.NewClock(time.Now())
 	l := utils.NewLimiterWithPause(2, 10*time.Millisecond, 20*time.Millisecond, clk)
 	acquired := make(chan bool, 1)
 	start := make(chan bool, 0)

@@ -13,7 +13,7 @@ import (
 	jc "github.com/juju/testing/checkers"
 	gc "gopkg.in/check.v1"
 
-	"github.com/juju/utils/clock"
+	"github.com/juju/clock"
 	"github.com/juju/utils/exec"
 )
 

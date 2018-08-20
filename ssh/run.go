@@ -10,8 +10,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/juju/clock"
 	"github.com/juju/errors"
-	"github.com/juju/utils/clock"
 	utilexec "github.com/juju/utils/exec"
 )
 

@@ -7,7 +7,7 @@ import (
 
 	"golang.org/x/net/context"
 
-	"github.com/juju/utils/clock"
+	"github.com/juju/clock"
 )
 
 // timerCtx is an implementation of context.Context that

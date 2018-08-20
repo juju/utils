@@ -1,3 +1,6 @@
+// Copyright 2018 Canonical Ltd.
+// Licensed under the LGPLv3, see LICENCE file for details.
+
 package utils_test
 
 import (
@@ -6,7 +9,7 @@ import (
 
 	"golang.org/x/net/context"
 
-	"github.com/juju/testing"
+	"github.com/juju/clock/testclock"
 	jc "github.com/juju/testing/checkers"
 	gc "gopkg.in/check.v1"
 
@@ -21,7 +24,7 @@ var _ = gc.Suite(&contextSuite{})
 // in the Go standard library.
 
 func (*contextSuite) TestDeadline(c *gc.C) {
-	clk := testing.NewClock(time.Date(2000, time.January, 1, 0, 0, 0, 0, time.UTC))
+	clk := testclock.NewClock(time.Date(2000, time.January, 1, 0, 0, 0, 0, time.UTC))
 	ctx, cancel := utils.ContextWithDeadline(context.Background(), clk, clk.Now().Add(50*time.Millisecond))
 	defer cancel()
 	c.Assert(fmt.Sprint(ctx), gc.Equals, `context.Background.WithDeadline(2000-01-01 00:00:00.05 +0000 UTC [50ms])`)
@@ -47,7 +50,7 @@ func (*contextSuite) TestDeadline(c *gc.C) {
 }
 
 func (*contextSuite) TestTimeout(c *gc.C) {
-	clk := testing.NewClock(time.Date(2000, time.January, 1, 0, 0, 0, 0, time.UTC))
+	clk := testclock.NewClock(time.Date(2000, time.January, 1, 0, 0, 0, 0, time.UTC))
 	ctx, _ := utils.ContextWithTimeout(context.Background(), clk, 50*time.Millisecond)
 	c.Assert(fmt.Sprint(ctx), gc.Equals, `context.Background.WithDeadline(2000-01-01 00:00:00.05 +0000 UTC [50ms])`)
 	testContextDeadline(c, ctx, "WithTimeout", clk, 1, 50*time.Millisecond)
@@ -63,7 +66,7 @@ func (*contextSuite) TestTimeout(c *gc.C) {
 }
 
 func (*contextSuite) TestCanceledTimeout(c *gc.C) {
-	clk := testing.NewClock(time.Date(2000, time.January, 1, 0, 0, 0, 0, time.UTC))
+	clk := testclock.NewClock(time.Date(2000, time.January, 1, 0, 0, 0, 0, time.UTC))
 	ctx, _ := utils.ContextWithTimeout(context.Background(), clk, time.Second)
 	o := otherContext{ctx}
 	ctx, cancel := utils.ContextWithTimeout(o, clk, 2*time.Second)
@@ -77,7 +80,7 @@ func (*contextSuite) TestCanceledTimeout(c *gc.C) {
 	c.Assert(ctx.Err(), gc.Equals, context.Canceled)
 }
 
-func testContextDeadline(c *gc.C, ctx context.Context, name string, clk *testing.Clock, waiters int, failAfter time.Duration) {
+func testContextDeadline(c *gc.C, ctx context.Context, name string, clk *testclock.Clock, waiters int, failAfter time.Duration) {
 	err := clk.WaitAdvance(failAfter, 0, waiters)
 	c.Assert(err, jc.ErrorIsNil)
 	select {

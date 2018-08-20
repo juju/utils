@@ -8,7 +8,7 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/juju/utils/clock"
+	"github.com/juju/clock"
 )
 
 // Countdown implements a timer that will call a provided function.

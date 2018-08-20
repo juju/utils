@@ -8,7 +8,7 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/juju/utils/clock"
+	"github.com/juju/clock"
 )
 
 type empty struct{}

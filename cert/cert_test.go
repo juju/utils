@@ -1,6 +1,6 @@
 // Copyright 2012, 2013 Canonical Ltd.
 // Copyright 2016 Cloudbase solutions
-// Licensed under the AGPLv3, see LICENCE file for details.
+// Licensed under the LGPLv3, see LICENCE file for details.
 
 package cert_test
 

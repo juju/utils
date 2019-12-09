@@ -60,17 +60,22 @@ func setFlags(val string) {
 	}
 }
 
-// Enabled is used to determine if a particular feature flag is enabled for
+// Enabled is used to determine if a particular feature flag/s is/are enabled for
 // the process.
-func Enabled(flag string) bool {
+func Enabled(givenFlags ...string) bool {
 	flaglock.Lock()
 	defer flaglock.Unlock()
-	flag = strings.TrimSpace(strings.ToLower(flag))
-	if flag == "" {
-		// The empty feature is always enabled.
-		return true
+	for _, value := range givenFlags {
+		value = strings.TrimSpace(strings.ToLower(value))
+		if value == "" {
+			// The empty feature is always enabled.
+			return true
+		}
+		if flags.Contains(value) {
+			return true
+		}
 	}
-	return flags.Contains(flag)
+	return false
 }
 
 // All returns all the current feature flags.

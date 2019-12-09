@@ -45,3 +45,14 @@ func (s *flagSuite) TestEnabled(c *gc.C) {
 	c.Assert(featureflag.Enabled("Magic"), jc.IsTrue)
 	c.Assert(featureflag.Enabled(" MAGIC "), jc.IsTrue)
 }
+
+// Assume we migrated from an old version to a new one.
+// Out of UX reasons we try to support multiple featureflags for the same feature as below.
+func (s *flagSuite) TestEnabledMultiple(c *gc.C) {
+	s.PatchEnvironment("JUJU_TESTING_FEATURE", "MAGIC")
+	featureflag.SetFlagsFromEnvironment("JUJU_TESTING_FEATURE")
+
+	c.Assert(featureflag.Enabled("magic", "oldMagic"), jc.IsTrue)
+	c.Assert(featureflag.Enabled("Magic", "oldMagic"), jc.IsTrue)
+	c.Assert(featureflag.Enabled(" MAGIC ", "oldMagic"), jc.IsTrue)
+}

@@ -42,7 +42,7 @@ const (
 // non validating client depending on the value of verify.
 func GetHTTPClient(verify SSLHostnameVerification, certs ...string) *http.Client {
 	if len(certs) > 0 {
-		return GetHTTPClientWithCerts(verify, certs)
+		return getHTTPClientWithCerts(verify, certs)
 	}
 	if verify == VerifySSLHostnames {
 		return GetValidatingHTTPClient()
@@ -50,11 +50,11 @@ func GetHTTPClient(verify SSLHostnameVerification, certs ...string) *http.Client
 	return GetNonValidatingHTTPClient()
 }
 
-// GetHTTPClientWithCerts returns a new http.Client that verifies the
+// getHTTPClientWithCerts returns a new http.Client that verifies the
 // server's certificate chain and hostname depending on arguments and
 // adds ca certificates to the client. Returns nil if no certificates
 // provided.
-func GetHTTPClientWithCerts(verify SSLHostnameVerification, certs []string) *http.Client {
+func getHTTPClientWithCerts(verify SSLHostnameVerification, certs []string) *http.Client {
 	if len(certs) == 0 {
 		return nil
 	}

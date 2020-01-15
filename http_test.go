@@ -68,16 +68,17 @@ func (s *httpSuite) TestNonValidatingClientGetter(c *gc.C) {
 	client := utils.GetNonValidatingHTTPClient()
 	resp, err := client.Get(s.Server.URL)
 	c.Assert(err, gc.IsNil)
-	resp.Body.Close()
+	_ = resp.Body.Close()
 	c.Assert(resp.StatusCode, gc.Equals, http.StatusOK)
 
 	client1 := utils.GetNonValidatingHTTPClient()
 	c.Assert(client1, gc.Not(gc.Equals), client)
 }
 
-func (s *httpSuite) TestGetHTTPClientWithCertsNoCerts(c *gc.C) {
-	client := utils.GetHTTPClientWithCerts(utils.VerifySSLHostnames, []string{})
-	c.Assert(client, gc.IsNil)
+func (s *httpSuite) TestGetHTTPClientVerify(c *gc.C) {
+	client := utils.GetHTTPClient(utils.VerifySSLHostnames)
+	_, err := client.Get(s.Server.URL)
+	c.Assert(err, gc.ErrorMatches, "(.|\n)*x509: certificate signed by unknown authority")
 }
 
 func (s *httpSuite) TestGetHTTPClientWithCertsVerify(c *gc.C) {
@@ -96,7 +97,7 @@ func (s *httpSuite) testGetHTTPClientWithCerts(c *gc.C, verify utils.SSLHostname
 	})
 	c.Assert(err, gc.IsNil)
 
-	client := utils.GetHTTPClientWithCerts(verify, []string{caPEM.String()})
+	client := utils.GetHTTPClient(verify, caPEM.String())
 	resp, err := client.Get(s.Server.URL)
 	c.Assert(err, gc.IsNil)
 	c.Assert(resp.Body.Close(), gc.IsNil)

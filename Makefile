@@ -21,6 +21,13 @@ check-go:
 	@(go vet -all -composites=false -copylocks=false .)
 
 # Install packages required to develop in utils and run tests.
+install-dependencies: install-snap-dependencies install-mongo-dependencies
+	@echo Installing dependencies
+	@echo Installing bzr
+	@sudo apt install bzr --yes
+	@echo Installing zip
+	@sudo apt install zip --yes
+
 install-snap-dependencies:
 ## install-snap-dependencies: Install the supported snap dependencies
 	@echo Installing go-1.12 snap
@@ -35,10 +42,3 @@ install-mongo-dependencies:
 	@sudo apt-get --yes install  \
 	$(strip $(DEPENDENCIES)) \
 	$(shell apt-cache madison mongodb-server-core juju-mongodb3.2 juju-mongodb mongodb-server | head -1 | cut -d '|' -f1)
-
-install-dependencies: install-snap-dependencies install-mongo-dependencies
-    @echo Installing dependencies
-    @echo Installing bzr
-    @sudo apt install bzr --yes
-    @echo Installing zip
-    @sudo apt install zip --yes

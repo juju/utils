@@ -262,7 +262,7 @@ var tests = []struct {
 		"echo echo\n",
 	},
 	appendedCollectedData: alphabetData[5:],
-	err: "ouch after 10 lines",
+	err:                   "ouch after 10 lines",
 }, {
 	description: "more lines already written than initially requested, some empty, unfiltered",
 	data: []string{

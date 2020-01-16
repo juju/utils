@@ -5,16 +5,13 @@ package utils
 
 import (
 	"crypto/tls"
+	"crypto/x509"
 	"encoding/base64"
 	"fmt"
 	"net"
 	"net/http"
 	"strings"
-	"sync"
 )
-
-var insecureClient = (*http.Client)(nil)
-var insecureClientMutex = sync.Mutex{}
 
 func init() {
 	defaultTransport := http.DefaultTransport.(*http.Transport)
@@ -43,11 +40,36 @@ const (
 
 // GetHTTPClient returns either a standard http client or
 // non validating client depending on the value of verify.
-func GetHTTPClient(verify SSLHostnameVerification) *http.Client {
+func GetHTTPClient(verify SSLHostnameVerification, certs ...string) *http.Client {
+	if len(certs) > 0 {
+		return getHTTPClientWithCerts(verify, certs)
+	}
 	if verify == VerifySSLHostnames {
 		return GetValidatingHTTPClient()
 	}
 	return GetNonValidatingHTTPClient()
+}
+
+// getHTTPClientWithCerts returns a new http.Client that verifies the
+// server's certificate chain and hostname depending on arguments and
+// adds ca certificates to the client. Returns nil if no certificates
+// provided.
+func getHTTPClientWithCerts(verify SSLHostnameVerification, certs []string) *http.Client {
+	if len(certs) == 0 {
+		return nil
+	}
+	pool := x509.NewCertPool()
+	for _, cert := range certs {
+		pool.AppendCertsFromPEM([]byte(cert))
+	}
+	tlsConfig := SecureTLSConfig()
+	tlsConfig.RootCAs = pool
+	if verify == NoVerifySSLHostnames {
+		tlsConfig.InsecureSkipVerify = true
+	}
+	return &http.Client{
+		Transport: NewHttpTLSTransport(tlsConfig),
+	}
 }
 
 // GetValidatingHTTPClient returns a new http.Client that

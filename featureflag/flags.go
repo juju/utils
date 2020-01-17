@@ -22,8 +22,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/juju/collections/set"
 	"github.com/juju/loggo"
-	"github.com/juju/utils/set"
 )
 
 var (

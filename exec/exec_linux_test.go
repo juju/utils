@@ -7,7 +7,7 @@ import (
 	jc "github.com/juju/testing/checkers"
 	gc "gopkg.in/check.v1"
 
-	"github.com/juju/utils/exec"
+	"github.com/juju/utils.v2/exec"
 )
 
 // 0 is thrown by linux because RunParams.Wait

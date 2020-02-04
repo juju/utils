@@ -8,7 +8,7 @@ import (
 
 	gc "gopkg.in/check.v1"
 
-	"github.com/juju/utils"
+	"github.com/juju/utils.v2"
 )
 
 func doSomething() (int, error) { return 0, nil }

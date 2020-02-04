@@ -10,7 +10,7 @@ import (
 
 	"github.com/juju/errors"
 	"github.com/juju/loggo"
-	"github.com/juju/utils/os"
+	"github.com/juju/utils.v2/os"
 )
 
 var (

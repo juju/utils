@@ -12,7 +12,7 @@ import (
 	jc "github.com/juju/testing/checkers"
 	gc "gopkg.in/check.v1"
 
-	"github.com/juju/utils/filepath"
+	"github.com/juju/utils.v2/filepath"
 )
 
 // The tests here are mostly just sanity checks against the behavior

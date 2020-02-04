@@ -8,8 +8,8 @@ import (
 	jc "github.com/juju/testing/checkers"
 	gc "gopkg.in/check.v1"
 
-	"github.com/juju/utils/os"
-	"github.com/juju/utils/series"
+	"github.com/juju/utils.v2/os"
+	"github.com/juju/utils.v2/series"
 )
 
 type supportedSeriesSuite struct {

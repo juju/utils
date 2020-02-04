@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/juju/utils"
+	"github.com/juju/utils.v2"
 )
 
 // DumpFileOnErrorScript returns a bash script that

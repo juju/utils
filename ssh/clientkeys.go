@@ -10,9 +10,9 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
-
-	"github.com/juju/utils"
-	"github.com/juju/utils/set"
+	
+	"github.com/juju/utils.v2"
+	"github.com/juju/utils.v2/set"
 	"golang.org/x/crypto/ssh"
 )
 

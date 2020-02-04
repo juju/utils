@@ -9,7 +9,7 @@ import (
 	"golang.org/x/sys/windows/registry"
 	gc "gopkg.in/check.v1"
 
-	"github.com/juju/utils/featureflag"
+	"github.com/juju/utils.v2/featureflag"
 )
 
 type flagWinSuite struct {

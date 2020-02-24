@@ -18,6 +18,7 @@ import (
 
 	"github.com/juju/errors"
 
+	"github.com/juju/utils/set"
 	"github.com/juju/utils/symlink"
 )
 
@@ -168,6 +169,24 @@ func createAndFill(filePath string, mode int64, content io.Reader) error {
 // outputFolder as root
 func UntarFiles(tarFile io.Reader, outputFolder string) error {
 	tr := tar.NewReader(tarFile)
+	// Ensure we still make directories for any files where we haven't
+	// already seen the directory (for example, juju backup generates
+	// files like this).
+	seenDirs := set.NewStrings()
+
+	maybeMkParentDir := func(path string) error {
+		dirName := filepath.Dir(path)
+		if seenDirs.Contains(dirName) {
+			return nil
+		}
+		err := os.MkdirAll(dirName, os.FileMode(0755))
+		if err != nil {
+			return fmt.Errorf("cannot create parent directory for %q: %v", path, err)
+		}
+		seenDirs.Add(dirName)
+		return nil
+	}
+
 	for {
 		hdr, err := tr.Next()
 		if err == io.EOF {
@@ -183,12 +202,21 @@ func UntarFiles(tarFile io.Reader, outputFolder string) error {
 			if err = os.MkdirAll(fullPath, os.FileMode(hdr.Mode)); err != nil {
 				return fmt.Errorf("cannot extract directory %q: %v", fullPath, err)
 			}
+			seenDirs.Add(fullPath)
+
 		case tar.TypeSymlink:
+			if err = maybeMkParentDir(fullPath); err != nil {
+				return err
+			}
 			if err = symlink.New(hdr.Linkname, fullPath); err != nil {
 				return fmt.Errorf("cannot extract symlink %q to %q: %v", hdr.Linkname, fullPath, err)
 			}
 			continue
+
 		case tar.TypeReg, tar.TypeRegA:
+			if err = maybeMkParentDir(fullPath); err != nil {
+				return err
+			}
 			if err = createAndFill(fullPath, hdr.Mode, tr); err != nil {
 				return fmt.Errorf("cannot extract file %q: %v", fullPath, err)
 			}

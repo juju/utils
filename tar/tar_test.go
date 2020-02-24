@@ -17,6 +17,7 @@ import (
 	stdtesting "testing"
 
 	"github.com/juju/testing"
+	jc "github.com/juju/testing/checkers"
 	gc "gopkg.in/check.v1"
 )
 
@@ -298,6 +299,7 @@ func (t *TarSuite) TestUntarFilesHeadersIgnored(c *gc.C) {
 	c.Assert(err, gc.IsNil)
 
 	err = UntarFiles(&buf, t.cwd)
+	c.Assert(err, jc.ErrorIsNil)
 	err = filepath.Walk(t.cwd, func(path string, finfo os.FileInfo, err error) error {
 		if path != t.cwd {
 			return fmt.Errorf("unexpected file: %v", path)
@@ -305,4 +307,47 @@ func (t *TarSuite) TestUntarFilesHeadersIgnored(c *gc.C) {
 		return err
 	})
 	c.Assert(err, gc.IsNil)
+}
+
+func (t *TarSuite) TestUntarFilesWithMissingDirectories(c *gc.C) {
+	var buf bytes.Buffer
+	w := tar.NewWriter(&buf)
+	contents := []byte("file contents")
+	err := w.WriteHeader(&tar.Header{
+		Name:     "missingdir/otherdir/file",
+		Typeflag: tar.TypeReg,
+		Mode:     0700,
+		Size:     int64(len(contents)),
+	})
+	c.Assert(err, jc.ErrorIsNil)
+	_, err = w.Write(contents)
+	c.Assert(err, jc.ErrorIsNil)
+
+	err = w.WriteHeader(&tar.Header{
+		Name:     "missingdir/otherdir/link",
+		Typeflag: tar.TypeSymlink,
+		Linkname: "viginti",
+	})
+	c.Assert(err, jc.ErrorIsNil)
+	err = w.Flush()
+	c.Assert(err, jc.ErrorIsNil)
+
+	err = UntarFiles(&buf, t.cwd)
+	c.Assert(err, jc.ErrorIsNil)
+
+	var names []string
+	err = filepath.Walk(t.cwd, func(path string, finfo os.FileInfo, err error) error {
+		names = append(names, path[len(t.cwd):])
+		return nil
+	})
+	c.Assert(err, jc.ErrorIsNil)
+
+	expected := []string{
+		"",
+		"/missingdir",
+		"/missingdir/otherdir",
+		"/missingdir/otherdir/file",
+		"/missingdir/otherdir/link",
+	}
+	c.Assert(names, gc.DeepEquals, expected)
 }

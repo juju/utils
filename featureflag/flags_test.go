@@ -27,21 +27,27 @@ func (s *flagSuite) TestEmpty(c *gc.C) {
 
 func (s *flagSuite) TestParsing(c *gc.C) {
 	s.PatchEnvironment("JUJU_TESTING_FEATURE", "MAGIC, test, space ")
-	featureflag.SetFlagsFromEnvironment("JUJU_TESTING_FEATURE")
-	c.Assert(featureflag.All(), jc.SameContents, []string{"magic", "space", "test"})
-	c.Assert(featureflag.AsEnvironmentValue(), gc.Equals, "magic,space,test")
-	c.Assert(featureflag.String(), gc.Equals, `"magic", "space", "test"`)
+	s.PatchEnvironment("JUJU_TESTING_FEATURE2", "magic2")
+	featureflag.SetFlagsFromEnvironment("JUJU_TESTING_FEATURE", "JUJU_TESTING_FEATURE2")
+	c.Assert(featureflag.All(), jc.SameContents, []string{"magic", "space", "test", "magic2"})
+	c.Assert(featureflag.AsEnvironmentValue(), gc.Equals, "magic,magic2,space,test")
+	c.Assert(featureflag.String(), gc.Equals, `"magic", "magic2", "space", "test"`)
 }
 
 func (s *flagSuite) TestEnabled(c *gc.C) {
 	c.Assert(featureflag.Enabled(""), jc.IsTrue)
 	c.Assert(featureflag.Enabled(" "), jc.IsTrue)
 	c.Assert(featureflag.Enabled("magic"), jc.IsFalse)
+	c.Assert(featureflag.Enabled("magic2"), jc.IsFalse)
 
 	s.PatchEnvironment("JUJU_TESTING_FEATURE", "MAGIC")
-	featureflag.SetFlagsFromEnvironment("JUJU_TESTING_FEATURE")
+	s.PatchEnvironment("JUJU_TESTING_FEATURE2", "MAGIC2")
+	featureflag.SetFlagsFromEnvironment("JUJU_TESTING_FEATURE", "JUJU_TESTING_FEATURE2")
 
 	c.Assert(featureflag.Enabled("magic"), jc.IsTrue)
 	c.Assert(featureflag.Enabled("Magic"), jc.IsTrue)
 	c.Assert(featureflag.Enabled(" MAGIC "), jc.IsTrue)
+	c.Assert(featureflag.Enabled("magic2"), jc.IsTrue)
+	c.Assert(featureflag.Enabled("Magic2"), jc.IsTrue)
+	c.Assert(featureflag.Enabled(" MAGIC2 "), jc.IsTrue)
 }

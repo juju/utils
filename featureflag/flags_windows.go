@@ -20,8 +20,12 @@ import (
 // program startup (or tests), and it is serialized by the runtime, we don't
 // use any mutux when setting the flag set.  Should this change in the future,
 // a mutex should be used.
-func SetFlagsFromRegistry(regVarKey string, regVarName string) {
-	setFlags(getFlagsFromRegistry(regVarKey, regVarName))
+func SetFlagsFromRegistry(regVarKey string, regVarNames ...string) {
+	rawValues := make([]string, len(regVarNames))
+	for i, regVarName := range regVarNames {
+		rawValues[i] = getFlagsFromRegistry(regVarKey, regVarName)
+	}
+	setFlags(rawValues...)
 }
 
 // getFlagsFromRegistry returns the string value from a registry key

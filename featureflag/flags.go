@@ -41,21 +41,26 @@ var (
 // program startup (or tests), and it is serialized by the runtime, we don't
 // use any mutux when setting the flag set.  Should this change in the future,
 // a mutex should be used.
-func SetFlagsFromEnvironment(envVarName string) {
-	setFlags(os.Getenv(envVarName))
+func SetFlagsFromEnvironment(envVarNames ...string) {
+	rawValues := make([]string, len(envVarNames))
+	for i, envVarName := range envVarNames {
+		rawValues[i] = os.Getenv(envVarName)
+	}
+	setFlags(rawValues...)
 }
 
-// setFlags populates the global set using a string passed to it containing the
+// setFlags populates the global set using string(s) passed to it containing the
 // flags.
-func setFlags(val string) {
-	values := strings.ToLower(val)
-
+func setFlags(rawValues ...string) {
 	flaglock.Lock()
 	defer flaglock.Unlock()
 	flags = set.NewStrings()
-	for _, flag := range strings.Split(values, ",") {
-		if flag = strings.TrimSpace(flag); flag != "" {
-			flags.Add(flag)
+	for _, values := range rawValues {
+		values = strings.ToLower(values)
+		for _, flag := range strings.Split(values, ",") {
+			if flag = strings.TrimSpace(flag); flag != "" {
+				flags.Add(flag)
+			}
 		}
 	}
 }

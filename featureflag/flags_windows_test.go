@@ -30,6 +30,7 @@ func (s *flagWinSuite) SetUpTest(c *gc.C) {
 
 func (s *flagWinSuite) TearDownTest(c *gc.C) {
 	s.k.DeleteValue("JUJU_TESTING_FEATURE")
+	s.k.DeleteValue("JUJU_TESTING_FEATURE2")
 	s.k.Close()
 	registry.DeleteKey(registry.LOCAL_MACHINE, regKey[6:])
 }
@@ -44,21 +45,27 @@ func (s *flagWinSuite) TestEmpty(c *gc.C) {
 
 func (s *flagWinSuite) TestParsing(c *gc.C) {
 	s.k.SetStringValue("JUJU_TESTING_FEATURE", "MAGIC, test, space ")
-	featureflag.SetFlagsFromRegistry(regKey, "JUJU_TESTING_FEATURE")
-	c.Assert(featureflag.All(), jc.SameContents, []string{"magic", "space", "test"})
-	c.Assert(featureflag.AsEnvironmentValue(), gc.Equals, "magic,space,test")
-	c.Assert(featureflag.String(), gc.Equals, `"magic", "space", "test"`)
+	s.k.SetStringValue("JUJU_TESTING_FEATURE2", "magic2")
+	featureflag.SetFlagsFromRegistry(regKey, "JUJU_TESTING_FEATURE", "JUJU_TESTING_FEATURE2")
+	c.Assert(featureflag.All(), jc.SameContents, []string{"magic", "space", "test", "magic2"})
+	c.Assert(featureflag.AsEnvironmentValue(), gc.Equals, "magic,magic2,space,test")
+	c.Assert(featureflag.String(), gc.Equals, `"magic", "magic2", "space", "test"`)
 }
 
 func (s *flagWinSuite) TestEnabled(c *gc.C) {
 	c.Assert(featureflag.Enabled(""), jc.IsTrue)
 	c.Assert(featureflag.Enabled(" "), jc.IsTrue)
 	c.Assert(featureflag.Enabled("magic"), jc.IsFalse)
+	c.Assert(featureflag.Enabled("magic2"), jc.IsFalse)
 
 	s.k.SetStringValue("JUJU_TESTING_FEATURE", "MAGIC")
-	featureflag.SetFlagsFromRegistry(regKey, "JUJU_TESTING_FEATURE")
+	s.k.SetStringValue("JUJU_TESTING_FEATURE2", "MAGIC2")
+	featureflag.SetFlagsFromRegistry(regKey, "JUJU_TESTING_FEATURE", "JUJU_TESTING_FEATURE2")
 
 	c.Assert(featureflag.Enabled("magic"), jc.IsTrue)
 	c.Assert(featureflag.Enabled("Magic"), jc.IsTrue)
 	c.Assert(featureflag.Enabled(" MAGIC "), jc.IsTrue)
+	c.Assert(featureflag.Enabled("magic2"), jc.IsTrue)
+	c.Assert(featureflag.Enabled("Magic2"), jc.IsTrue)
+	c.Assert(featureflag.Enabled(" MAGIC2 "), jc.IsTrue)
 }

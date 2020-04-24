@@ -211,8 +211,11 @@ func NewClient(config ClientConfig) (*Client, error) {
 // If the Run successfully executes it returns nil
 func (c *Client) Run(command string, stdout io.Writer, stderr io.Writer) error {
 	logger.Debugf("Runing cmd on WinRM connection %q", command)
-	_, err := c.conn.Run(command, stdout, stderr)
-	if err != nil {
+	exitCode, err := c.conn.Run(command, stdout, stderr)
+	if exitCode != 0 {
+		if err == nil {
+			err = errors.Errorf("exit status %d", exitCode)
+		}
 		return errors.Annotatef(err, "cannot run WinRM command %q", command)
 	}
 	return nil

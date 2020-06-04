@@ -24,6 +24,9 @@ func (e DuplicateError) Error() string {
 func Parse(src []string, allowEmptyValues bool) (map[string]string, error) {
 	results := map[string]string{}
 	for _, kv := range src {
+		if kv == "" {
+			continue
+		}
 		parts := strings.SplitN(kv, "=", 2)
 		if len(parts) != 2 {
 			return nil, fmt.Errorf(`expected "key=value", got %q`, kv)

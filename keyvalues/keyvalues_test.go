@@ -115,6 +115,12 @@ var testCases = []struct {
 	allowEmptyVal: true,
 	output:        nil,
 	error:         `expected "key=value", got "=value"`,
+}, {
+	about:         "empty inputs are skipped",
+	input:         []string{"key=value", "", "foo=bar"},
+	allowEmptyVal: true,
+	output:        map[string]string{"key": "value", "foo": "bar"},
+	error:         "",
 }}
 
 func (keyValuesSuite) TestMapParsing(c *gc.C) {

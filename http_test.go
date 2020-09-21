@@ -15,7 +15,7 @@ import (
 	"github.com/juju/testing"
 	gc "gopkg.in/check.v1"
 
-	"github.com/juju/utils"
+	"github.com/juju/utils/v2"
 )
 
 func init() {
@@ -170,66 +170,5 @@ func (s *httpSuite) TestParseBasicAuthHeader(c *gc.C) {
 		} else {
 			c.Assert(err, gc.IsNil)
 		}
-	}
-}
-
-type httpDialSuite struct {
-	testing.IsolationSuite
-}
-
-var _ = gc.Suite(&httpDialSuite{})
-
-func (s *httpDialSuite) TestDefaultClientNoAccess(c *gc.C) {
-	s.PatchValue(&utils.OutgoingAccessAllowed, false)
-	_, err := http.Get("http://0.1.2.3:1234")
-	c.Assert(err, gc.ErrorMatches, `.*access to address "0.1.2.3:1234" not allowed`)
-}
-
-func (s *httpDialSuite) TestInsecureClientNoAccess(c *gc.C) {
-	s.PatchValue(&utils.OutgoingAccessAllowed, false)
-	_, err := utils.GetNonValidatingHTTPClient().Get("http://0.1.2.3:1234")
-	c.Assert(err, gc.ErrorMatches, `.*access to address "0.1.2.3:1234" not allowed`)
-}
-
-func (s *httpDialSuite) TestSecureClientNoAccess(c *gc.C) {
-	s.PatchValue(&utils.OutgoingAccessAllowed, false)
-	_, err := utils.GetValidatingHTTPClient().Get("http://0.1.2.3:1234")
-	c.Assert(err, gc.ErrorMatches, `.*access to address "0.1.2.3:1234" not allowed`)
-}
-
-func (s *httpDialSuite) TestDefaultClientAllowAccess(c *gc.C) {
-	_, err := http.Get("http://0.1.2.3:1234")
-	c.Assert(err, gc.ErrorMatches, `Get http://0.1.2.3:1234: dial tcp 0.1.2.3:1234: connect: .*`)
-}
-
-func (s *httpDialSuite) TestInsecureClientAllowAccess(c *gc.C) {
-	_, err := utils.GetNonValidatingHTTPClient().Get("http://0.1.2.3:1234")
-	c.Assert(err, gc.ErrorMatches, `Get http://0.1.2.3:1234: dial tcp 0.1.2.3:1234: connect: .*`)
-}
-
-func (s *httpDialSuite) TestSecureClientAllowAccess(c *gc.C) {
-	_, err := utils.GetValidatingHTTPClient().Get("http://0.1.2.3:1234")
-	c.Assert(err, gc.ErrorMatches, `Get http://0.1.2.3:1234: dial tcp 0.1.2.3:1234: connect: .*`)
-}
-
-var isLocalAddrTests = []struct {
-	addr    string
-	isLocal bool
-}{
-	{"localhost:456", true},
-	{"127.0.0.1:1234", true},
-	{"[::1]:4567", true},
-	{"localhost:smtp", true},
-	{"123.45.67.5", false},
-	{"0.1.2.3", false},
-	{"10.0.43.6:12345", false},
-	{":456", false},
-	{"12xz4.5.6", false},
-}
-
-func (s *httpDialSuite) TestIsLocalAddr(c *gc.C) {
-	for i, test := range isLocalAddrTests {
-		c.Logf("test %d: %v", i, test.addr)
-		c.Assert(utils.IsLocalAddr(test.addr), gc.Equals, test.isLocal)
 	}
 }

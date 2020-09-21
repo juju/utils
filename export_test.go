@@ -16,5 +16,3 @@ var (
 func ExposeBackoffTimerDuration(bot *BackoffTimer) time.Duration {
 	return bot.currentDuration
 }
-
-var IsLocalAddr = isLocalAddr

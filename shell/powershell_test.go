@@ -8,7 +8,7 @@ import (
 	jc "github.com/juju/testing/checkers"
 	gc "gopkg.in/check.v1"
 
-	"github.com/juju/utils/shell"
+	"github.com/juju/utils/v2/shell"
 )
 
 var _ = gc.Suite(&powershellSuite{})

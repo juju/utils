@@ -12,8 +12,8 @@ import (
 	"golang.org/x/sys/windows/registry"
 	gc "gopkg.in/check.v1"
 
-	"github.com/juju/utils"
-	"github.com/juju/utils/series"
+	"github.com/juju/utils/v2"
+	"github.com/juju/utils/v2/series"
 )
 
 type windowsSeriesSuite struct {

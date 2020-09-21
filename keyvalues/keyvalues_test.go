@@ -6,7 +6,7 @@ package keyvalues_test
 import (
 	gc "gopkg.in/check.v1"
 
-	"github.com/juju/utils/keyvalues"
+	"github.com/juju/utils/v2/keyvalues"
 )
 
 type keyValuesSuite struct{}

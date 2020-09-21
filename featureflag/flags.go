@@ -23,7 +23,7 @@ import (
 	"sync"
 
 	"github.com/juju/loggo"
-	"github.com/juju/utils/set"
+	"github.com/juju/utils/v2/set"
 )
 
 var (

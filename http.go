@@ -8,16 +8,9 @@ import (
 	"crypto/x509"
 	"encoding/base64"
 	"fmt"
-	"net"
 	"net/http"
 	"strings"
 )
-
-func init() {
-	defaultTransport := http.DefaultTransport.(*http.Transport)
-	installHTTPDialShim(defaultTransport)
-	registerFileProtocol(defaultTransport)
-}
 
 // registerFileProtocol registers support for file:// URLs on the given transport.
 func registerFileProtocol(transport *http.Transport) {
@@ -124,16 +117,4 @@ func ParseBasicAuthHeader(h http.Header) (userid, password string, err error) {
 		return "", "", fmt.Errorf("invalid HTTP auth contents")
 	}
 	return tokens[0], tokens[1], nil
-}
-
-// OutgoingAccessAllowed determines whether connections other than
-// localhost can be dialled.
-var OutgoingAccessAllowed = true
-
-func isLocalAddr(addr string) bool {
-	host, _, err := net.SplitHostPort(addr)
-	if err != nil {
-		return false
-	}
-	return host == "localhost" || net.ParseIP(host).IsLoopback()
 }

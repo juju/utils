@@ -9,7 +9,7 @@ package utils_test
 import (
 	gc "gopkg.in/check.v1"
 
-	"github.com/juju/utils"
+	"github.com/juju/utils/v2"
 )
 
 type windowsFileSuite struct {

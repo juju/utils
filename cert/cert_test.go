@@ -20,8 +20,8 @@ import (
 	"time"
 
 	jc "github.com/juju/testing/checkers"
-	"github.com/juju/utils"
-	"github.com/juju/utils/cert"
+	"github.com/juju/utils/v2"
+	"github.com/juju/utils/v2/cert"
 	gc "gopkg.in/check.v1"
 )
 

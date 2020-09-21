@@ -11,7 +11,7 @@ import (
 	gc "gopkg.in/check.v1"
 	"gopkg.in/errgo.v1"
 
-	"github.com/juju/utils/cache"
+	"github.com/juju/utils/v2/cache"
 )
 
 type suite struct{}

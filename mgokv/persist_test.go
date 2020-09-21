@@ -12,7 +12,7 @@ import (
 	"gopkg.in/errgo.v1"
 	"gopkg.in/mgo.v2/bson"
 
-	"github.com/juju/utils/mgokv"
+	"github.com/juju/utils/v2/mgokv"
 )
 
 type suite struct {

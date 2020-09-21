@@ -6,9 +6,9 @@ package set_test
 import (
 	"github.com/juju/testing"
 	gc "gopkg.in/check.v1"
-	"gopkg.in/juju/names.v3"
+	"github.com/juju/names/v4"
 
-	"github.com/juju/utils/set"
+	"github.com/juju/utils/v2/set"
 )
 
 type tagSetSuite struct {

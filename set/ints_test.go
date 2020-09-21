@@ -10,7 +10,7 @@ import (
 	jc "github.com/juju/testing/checkers"
 	gc "gopkg.in/check.v1"
 
-	"github.com/juju/utils/set"
+	"github.com/juju/utils/v2/set"
 )
 
 type intSetSuite struct {

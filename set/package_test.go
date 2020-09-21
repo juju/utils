@@ -6,10 +6,10 @@ package set_test
 import (
 	"testing"
 
+	"github.com/juju/names/v4"
 	gc "gopkg.in/check.v1"
-	"gopkg.in/juju/names.v3"
 
-	"github.com/juju/utils/set"
+	"github.com/juju/utils/v2/set"
 )
 
 func TestPackage(t *testing.T) {

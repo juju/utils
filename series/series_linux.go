@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/juju/errors"
-	jujuos "github.com/juju/utils/os"
+	jujuos "github.com/juju/utils/v2/os"
 )
 
 var (

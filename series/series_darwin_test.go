@@ -5,7 +5,7 @@ package series
 
 import (
 	jc "github.com/juju/testing/checkers"
-	"github.com/juju/utils/set"
+	"github.com/juju/utils/v2/set"
 	gc "gopkg.in/check.v1"
 )
 

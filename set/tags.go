@@ -7,7 +7,7 @@ import (
 	"sort"
 
 	"github.com/juju/errors"
-	"gopkg.in/juju/names.v3"
+	"github.com/juju/names/v4"
 )
 
 // Tags represents the Set data structure, it implements tagSet

@@ -12,8 +12,10 @@ require (
 	github.com/juju/httpprof v0.0.0-20141217160036-14bf14c30767
 	github.com/juju/loggo v0.0.0-20200526014432-9ce3a2e09b5e
 	github.com/juju/mutex v0.0.0-20171110020013-1fe2a4bf0a3a
-	github.com/juju/names/v4 v4.0.0-20200424054733-9a8294627524
+	github.com/juju/retry v0.0.0-20180821225755-9058e192b216 // indirect
 	github.com/juju/testing v0.0.0-20190723135506-ce30eb24acd2
+	github.com/juju/utils v0.0.0-20200116185830-d40c2fe10647 // indirect
+	github.com/juju/version v0.0.0-20180108022336-b64dbd566305 // indirect
 	github.com/julienschmidt/httprouter v1.1.1-0.20151013225520-77a895ad01eb
 	github.com/lunixbochs/vtclean v0.0.0-20160125035106-4fbf7632a2c6 // indirect
 	github.com/masterzen/azure-sdk-for-go v3.2.0-beta.0.20161014135628-ee4f0065d00c+incompatible // indirect
@@ -25,7 +27,6 @@ require (
 	github.com/nu7hatch/gouuid v0.0.0-20131221200532-179d4d0c4d8d // indirect
 	golang.org/x/crypto v0.0.0-20200820211705-5c72a883971a
 	golang.org/x/net v0.0.0-20200904194848-62affa334b73
-	golang.org/x/sys v0.0.0-20200323222414-85ca7c5b95cd
 	golang.org/x/text v0.3.0
 	gopkg.in/check.v1 v1.0.0-20160105164936-4f90aeace3a2
 	gopkg.in/errgo.v1 v1.0.0-20161222125816-442357a80af5

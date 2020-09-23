@@ -10,7 +10,7 @@ import (
 	ft "github.com/juju/testing/filetesting"
 	gc "gopkg.in/check.v1"
 
-	"github.com/juju/utils/fs"
+	"github.com/juju/utils/v2/fs"
 )
 
 type copySuite struct{}

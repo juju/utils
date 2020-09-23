@@ -11,8 +11,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/juju/utils"
-	"github.com/juju/utils/set"
+	"github.com/juju/collections/set"
+	"github.com/juju/utils/v2"
 	"golang.org/x/crypto/ssh"
 )
 

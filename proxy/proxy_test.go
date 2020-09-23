@@ -9,7 +9,7 @@ import (
 	"github.com/juju/testing"
 	gc "gopkg.in/check.v1"
 
-	"github.com/juju/utils/proxy"
+	"github.com/juju/utils/v2/proxy"
 )
 
 type proxySuite struct {

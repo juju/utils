@@ -8,7 +8,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/juju/utils/set"
+	"github.com/juju/collections/set"
 )
 
 const (

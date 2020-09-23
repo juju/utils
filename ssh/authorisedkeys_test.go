@@ -11,8 +11,8 @@ import (
 	jc "github.com/juju/testing/checkers"
 	gc "gopkg.in/check.v1"
 
-	"github.com/juju/utils/ssh"
-	sshtesting "github.com/juju/utils/ssh/testing"
+	"github.com/juju/utils/v2/ssh"
+	sshtesting "github.com/juju/utils/v2/ssh/testing"
 )
 
 type AuthorisedKeysKeysSuite struct {

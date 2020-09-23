@@ -13,7 +13,7 @@ import (
 	gc "gopkg.in/check.v1"
 	"gopkg.in/mgo.v2"
 
-	"github.com/juju/utils/debugstatus"
+	"github.com/juju/utils/v2/debugstatus"
 )
 
 type statusSuite struct {

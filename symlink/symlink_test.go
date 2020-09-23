@@ -12,8 +12,8 @@ import (
 	jc "github.com/juju/testing/checkers"
 	gc "gopkg.in/check.v1"
 
-	"github.com/juju/utils"
-	"github.com/juju/utils/symlink"
+	"github.com/juju/utils/v2"
+	"github.com/juju/utils/v2/symlink"
 )
 
 type SymlinkSuite struct{}

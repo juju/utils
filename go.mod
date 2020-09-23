@@ -6,6 +6,7 @@ require (
 	github.com/juju/ansiterm v0.0.0-20160907234532-b99631de12cf // indirect
 	github.com/juju/clock v0.0.0-20190205081909-9c5c9712527c
 	github.com/juju/cmd v0.0.0-20171107070456-e74f39857ca0
+	github.com/juju/collections v0.0.0-20200605021417-0d0ec82b7271
 	github.com/juju/errors v0.0.0-20200330140219-3fe23663418f
 	github.com/juju/gnuflag v0.0.0-20171113085948-2ce1bb71843d // indirect
 	github.com/juju/httpprof v0.0.0-20141217160036-14bf14c30767

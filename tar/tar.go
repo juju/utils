@@ -18,7 +18,7 @@ import (
 
 	"github.com/juju/errors"
 
-	"github.com/juju/utils/v2/set"
+	"github.com/juju/collections/set"
 	"github.com/juju/utils/v2/symlink"
 )
 

@@ -12,7 +12,7 @@ import (
 	"sync"
 
 	"github.com/juju/utils/v2"
-	"github.com/juju/utils/v2/set"
+	"github.com/juju/collections/set"
 	"golang.org/x/crypto/ssh"
 )
 

@@ -13,9 +13,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/juju/mgo/v2"
+	"github.com/juju/mgo/v2/bson"
 	"gopkg.in/errgo.v1"
-	mgo "gopkg.in/mgo.v2"
-	"gopkg.in/mgo.v2/bson"
 )
 
 // ErrNotFound is returned as the cause of the error

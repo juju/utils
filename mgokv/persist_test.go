@@ -7,10 +7,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/juju/mgo/v2/bson"
 	"github.com/juju/testing"
 	gc "gopkg.in/check.v1"
 	"gopkg.in/errgo.v1"
-	"gopkg.in/mgo.v2/bson"
 
 	"github.com/juju/utils/v2/mgokv"
 )

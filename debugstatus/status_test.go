@@ -7,11 +7,11 @@ import (
 	"errors"
 	"time"
 
+	"github.com/juju/mgo/v2"
 	jujutesting "github.com/juju/testing"
 	jc "github.com/juju/testing/checkers"
 	"golang.org/x/net/context"
 	gc "gopkg.in/check.v1"
-	"gopkg.in/mgo.v2"
 
 	"github.com/juju/utils/v2/debugstatus"
 )

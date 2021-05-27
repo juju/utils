@@ -20,7 +20,6 @@ import (
 	"time"
 
 	jc "github.com/juju/testing/checkers"
-	"github.com/juju/utils/v3"
 	"github.com/juju/utils/v3/cert"
 	gc "gopkg.in/check.v1"
 )
@@ -125,7 +124,10 @@ func checkTLSConnection(c *gc.C, caCert, srvCert *x509.Certificate, srvKey *rsa.
 	var clientState tls.ConnectionState
 	done := make(chan error)
 	go func() {
-		config := utils.SecureTLSConfig()
+		config := &tls.Config{
+			CipherSuites: knownGoodCipherSuites,
+			MinVersion:   tls.VersionTLS12,
+		}
 		config.Certificates = []tls.Certificate{{
 			Certificate: [][]byte{srvCert.Raw},
 			PrivateKey:  srvKey,
@@ -139,7 +141,10 @@ func checkTLSConnection(c *gc.C, caCert, srvCert *x509.Certificate, srvKey *rsa.
 		close(done)
 	}()
 
-	tlsConfig := utils.SecureTLSConfig()
+	tlsConfig := &tls.Config{
+		CipherSuites: knownGoodCipherSuites,
+		MinVersion:   tls.VersionTLS12,
+	}
 	tlsConfig.ServerName = "anyServer"
 	tlsConfig.RootCAs = clientCertPool
 	clientConn := tls.Client(p0, tlsConfig)
@@ -246,3 +251,34 @@ ve4WjiEqnQaHNAPy0hY/1DfIgBOSpOfnkFHOk9vX
 -----END RSA PRIVATE KEY-----
 `
 )
+
+// knownGoodCipherSuites contains the list of secure cipher suites to use
+// with tls.Config. This list matches those that Go 1.6 implements from
+// https://wiki.mozilla.org/Security/Server_Side_TLS#Recommended_configurations.
+//
+// https://tools.ietf.org/html/rfc7525#section-4.2 excludes RSA exchange completely
+// so we could be more strict if all our clients will support
+// TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256/384. Unfortunately Go's crypto library
+// is limited and doesn't support DHE-RSA-AES256-GCM-SHA384 and
+// DHE-RSA-AES256-SHA256, which are part of the recommended set.
+//
+// Unfortunately we can't drop the RSA algorithms because our servers aren't
+// generating ECDHE keys.
+var knownGoodCipherSuites = []uint16{
+	// These are technically useless for Juju, since we use an RSA certificate,
+	// but they also don't hurt anything, and supporting an ECDSA certificate
+	// could be useful in the future.
+	tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+	tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+
+	tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+	tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+
+	// Windows doesn't support GCM currently, so we need these for RSA support.
+	tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
+	tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
+
+	// We need this so that we have at least one suite in common
+	// with the default gnutls installed for precise and trusty.
+	tls.TLS_RSA_WITH_AES_256_CBC_SHA,
+}

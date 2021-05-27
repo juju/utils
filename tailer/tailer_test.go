@@ -14,7 +14,7 @@ import (
 	"github.com/juju/testing"
 	gc "gopkg.in/check.v1"
 
-	"github.com/juju/utils/v2/tailer"
+	"github.com/juju/utils/v3/tailer"
 )
 
 type tailerSuite struct {

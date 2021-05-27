@@ -9,7 +9,7 @@ import (
 	"os"
 	"path"
 
-	"github.com/juju/utils/v2/winrm"
+	"github.com/juju/utils/v3/winrm"
 
 	gc "gopkg.in/check.v1"
 )

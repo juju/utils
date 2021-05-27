@@ -19,7 +19,7 @@ import (
 	"github.com/juju/errors"
 
 	"github.com/juju/collections/set"
-	"github.com/juju/utils/v2/symlink"
+	"github.com/juju/utils/v3/symlink"
 )
 
 // FindFile returns the header and ReadCloser for the entry in the

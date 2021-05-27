@@ -11,7 +11,7 @@ import (
 	jc "github.com/juju/testing/checkers"
 	gc "gopkg.in/check.v1"
 
-	"github.com/juju/utils/v2/exec"
+	"github.com/juju/utils/v3/exec"
 )
 
 // 1 is thrown by powershell after the a command is cancelled

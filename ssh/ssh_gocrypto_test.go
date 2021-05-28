@@ -40,12 +40,16 @@ type sshServer struct {
 func newServer(c *gc.C, serverConfig cryptossh.ServerConfig) (*sshServer, cryptossh.PublicKey) {
 	private, _, err := ssh.GenerateKey("test-server")
 	c.Assert(err, jc.ErrorIsNil)
+
 	key, err := cryptossh.ParsePrivateKey([]byte(private))
 	c.Assert(err, jc.ErrorIsNil)
+
 	server := &sshServer{cfg: &serverConfig}
 	server.cfg.AddHostKey(key)
 	server.listener, err = net.Listen("tcp", "127.0.0.1:0")
 	c.Assert(err, jc.ErrorIsNil)
+	c.Logf("Server listening on %s", server.listener.Addr().String())
+
 	return server, key.PublicKey()
 }
 
@@ -53,21 +57,28 @@ func (s *sshServer) run(c *gc.C) {
 	netconn, err := s.listener.Accept()
 	c.Assert(err, jc.ErrorIsNil)
 	defer netconn.Close()
+
 	conn, chans, reqs, err := cryptossh.NewServerConn(netconn, s.cfg)
 	c.Assert(err, jc.ErrorIsNil)
 	s.client = cryptossh.NewClient(conn, chans, reqs)
+
 	var wg sync.WaitGroup
 	defer wg.Wait()
+
 	sessionChannels := s.client.HandleChannelOpen("session")
 	c.Assert(sessionChannels, gc.NotNil)
 	for newChannel := range sessionChannels {
 		c.Assert(newChannel.ChannelType(), gc.Equals, "session")
+
 		channel, reqs, err := newChannel.Accept()
+
 		c.Assert(err, jc.ErrorIsNil)
 		wg.Add(1)
+
 		go func() {
 			defer wg.Done()
 			defer channel.Close()
+
 			for req := range reqs {
 				switch req.Type {
 				case "exec":
@@ -80,6 +91,7 @@ func (s *sshServer) run(c *gc.C) {
 					_, err := channel.SendRequest("exit-status", false, cryptossh.Marshal(&struct{ n uint32 }{0}))
 					c.Check(err, jc.ErrorIsNil)
 					return
+
 				default:
 					c.Errorf("Unexpected request type: %v", req.Type)
 					return
@@ -92,9 +104,13 @@ func (s *sshServer) run(c *gc.C) {
 func newClient(c *gc.C) (*ssh.GoCryptoClient, cryptossh.PublicKey) {
 	private, _, err := ssh.GenerateKey("test-client")
 	c.Assert(err, jc.ErrorIsNil)
+
 	key, err := cryptossh.ParsePrivateKey([]byte(private))
+	c.Assert(err, jc.ErrorIsNil)
+
 	client, err := ssh.NewGoCryptoClient(key)
 	c.Assert(err, jc.ErrorIsNil)
+
 	return client, key.PublicKey()
 }
 
@@ -108,8 +124,10 @@ var _ = gc.Suite(&SSHGoCryptoCommandSuite{})
 
 func (s *SSHGoCryptoCommandSuite) SetUpTest(c *gc.C) {
 	s.IsolationSuite.SetUpTest(c)
+
 	generateKeyRestorer := overrideGenerateKey(c)
 	s.AddCleanup(func(*gc.C) { generateKeyRestorer.Restore() })
+
 	client, err := ssh.NewGoCryptoClient()
 	c.Assert(err, jc.ErrorIsNil)
 	s.client = client
@@ -121,10 +139,13 @@ func (s *SSHGoCryptoCommandSuite) SetUpTest(c *gc.C) {
 func (s *SSHGoCryptoCommandSuite) TestNewGoCryptoClient(c *gc.C) {
 	_, err := ssh.NewGoCryptoClient()
 	c.Assert(err, jc.ErrorIsNil)
+
 	private, _, err := ssh.GenerateKey("test-client")
 	c.Assert(err, jc.ErrorIsNil)
+
 	key, err := cryptossh.ParsePrivateKey([]byte(private))
 	c.Assert(err, jc.ErrorIsNil)
+
 	_, err = ssh.NewGoCryptoClient(key)
 	c.Assert(err, jc.ErrorIsNil)
 }
@@ -379,6 +400,7 @@ func (s *SSHGoCryptoCommandSuite) TestStrictHostChecksDifferentKeyTypes(c *gc.C)
 	var opts ssh.Options
 	opts.SetPort(serverPort)
 	opts.SetStrictHostKeyChecking(ssh.StrictHostChecksNo)
+
 	client, _ := newClient(c)
 	cmd := client.Command("127.0.0.1", testCommand, &opts)
 	_, err = cmd.Output()

@@ -5,17 +5,10 @@
 package cert_test
 
 import (
-	"bytes"
 	"crypto/rsa"
-	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"fmt"
-	"io"
-	"io/ioutil"
-	"math/big"
-	"net"
-	"strings"
 	"testing"
 	"time"
 
@@ -87,94 +80,6 @@ func (certSuite) TestNewCA(c *gc.C) {
 	c.Check(caCert.BasicConstraintsValid, jc.IsTrue)
 	c.Check(caCert.IsCA, jc.IsTrue)
 	//c.Assert(caCert.MaxPathLen, Equals, 0)	TODO it ends up as -1 - check that this is ok.
-}
-
-func checkCertificate(c *gc.C, caCert *x509.Certificate, srvCertPEM, srvKeyPEM string, now, expiry time.Time) {
-	srvCert, srvKey, err := cert.ParseCertAndKey(srvCertPEM, srvKeyPEM)
-	c.Assert(err, jc.ErrorIsNil)
-	c.Assert(srvCert.Subject.CommonName, gc.Equals, "*")
-	checkNotBefore(c, srvCert, now)
-	checkNotAfter(c, srvCert, expiry)
-	c.Assert(srvCert.BasicConstraintsValid, jc.IsFalse)
-	c.Assert(srvCert.IsCA, jc.IsFalse)
-	c.Assert(srvCert.ExtKeyUsage, gc.DeepEquals, []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth})
-	c.Assert(srvCert.SerialNumber, gc.NotNil)
-	if srvCert.SerialNumber.Cmp(big.NewInt(0)) == 0 {
-		c.Fatalf("zero serial number")
-	}
-
-	checkTLSConnection(c, caCert, srvCert, srvKey)
-}
-
-// checkTLSConnection checks that we can correctly perform a TLS
-// handshake using the given credentials.
-func checkTLSConnection(c *gc.C, caCert, srvCert *x509.Certificate, srvKey *rsa.PrivateKey) (caName string) {
-	clientCertPool := x509.NewCertPool()
-	clientCertPool.AddCert(caCert)
-
-	var outBytes bytes.Buffer
-
-	const msg = "hello to the server"
-	p0, p1 := net.Pipe()
-	p0 = &recordingConn{
-		Conn:   p0,
-		Writer: io.MultiWriter(p0, &outBytes),
-	}
-
-	var clientState tls.ConnectionState
-	done := make(chan error)
-	go func() {
-		config := &tls.Config{
-			CipherSuites: knownGoodCipherSuites,
-			MinVersion:   tls.VersionTLS12,
-		}
-		config.Certificates = []tls.Certificate{{
-			Certificate: [][]byte{srvCert.Raw},
-			PrivateKey:  srvKey,
-		}}
-
-		conn := tls.Server(p1, config)
-		defer conn.Close()
-		data, err := ioutil.ReadAll(conn)
-		c.Assert(err, jc.ErrorIsNil)
-		c.Assert(string(data), gc.Equals, msg)
-		close(done)
-	}()
-
-	tlsConfig := &tls.Config{
-		CipherSuites: knownGoodCipherSuites,
-		MinVersion:   tls.VersionTLS12,
-	}
-	tlsConfig.ServerName = "anyServer"
-	tlsConfig.RootCAs = clientCertPool
-	clientConn := tls.Client(p0, tlsConfig)
-	defer clientConn.Close()
-
-	_, err := clientConn.Write([]byte(msg))
-	c.Assert(err, jc.ErrorIsNil)
-	clientState = clientConn.ConnectionState()
-	clientConn.Close()
-
-	// wait for server to exit
-	<-done
-
-	outData := outBytes.String()
-	c.Assert(outData, gc.Not(gc.HasLen), 0)
-	if strings.Index(outData, msg) != -1 {
-		c.Fatalf("TLS connection not encrypted")
-	}
-	c.Assert(clientState.VerifiedChains, gc.HasLen, 1)
-	c.Assert(clientState.VerifiedChains[0], gc.HasLen, 2)
-	return clientState.VerifiedChains[0][1].Subject.CommonName
-}
-
-type recordingConn struct {
-	net.Conn
-	io.Writer
-}
-
-func (c recordingConn) Write(buf []byte) (int, error) {
-	return c.Writer.Write(buf)
 }
 
 // roundTime returns t rounded to the previous whole second.
@@ -251,34 +156,3 @@ ve4WjiEqnQaHNAPy0hY/1DfIgBOSpOfnkFHOk9vX
 -----END RSA PRIVATE KEY-----
 `
 )
-
-// knownGoodCipherSuites contains the list of secure cipher suites to use
-// with tls.Config. This list matches those that Go 1.6 implements from
-// https://wiki.mozilla.org/Security/Server_Side_TLS#Recommended_configurations.
-//
-// https://tools.ietf.org/html/rfc7525#section-4.2 excludes RSA exchange completely
-// so we could be more strict if all our clients will support
-// TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256/384. Unfortunately Go's crypto library
-// is limited and doesn't support DHE-RSA-AES256-GCM-SHA384 and
-// DHE-RSA-AES256-SHA256, which are part of the recommended set.
-//
-// Unfortunately we can't drop the RSA algorithms because our servers aren't
-// generating ECDHE keys.
-var knownGoodCipherSuites = []uint16{
-	// These are technically useless for Juju, since we use an RSA certificate,
-	// but they also don't hurt anything, and supporting an ECDSA certificate
-	// could be useful in the future.
-	tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
-	tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
-
-	tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
-	tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
-
-	// Windows doesn't support GCM currently, so we need these for RSA support.
-	tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
-	tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
-
-	// We need this so that we have at least one suite in common
-	// with the default gnutls installed for precise and trusty.
-	tls.TLS_RSA_WITH_AES_256_CBC_SHA,
-}

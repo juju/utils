@@ -13,7 +13,7 @@ import (
 	"golang.org/x/net/context"
 	gc "gopkg.in/check.v1"
 
-	"github.com/juju/utils/v2/debugstatus"
+	"github.com/juju/utils/v3/debugstatus"
 )
 
 type statusSuite struct {

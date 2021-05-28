@@ -8,7 +8,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/juju/utils/v2"
+	"github.com/juju/utils/v3"
 )
 
 // Replace will do an atomic replacement of a symlink to a new path

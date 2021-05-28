@@ -11,7 +11,7 @@ import (
 	"golang.org/x/text/encoding/unicode"
 
 	"github.com/juju/errors"
-	"github.com/juju/utils/v2"
+	"github.com/juju/utils/v3"
 )
 
 // PowershellRenderer is a shell renderer for Windows Powershell.

@@ -8,8 +8,8 @@ import (
 	"strings"
 
 	"github.com/juju/errors"
-	"github.com/juju/utils/v2"
-	"github.com/juju/utils/v2/filepath"
+	"github.com/juju/utils/v3"
+	"github.com/juju/utils/v3/filepath"
 )
 
 // A PathRenderer generates paths that are appropriate for a given

@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/juju/utils/v2/filepath"
+	"github.com/juju/utils/v3/filepath"
 )
 
 // windowsRenderer is the base implementation for Windows shells.

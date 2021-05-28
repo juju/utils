@@ -14,7 +14,7 @@ import (
 	gc "gopkg.in/check.v1"
 
 	"github.com/juju/clock"
-	"github.com/juju/utils/v2/exec"
+	"github.com/juju/utils/v3/exec"
 )
 
 type execSuite struct {

@@ -5,23 +5,15 @@
 package cert_test
 
 import (
-	"bytes"
 	"crypto/rsa"
-	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"fmt"
-	"io"
-	"io/ioutil"
-	"math/big"
-	"net"
-	"strings"
 	"testing"
 	"time"
 
 	jc "github.com/juju/testing/checkers"
-	"github.com/juju/utils/v2"
-	"github.com/juju/utils/v2/cert"
+	"github.com/juju/utils/v3/cert"
 	gc "gopkg.in/check.v1"
 )
 
@@ -88,88 +80,6 @@ func (certSuite) TestNewCA(c *gc.C) {
 	c.Check(caCert.BasicConstraintsValid, jc.IsTrue)
 	c.Check(caCert.IsCA, jc.IsTrue)
 	//c.Assert(caCert.MaxPathLen, Equals, 0)	TODO it ends up as -1 - check that this is ok.
-}
-
-func checkCertificate(c *gc.C, caCert *x509.Certificate, srvCertPEM, srvKeyPEM string, now, expiry time.Time) {
-	srvCert, srvKey, err := cert.ParseCertAndKey(srvCertPEM, srvKeyPEM)
-	c.Assert(err, jc.ErrorIsNil)
-	c.Assert(srvCert.Subject.CommonName, gc.Equals, "*")
-	checkNotBefore(c, srvCert, now)
-	checkNotAfter(c, srvCert, expiry)
-	c.Assert(srvCert.BasicConstraintsValid, jc.IsFalse)
-	c.Assert(srvCert.IsCA, jc.IsFalse)
-	c.Assert(srvCert.ExtKeyUsage, gc.DeepEquals, []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth})
-	c.Assert(srvCert.SerialNumber, gc.NotNil)
-	if srvCert.SerialNumber.Cmp(big.NewInt(0)) == 0 {
-		c.Fatalf("zero serial number")
-	}
-
-	checkTLSConnection(c, caCert, srvCert, srvKey)
-}
-
-// checkTLSConnection checks that we can correctly perform a TLS
-// handshake using the given credentials.
-func checkTLSConnection(c *gc.C, caCert, srvCert *x509.Certificate, srvKey *rsa.PrivateKey) (caName string) {
-	clientCertPool := x509.NewCertPool()
-	clientCertPool.AddCert(caCert)
-
-	var outBytes bytes.Buffer
-
-	const msg = "hello to the server"
-	p0, p1 := net.Pipe()
-	p0 = &recordingConn{
-		Conn:   p0,
-		Writer: io.MultiWriter(p0, &outBytes),
-	}
-
-	var clientState tls.ConnectionState
-	done := make(chan error)
-	go func() {
-		config := utils.SecureTLSConfig()
-		config.Certificates = []tls.Certificate{{
-			Certificate: [][]byte{srvCert.Raw},
-			PrivateKey:  srvKey,
-		}}
-
-		conn := tls.Server(p1, config)
-		defer conn.Close()
-		data, err := ioutil.ReadAll(conn)
-		c.Assert(err, jc.ErrorIsNil)
-		c.Assert(string(data), gc.Equals, msg)
-		close(done)
-	}()
-
-	tlsConfig := utils.SecureTLSConfig()
-	tlsConfig.ServerName = "anyServer"
-	tlsConfig.RootCAs = clientCertPool
-	clientConn := tls.Client(p0, tlsConfig)
-	defer clientConn.Close()
-
-	_, err := clientConn.Write([]byte(msg))
-	c.Assert(err, jc.ErrorIsNil)
-	clientState = clientConn.ConnectionState()
-	clientConn.Close()
-
-	// wait for server to exit
-	<-done
-
-	outData := outBytes.String()
-	c.Assert(outData, gc.Not(gc.HasLen), 0)
-	if strings.Index(outData, msg) != -1 {
-		c.Fatalf("TLS connection not encrypted")
-	}
-	c.Assert(clientState.VerifiedChains, gc.HasLen, 1)
-	c.Assert(clientState.VerifiedChains[0], gc.HasLen, 2)
-	return clientState.VerifiedChains[0][1].Subject.CommonName
-}
-
-type recordingConn struct {
-	net.Conn
-	io.Writer
-}
-
-func (c recordingConn) Write(buf []byte) (int, error) {
-	return c.Writer.Write(buf)
 }
 
 // roundTime returns t rounded to the previous whole second.

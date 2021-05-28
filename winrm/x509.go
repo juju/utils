@@ -14,8 +14,8 @@ import (
 	"time"
 
 	"github.com/juju/errors"
-	"github.com/juju/utils/v2"
-	"github.com/juju/utils/v2/cert"
+	"github.com/juju/utils/v3"
+	"github.com/juju/utils/v3/cert"
 )
 
 // List of exported internal errors

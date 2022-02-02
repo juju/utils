@@ -15,8 +15,8 @@ import (
 // inside a strictly confined snap.
 func Home() string {
 	// Used when running inside a confined snap.
-	realHome := os.Getenv("SNAP_REAL_HOME")
-	if realHome != "" {
+	realHome, exists := os.LookupEnv("SNAP_REAL_HOME")
+	if exists {
 		return realHome
 	}
 	return os.Getenv("HOME")
@@ -24,5 +24,8 @@ func Home() string {
 
 // SetHome sets the os-specific home path in the environment.
 func SetHome(s string) error {
-	return os.Setenv("SNAP_REAL_HOME", s)
+	if _, exists := os.LookupEnv("SNAP_REAL_HOME"); exists {
+		return os.Setenv("SNAP_REAL_HOME", s)
+	}
+	return os.Setenv("HOME", s)
 }

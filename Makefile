@@ -3,7 +3,9 @@ PROJECT := github.com/juju/utils/v3
 .PHONY: check-licence check-go check
 
 check: check-licence check-go
-	go test $(PROJECT)/...
+    # TODO - testing this way results in a go.sum dep error
+	# go test $(PROJECT)/...
+	go test ./...
 
 check-licence:
 	@(grep -rFl "Licensed under the LGPLv3" .;\

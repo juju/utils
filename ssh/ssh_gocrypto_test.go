@@ -21,6 +21,7 @@ import (
 	"github.com/juju/testing"
 	jc "github.com/juju/testing/checkers"
 	cryptossh "golang.org/x/crypto/ssh"
+	"golang.org/x/crypto/ssh/testdata"
 	gc "gopkg.in/check.v1"
 
 	"github.com/juju/utils/v3/ssh"
@@ -35,22 +36,6 @@ type sshServer struct {
 	cfg      *cryptossh.ServerConfig
 	listener net.Listener
 	client   *cryptossh.Client
-}
-
-func newServer(c *gc.C, serverConfig cryptossh.ServerConfig) (*sshServer, cryptossh.PublicKey) {
-	private, _, err := ssh.GenerateKey("test-server")
-	c.Assert(err, jc.ErrorIsNil)
-
-	key, err := cryptossh.ParsePrivateKey([]byte(private))
-	c.Assert(err, jc.ErrorIsNil)
-
-	server := &sshServer{cfg: &serverConfig}
-	server.cfg.AddHostKey(key)
-	server.listener, err = net.Listen("tcp", "127.0.0.1:0")
-	c.Assert(err, jc.ErrorIsNil)
-	c.Logf("Server listening on %s", server.listener.Addr().String())
-
-	return server, key.PublicKey()
 }
 
 func (s *sshServer) run(c *gc.C) {
@@ -118,9 +103,50 @@ type SSHGoCryptoCommandSuite struct {
 	testing.IsolationSuite
 	client         ssh.Client
 	knownHostsFile string
+
+	testPrivateKeys map[string]interface{}
+	testSigners     map[string]cryptossh.Signer
+	testPublicKeys  map[string]cryptossh.PublicKey
 }
 
 var _ = gc.Suite(&SSHGoCryptoCommandSuite{})
+
+func (s *SSHGoCryptoCommandSuite) SetUpSuite(c *gc.C) {
+	s.IsolationSuite.SetUpSuite(c)
+	var err error
+
+	n := len(testdata.PEMBytes)
+	s.testPrivateKeys = make(map[string]interface{}, n)
+	s.testSigners = make(map[string]cryptossh.Signer, n)
+	s.testPublicKeys = make(map[string]cryptossh.PublicKey, n)
+	for t, k := range testdata.PEMBytes {
+		s.testPrivateKeys[t], err = cryptossh.ParseRawPrivateKey(k)
+		c.Assert(err, jc.ErrorIsNil)
+		s.testSigners[t], err = cryptossh.NewSignerFromKey(s.testPrivateKeys[t])
+		c.Assert(err, jc.ErrorIsNil)
+		s.testPublicKeys[t] = s.testSigners[t].PublicKey()
+	}
+
+	// Create a cert and sign it for use in tests.
+	testCert := &cryptossh.Certificate{
+		Nonce:           []byte{},                       // To pass reflect.DeepEqual after marshal & parse, this must be non-nil
+		ValidPrincipals: []string{"gopher1", "gopher2"}, // increases test coverage
+		ValidAfter:      0,                              // unix epoch
+		ValidBefore:     cryptossh.CertTimeInfinity,     // The end of currently representable time.
+		Reserved:        []byte{},                       // To pass reflect.DeepEqual after marshal & parse, this must be non-nil
+		Key:             s.testPublicKeys["ecdsa"],
+		SignatureKey:    s.testPublicKeys["rsa"],
+		Permissions: cryptossh.Permissions{
+			CriticalOptions: map[string]string{},
+			Extensions:      map[string]string{},
+		},
+	}
+	err = testCert.SignCert(rand.Reader, s.testSigners["rsa"])
+	c.Assert(err, jc.ErrorIsNil)
+	s.testPrivateKeys["cert"] = s.testPrivateKeys["ecdsa"]
+	s.testSigners["cert"], err = cryptossh.NewCertSigner(testCert, s.testSigners["ecdsa"])
+	c.Assert(err, jc.ErrorIsNil)
+}
 
 func (s *SSHGoCryptoCommandSuite) SetUpTest(c *gc.C) {
 	s.IsolationSuite.SetUpTest(c)
@@ -134,6 +160,17 @@ func (s *SSHGoCryptoCommandSuite) SetUpTest(c *gc.C) {
 
 	s.knownHostsFile = filepath.Join(c.MkDir(), "known_hosts")
 	ssh.SetGoCryptoKnownHostsFile(s.knownHostsFile)
+}
+
+func (s *SSHGoCryptoCommandSuite) newServer(c *gc.C, serverConfig cryptossh.ServerConfig) (*sshServer, cryptossh.PublicKey) {
+	server := &sshServer{cfg: &serverConfig}
+	server.cfg.AddHostKey(s.testSigners["rsa"])
+	var err error
+	server.listener, err = net.Listen("tcp", "127.0.0.1:0")
+	c.Assert(err, jc.ErrorIsNil)
+	c.Logf("Server listening on %s", server.listener.Addr().String())
+
+	return server, s.testPublicKeys["rsa"]
 }
 
 func (s *SSHGoCryptoCommandSuite) TestNewGoCryptoClient(c *gc.C) {
@@ -171,7 +208,7 @@ func (s *SSHGoCryptoCommandSuite) TestClientNoKeys(c *gc.C) {
 
 func (s *SSHGoCryptoCommandSuite) TestCommand(c *gc.C) {
 	client, clientKey := newClient(c)
-	server, serverKey := newServer(c, cryptossh.ServerConfig{})
+	server, serverKey := s.newServer(c, cryptossh.ServerConfig{})
 	serverPort := server.listener.Addr().(*net.TCPAddr).Port
 	var opts ssh.Options
 	opts.SetPort(serverPort)
@@ -216,7 +253,7 @@ func (s *SSHGoCryptoCommandSuite) TestProxyCommand(c *gc.C) {
 	c.Assert(err, jc.ErrorIsNil)
 
 	client, _ := newClient(c)
-	server, _ := newServer(c, cryptossh.ServerConfig{})
+	server, _ := s.newServer(c, cryptossh.ServerConfig{})
 	var opts ssh.Options
 	port := server.listener.Addr().(*net.TCPAddr).Port
 	opts.SetProxyCommand(netcat, "-q0", "%h", "%p")
@@ -236,7 +273,7 @@ func (s *SSHGoCryptoCommandSuite) TestProxyCommand(c *gc.C) {
 }
 
 func (s *SSHGoCryptoCommandSuite) TestStrictHostChecksYes(c *gc.C) {
-	server, _ := newServer(c, cryptossh.ServerConfig{NoClientAuth: true})
+	server, _ := s.newServer(c, cryptossh.ServerConfig{NoClientAuth: true})
 	serverPort := server.listener.Addr().(*net.TCPAddr).Port
 	go server.run(c)
 
@@ -255,7 +292,7 @@ func (s *SSHGoCryptoCommandSuite) TestStrictHostChecksYes(c *gc.C) {
 }
 
 func (s *SSHGoCryptoCommandSuite) TestStrictHostChecksAskNonTerminal(c *gc.C) {
-	server, _ := newServer(c, cryptossh.ServerConfig{NoClientAuth: true})
+	server, _ := s.newServer(c, cryptossh.ServerConfig{NoClientAuth: true})
 	serverPort := server.listener.Addr().(*net.TCPAddr).Port
 	go server.run(c)
 
@@ -276,7 +313,7 @@ func (s *SSHGoCryptoCommandSuite) TestStrictHostChecksAskTerminalYes(c *gc.C) {
 	readLineWriter.addLine("")
 	readLineWriter.addLine("yes")
 
-	server, serverKey := newServer(c, cryptossh.ServerConfig{NoClientAuth: true})
+	server, serverKey := s.newServer(c, cryptossh.ServerConfig{NoClientAuth: true})
 	serverPort := server.listener.Addr().(*net.TCPAddr).Port
 	go server.run(c)
 
@@ -308,7 +345,7 @@ func (s *SSHGoCryptoCommandSuite) TestStrictHostChecksAskTerminalNo(c *gc.C) {
 	ssh.PatchTerminal(&s.CleanupSuite, &readLineWriter)
 	readLineWriter.addLine("no")
 
-	server, serverKey := newServer(c, cryptossh.ServerConfig{NoClientAuth: true})
+	server, serverKey := s.newServer(c, cryptossh.ServerConfig{NoClientAuth: true})
 	serverPort := server.listener.Addr().(*net.TCPAddr).Port
 	go server.run(c)
 
@@ -334,7 +371,7 @@ func (s *SSHGoCryptoCommandSuite) TestStrictHostChecksNoMismatch(c *gc.C) {
 	var readLineWriter mockReadLineWriter
 	ssh.PatchTerminal(&s.CleanupSuite, &readLineWriter)
 
-	server, serverKey := newServer(c, cryptossh.ServerConfig{NoClientAuth: true})
+	server, serverKey := s.newServer(c, cryptossh.ServerConfig{NoClientAuth: true})
 	serverPort := server.listener.Addr().(*net.TCPAddr).Port
 	go server.run(c)
 
@@ -379,7 +416,7 @@ func (s *SSHGoCryptoCommandSuite) TestStrictHostChecksDifferentKeyTypes(c *gc.C)
 	var readLineWriter mockReadLineWriter
 	ssh.PatchTerminal(&s.CleanupSuite, &readLineWriter)
 
-	server, serverKey := newServer(c, cryptossh.ServerConfig{NoClientAuth: true})
+	server, serverKey := s.newServer(c, cryptossh.ServerConfig{NoClientAuth: true})
 	serverPort := server.listener.Addr().(*net.TCPAddr).Port
 	go server.run(c)
 

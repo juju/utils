@@ -30,8 +30,8 @@ install-dependencies: install-snap-dependencies install-mongo-dependencies
 
 install-snap-dependencies:
 ## install-snap-dependencies: Install the supported snap dependencies
-	@echo Installing go-1.14 snap
-	@sudo snap install go --channel=1.14/stable --classic
+	@echo Installing go-1.17 snap
+	@sudo snap install go --channel=1.17/stable --classic
 
 install-mongo-dependencies:
 ## install-mongo-dependencies: Install Mongo and its dependencies

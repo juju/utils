@@ -1,6 +1,7 @@
 // Copyright 2013 Canonical Ltd.
 // Licensed under the LGPLv3, see LICENCE file for details.
 
+//go:build !windows
 // +build !windows
 
 package ssh_test
@@ -13,7 +14,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/juju/cmd"
+	"github.com/juju/cmd/v3"
 	"github.com/juju/testing"
 	jc "github.com/juju/testing/checkers"
 	gc "gopkg.in/check.v1"

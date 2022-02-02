@@ -2,6 +2,7 @@
 // Copyright 2016 Cloudbase Solutions SRL
 // Licensed under the LGPLv3, see LICENCE file for details.
 
+//go:build windows
 // +build windows
 
 package exec

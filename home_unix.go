@@ -24,5 +24,5 @@ func Home() string {
 
 // SetHome sets the os-specific home path in the environment.
 func SetHome(s string) error {
-	return os.Setenv("HOME", s)
+	return os.Setenv("SNAP_REAL_HOME", s)
 }

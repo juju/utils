@@ -3,6 +3,7 @@
 // Use of this source code is governed by a public domain
 // license that can be found in the LICENSE.ricochet2200 file.
 //
+//go:build !windows
 // +build !windows
 
 package du

@@ -19,11 +19,12 @@ import (
 
 	"github.com/juju/clock"
 	"github.com/juju/errors"
-	"github.com/juju/mutex"
-	"github.com/juju/utils/v3"
+	"github.com/juju/mutex/v2"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/knownhosts"
 	"golang.org/x/crypto/ssh/terminal"
+
+	"github.com/juju/utils/v3"
 )
 
 const sshDefaultPort = 22

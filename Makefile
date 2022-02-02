@@ -3,7 +3,9 @@ PROJECT := github.com/juju/utils/v3
 .PHONY: check-licence check-go check
 
 check: check-licence check-go
-	go test $(PROJECT)/...
+    # TODO - testing this way results in a go.sum dep error
+	# go test $(PROJECT)/...
+	go test ./...
 
 check-licence:
 	@(grep -rFl "Licensed under the LGPLv3" .;\
@@ -30,8 +32,8 @@ install-dependencies: install-snap-dependencies install-mongo-dependencies
 
 install-snap-dependencies:
 ## install-snap-dependencies: Install the supported snap dependencies
-	@echo Installing go-1.14 snap
-	@sudo snap install go --channel=1.14/stable --classic
+	@echo Installing go-1.17 snap
+	@sudo snap install go --channel=1.17/stable --classic
 
 install-mongo-dependencies:
 ## install-mongo-dependencies: Install Mongo and its dependencies

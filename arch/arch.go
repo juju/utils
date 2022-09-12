@@ -63,7 +63,7 @@ var archREs = []struct {
 	{regexp.MustCompile("aarch64"), ARM64},
 	{regexp.MustCompile("ppc64|ppc64el|ppc64le"), PPC64EL},
 	{regexp.MustCompile("s390x"), S390X},
-	{regexp.MustCompile("risc$|risc-[vV]64"), RISCV64},
+	{regexp.MustCompile("riscv64|risc$|risc-[vV]64"), RISCV64},
 }
 
 // Override for testing.

@@ -15,6 +15,7 @@ import (
 	gc "gopkg.in/check.v1"
 
 	"github.com/juju/errors"
+
 	"github.com/juju/utils/v3"
 )
 
@@ -68,6 +69,6 @@ func (s *unixFileSuite) TestFileOwnerWithInvalidUsername(c *gc.C) {
 	c.Assert(err, gc.IsNil)
 
 	ok, err := utils.IsFileOwner(path, "invalid")
-	c.Assert(errors.Cause(err), gc.ErrorMatches, "user: unknown user invalid")
+	c.Assert(errors.Cause(err), gc.ErrorMatches, "user: lookup username invalid: .*")
 	c.Assert(ok, gc.Equals, false)
 }

@@ -60,7 +60,7 @@ func (*fileSuite) TestNormalizePath(c *gc.C) {
 		expected: filepath.FromSlash("foo~bar/baz"),
 	}, {
 		path: "~foobar/path",
-		err:  ".*" + utils.NoSuchUserErrRegexp,
+		err:  "no such user: .*",
 	}} {
 		c.Logf("test %d: %s", i, test.path)
 		actual, err := utils.NormalizePath(test.path)
@@ -120,7 +120,7 @@ func (*fileSuite) TestExpandPath(c *gc.C) {
 		expected: filepath.Join(cwd, "foo", "bar"),
 	}, {
 		path: "~foobar/path",
-		err:  ".*" + utils.NoSuchUserErrRegexp,
+		err:  "unable to normalise file path: " + "no such user: .*",
 	}} {
 		c.Logf("test %d: %s", i, test.path)
 		actual, err := utils.ExpandPath(test.path)

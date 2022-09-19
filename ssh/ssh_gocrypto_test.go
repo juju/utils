@@ -44,11 +44,7 @@ func (s *sshServer) run(c *gc.C) {
 	defer netconn.Close()
 
 	conn, chans, reqs, err := cryptossh.NewServerConn(netconn, s.cfg)
-	// cryptossh.NewServerConn intermittently sends an EOF in err
-	if !c.Check(err, jc.ErrorIsNil) {
-		c.Assert(err, gc.Equals, io.EOF)
-	}
-
+	c.Assert(err, jc.ErrorIsNil)
 	s.client = cryptossh.NewClient(conn, chans, reqs)
 
 	var wg sync.WaitGroup

@@ -5,7 +5,9 @@ package ssh_test
 
 import (
 	"bytes"
+	"crypto/dsa"
 	"crypto/rand"
+	"crypto/rsa"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -150,9 +152,6 @@ func (s *SSHGoCryptoCommandSuite) SetUpSuite(c *gc.C) {
 
 func (s *SSHGoCryptoCommandSuite) SetUpTest(c *gc.C) {
 	s.IsolationSuite.SetUpTest(c)
-
-	generateKeyRestorer := overrideGenerateKey(c)
-	s.AddCleanup(func(*gc.C) { generateKeyRestorer.Restore() })
 
 	client, err := ssh.NewGoCryptoClient()
 	c.Assert(err, jc.ErrorIsNil)
@@ -378,7 +377,7 @@ func (s *SSHGoCryptoCommandSuite) TestStrictHostChecksNoMismatch(c *gc.C) {
 	// Write a mismatching key to the known_hosts file. Even with
 	// StrictHostChecksNo, we should be verifying against an existing
 	// host key.
-	alternativeRSAKey, err := generateRSAKey(rand.Reader)
+	alternativeRSAKey, err := rsa.GenerateKey(rand.Reader, 512)
 	c.Assert(err, jc.ErrorIsNil)
 	alternativePublicKey, err := cryptossh.NewPublicKey(alternativeRSAKey.Public())
 	c.Assert(err, jc.ErrorIsNil)
@@ -410,6 +409,17 @@ Please contact your system administrator.
 Add correct host key in .*/known_hosts to get rid of this message.
 Offending ssh-rsa key in .*/known_hosts:1
 `[1:], regexp.QuoteMeta(cryptossh.FingerprintSHA256(serverKey))))
+}
+
+func generateDSAKey(random io.Reader) (*dsa.PrivateKey, error) {
+	var privKey dsa.PrivateKey
+	if err := dsa.GenerateParameters(&privKey.Parameters, random, dsa.L1024N160); err != nil {
+		return nil, err
+	}
+	if err := dsa.GenerateKey(&privKey, random); err != nil {
+		return nil, err
+	}
+	return &privKey, nil
 }
 
 func (s *SSHGoCryptoCommandSuite) TestStrictHostChecksDifferentKeyTypes(c *gc.C) {

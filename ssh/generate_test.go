@@ -4,73 +4,67 @@
 package ssh_test
 
 import (
-	"crypto/dsa"
-	"crypto/rsa"
-	"io"
+	"encoding/pem"
+	"strings"
 
-	"github.com/juju/testing"
 	jc "github.com/juju/testing/checkers"
-	gc "gopkg.in/check.v1"
-
 	"github.com/juju/utils/v3/ssh"
+	"golang.org/x/crypto/ed25519"
+	cssh "golang.org/x/crypto/ssh"
+	gc "gopkg.in/check.v1"
 )
 
-type GenerateSuite struct {
-	testing.IsolationSuite
-}
+type GenerateSuite struct{}
 
 var _ = gc.Suite(&GenerateSuite{})
 
-var (
-	pregeneratedKey   *rsa.PrivateKey
-	alternativeRSAKey *rsa.PrivateKey
-)
-
-// overrideGenerateKey patches out rsa.GenerateKey to create a single testing
-// key which is saved and used between tests to save computation time.
-func overrideGenerateKey(c *gc.C) testing.Restorer {
-	restorer := testing.PatchValue(ssh.RSAGenerateKey, func(random io.Reader, bits int) (*rsa.PrivateKey, error) {
-		if pregeneratedKey != nil {
-			return pregeneratedKey, nil
-		}
-		key, err := generateRSAKey(random)
-		if err != nil {
-			return nil, err
-		}
-		pregeneratedKey = key
-		return key, nil
-	})
-	return restorer
-}
-
-func generateRSAKey(random io.Reader) (*rsa.PrivateKey, error) {
-	// Ignore requested bits and just use 512 bits for speed
-	key, err := rsa.GenerateKey(random, 512)
-	if err != nil {
-		return nil, err
-	}
-	key.Precompute()
-	return key, nil
-}
-
-func generateDSAKey(random io.Reader) (*dsa.PrivateKey, error) {
-	var privKey dsa.PrivateKey
-	if err := dsa.GenerateParameters(&privKey.Parameters, random, dsa.L1024N160); err != nil {
-		return nil, err
-	}
-	if err := dsa.GenerateKey(&privKey, random); err != nil {
-		return nil, err
-	}
-	return &privKey, nil
-}
-
 func (s *GenerateSuite) TestGenerate(c *gc.C) {
-	defer overrideGenerateKey(c).Restore()
 	private, public, err := ssh.GenerateKey("some-comment")
 
 	c.Check(err, jc.ErrorIsNil)
-	c.Check(private, jc.HasPrefix, "-----BEGIN RSA PRIVATE KEY-----\n")
-	c.Check(private, jc.HasSuffix, "-----END RSA PRIVATE KEY-----\n")
-	c.Check(public, jc.HasPrefix, "ssh-rsa ")
+	c.Check(private, jc.HasPrefix, "-----BEGIN OPENSSH PRIVATE KEY-----\n")
+	c.Check(private, jc.HasSuffix, "-----END OPENSSH PRIVATE KEY-----\n")
+	c.Check(public, jc.HasPrefix, "ssh-ed25519 ")
 	c.Check(public, jc.HasSuffix, " some-comment\n")
+}
+
+func (s *GenerateSuite) TestKeysMatch(c *gc.C) {
+	private, authKey, err := ssh.GenerateKey("some-comment")
+	c.Assert(err, jc.ErrorIsNil)
+
+	block, _ := pem.Decode([]byte(private))
+	privKey := parseEd25519PrivateKey(block.Bytes)
+
+	publicKeyfromPriv, _ := cssh.NewPublicKey(privKey.Public())
+	authKeyFromPriv := string(cssh.MarshalAuthorizedKey(publicKeyfromPriv))
+
+	c.Assert(authKey, jc.HasPrefix, strings.TrimSpace(authKeyFromPriv))
+}
+
+func parseEd25519PrivateKey(der []byte) ed25519.PrivateKey {
+	headerSize := len(append([]byte("openssh-key-v1"), 0))
+	der = der[headerSize:]
+
+	meta := struct {
+		CipherName   string
+		KdfName      string
+		KdfOpts      string
+		NumKeys      uint32
+		PubKey       []byte
+		PrivKeyBlock []byte
+	}{}
+	cssh.Unmarshal(der, &meta)
+
+	keyData := struct {
+		Check1  uint32
+		Check2  uint32
+		Keytype string
+		Pub     []byte
+		Priv    []byte
+		Comment string
+		Pad     []byte `ssh:"rest"`
+	}{}
+	cssh.Unmarshal(meta.PrivKeyBlock, &keyData)
+
+	return ed25519.PrivateKey(keyData.Priv)
 }

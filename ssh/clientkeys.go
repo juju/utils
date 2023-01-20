@@ -16,7 +16,7 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-const clientKeyName = "juju_id_rsa"
+const clientKeyName = "juju_id_ed25519"
 
 // PublicKeySuffix is the file extension for public key files.
 const PublicKeySuffix = ".pub"

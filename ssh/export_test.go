@@ -17,7 +17,6 @@ var (
 	InitDefaultClient   = initDefaultClient
 	DefaultIdentities   = &defaultIdentities
 	SSHDial             = &sshDial
-	RSAGenerateKey      = &rsaGenerateKey
 	TestCopyReader      = copyReader
 	TestNewCmd          = newCmd
 )

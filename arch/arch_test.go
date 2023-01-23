@@ -40,6 +40,10 @@ func (s *archSuite) TestNormaliseArch(c *gc.C) {
 		{"ppc64le", "ppc64el"},
 		{"ppc64", "ppc64el"},
 		{"s390x", "s390x"},
+		{"riscv64", "riscv64"},
+		{"risc", "riscv64"},
+		{"risc-v64", "riscv64"},
+		{"risc-V64", "riscv64"},
 	} {
 		arch := arch.NormaliseArch(test.raw)
 		c.Check(arch, gc.Equals, test.arch)

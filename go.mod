@@ -13,7 +13,7 @@ require (
 	github.com/masterzen/winrm v0.0.0-20211231115050-232efb40349e
 	golang.org/x/crypto v0.0.0-20211215153901-e495a2d5b3d3
 	golang.org/x/net v0.0.0-20211216030914-fe4d6282115f
-	golang.org/x/text v0.3.7
+	golang.org/x/text v0.3.8
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c
 	gopkg.in/errgo.v1 v1.0.0-20161222125816-442357a80af5
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7
@@ -42,6 +42,6 @@ require (
 	github.com/masterzen/simplexml v0.0.0-20190410153822-31eea3082786 // indirect
 	github.com/mattn/go-colorable v0.1.8 // indirect
 	github.com/mattn/go-isatty v0.0.13 // indirect
-	golang.org/x/sys v0.0.0-20210806184541-e5e7981a1069 // indirect
+	golang.org/x/sys v0.0.0-20220722155257-8c9f86f7a55f // indirect
 	golang.org/x/term v0.0.0-20201126162022-7de9c90e9dd1 // indirect
 )

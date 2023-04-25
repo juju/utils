@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	jc "github.com/juju/testing/checkers"
-	"github.com/juju/utils/v3/winrm"
+	"github.com/juju/utils/v4/winrm"
 	gc "gopkg.in/check.v1"
 )
 

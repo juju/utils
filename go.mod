@@ -1,4 +1,4 @@
-module github.com/juju/utils/v3
+module github.com/juju/utils/v4
 
 go 1.17
 
@@ -35,6 +35,7 @@ require (
 	github.com/juju/gnuflag v0.0.0-20171113085948-2ce1bb71843d // indirect
 	github.com/juju/mgo/v2 v2.0.0-20210302023703-70d5d206e208 // indirect
 	github.com/juju/retry v0.0.0-20180821225755-9058e192b216 // indirect
+	github.com/juju/utils/v3 v3.0.0-20220202114721-338bb0530e89 // indirect
 	github.com/juju/version/v2 v2.0.0-20211007103408-2e8da085dc23 // indirect
 	github.com/kr/pretty v0.2.1 // indirect
 	github.com/kr/text v0.2.0 // indirect

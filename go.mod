@@ -11,9 +11,9 @@ require (
 	github.com/juju/mutex/v2 v2.0.0-20220203023141-11eeddb42c6c
 	github.com/juju/testing v0.0.0-20220203020004-a0ff61f03494
 	github.com/masterzen/winrm v0.0.0-20211231115050-232efb40349e
-	golang.org/x/crypto v0.1.0
-	golang.org/x/net v0.7.0
-	golang.org/x/text v0.7.0
+	golang.org/x/crypto v0.14.0
+	golang.org/x/net v0.17.0
+	golang.org/x/text v0.13.0
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c
 	gopkg.in/errgo.v1 v1.0.0-20161222125816-442357a80af5
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7
@@ -42,6 +42,6 @@ require (
 	github.com/masterzen/simplexml v0.0.0-20190410153822-31eea3082786 // indirect
 	github.com/mattn/go-colorable v0.1.8 // indirect
 	github.com/mattn/go-isatty v0.0.13 // indirect
-	golang.org/x/sys v0.5.0 // indirect
-	golang.org/x/term v0.5.0 // indirect
+	golang.org/x/sys v0.13.0 // indirect
+	golang.org/x/term v0.13.0 // indirect
 )

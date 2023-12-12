@@ -273,3 +273,14 @@ func (s *AuthorisedKeysKeysSuite) TestParseAuthorisedKey(c *gc.C) {
 		}
 	}
 }
+
+func (s *AuthorisedKeysKeysSuite) TestConcatAuthorisedKeys(c *gc.C) {
+	for _, test := range []struct{ a, b, result string }{
+		{"a", "", "a"},
+		{"", "b", "b"},
+		{"a", "b", "a\nb"},
+		{"a\n", "b", "a\nb"},
+	} {
+		c.Check(ssh.ConcatAuthorisedKeys(test.a, test.b), gc.Equals, test.result)
+	}
+}

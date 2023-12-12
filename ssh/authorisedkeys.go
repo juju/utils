@@ -66,6 +66,22 @@ func ParseAuthorisedKey(line string) (*AuthorisedKey, error) {
 	}, nil
 }
 
+// ConcatAuthorisedKeys will joing two or more authorised keys together to form
+// a string based list of authorised keys that can be read by ssh programs. Keys
+// joined with a newline as the separator.
+func ConcatAuthorisedKeys(a, b string) string {
+	if a == "" {
+		return b
+	}
+	if b == "" {
+		return a
+	}
+	if a[len(a)-1] != '\n' {
+		return a + "\n" + b
+	}
+	return a + b
+}
+
 // SplitAuthorisedKeys extracts a key slice from the specified key data,
 // by splitting the key data into lines and ignoring comments and blank lines.
 func SplitAuthorisedKeys(keyData string) []string {

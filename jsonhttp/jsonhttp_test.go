@@ -12,7 +12,7 @@ import (
 	gc "gopkg.in/check.v1"
 	"gopkg.in/errgo.v1"
 
-	"github.com/juju/utils/v3/jsonhttp"
+	"github.com/juju/utils/v4/jsonhttp"
 )
 
 type suite struct{}

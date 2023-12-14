@@ -11,7 +11,7 @@ import (
 
 	gc "gopkg.in/check.v1"
 
-	"github.com/juju/utils/v3/symlink"
+	"github.com/juju/utils/v4/symlink"
 )
 
 func (*SymlinkSuite) TestLongPath(c *gc.C) {

@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/juju/errors"
-	"github.com/juju/utils/v3"
+	"github.com/juju/utils/v4"
 )
 
 // Renderer provides methods for the different functions in

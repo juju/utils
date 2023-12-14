@@ -8,8 +8,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/juju/utils/v3"
-	"github.com/juju/utils/v3/filepath"
+	"github.com/juju/utils/v4"
+	"github.com/juju/utils/v4/filepath"
 )
 
 // unixRenderer is the base shell renderer for "unix" shells.

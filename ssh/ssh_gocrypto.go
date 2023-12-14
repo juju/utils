@@ -24,7 +24,7 @@ import (
 	"golang.org/x/crypto/ssh/knownhosts"
 	"golang.org/x/crypto/ssh/terminal"
 
-	"github.com/juju/utils/v3"
+	"github.com/juju/utils/v4"
 )
 
 const sshDefaultPort = 22

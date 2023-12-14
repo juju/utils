@@ -18,7 +18,7 @@ import (
 	ft "github.com/juju/testing/filetesting"
 	gc "gopkg.in/check.v1"
 
-	"github.com/juju/utils/v3/zip"
+	"github.com/juju/utils/v4/zip"
 )
 
 type ZipSuite struct {

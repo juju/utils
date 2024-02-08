@@ -12,7 +12,7 @@ import (
 	"github.com/juju/testing/filetesting"
 	gc "gopkg.in/check.v1"
 
-	"github.com/juju/utils/v3/hash"
+	"github.com/juju/utils/v4/hash"
 )
 
 var _ = gc.Suite(&WriterSuite{})

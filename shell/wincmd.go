@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/juju/utils/v3"
+	"github.com/juju/utils/v4"
 )
 
 // WinCmdRenderer is a shell renderer for Windows cmd.exe.

@@ -14,12 +14,12 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/juju/cmd/v3"
 	"github.com/juju/testing"
 	jc "github.com/juju/testing/checkers"
 	gc "gopkg.in/check.v1"
 
-	"github.com/juju/utils/v3/ssh"
+	"github.com/juju/utils/v4"
+	"github.com/juju/utils/v4/ssh"
 )
 
 const (
@@ -225,7 +225,7 @@ func (s *SSHCommandSuite) TestCommandError(c *gc.C) {
 	c.Assert(err, jc.ErrorIsNil)
 	command := s.client.Command("ignored", []string{echoCommand, "foo"}, &opts)
 	err = command.Run()
-	c.Assert(cmd.IsRcPassthroughError(err), jc.IsTrue)
+	c.Assert(utils.IsRcPassthroughError(err), jc.IsTrue)
 }
 
 func (s *SSHCommandSuite) TestCommandDefaultIdentities(c *gc.C) {

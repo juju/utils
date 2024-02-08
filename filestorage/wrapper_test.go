@@ -13,7 +13,7 @@ import (
 	jc "github.com/juju/testing/checkers"
 	gc "gopkg.in/check.v1"
 
-	"github.com/juju/utils/v3/filestorage"
+	"github.com/juju/utils/v4/filestorage"
 )
 
 var _ = gc.Suite(&WrapperSuite{})

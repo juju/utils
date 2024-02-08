@@ -12,7 +12,7 @@ import (
 	jc "github.com/juju/testing/checkers"
 	gc "gopkg.in/check.v1"
 
-	"github.com/juju/utils/v3/ssh"
+	"github.com/juju/utils/v4/ssh"
 )
 
 type SSHStreamSuite struct {

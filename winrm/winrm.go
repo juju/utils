@@ -14,7 +14,7 @@ import (
 	"time"
 
 	"github.com/juju/errors"
-	"github.com/juju/loggo"
+	"github.com/juju/loggo/v2"
 	"github.com/masterzen/winrm"
 	"golang.org/x/crypto/ssh/terminal"
 )

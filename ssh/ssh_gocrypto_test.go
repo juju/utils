@@ -24,7 +24,7 @@ import (
 	"golang.org/x/crypto/ssh/testdata"
 	gc "gopkg.in/check.v1"
 
-	"github.com/juju/utils/v3/ssh"
+	"github.com/juju/utils/v4/ssh"
 )
 
 var (

@@ -5,9 +5,11 @@
 package cert
 
 import (
+	"crypto"
+	"crypto/ed25519"
 	"crypto/rand"
-	"crypto/rsa"
 	"crypto/sha1"
+	"crypto/sha512"
 	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
@@ -48,7 +50,6 @@ type Config struct {
 	IsCA        bool               // IsCA if we want to generate new a CA cert
 	Hostnames   []string           // Hostnames , list of hostnames for the certificate
 	ExtKeyUsage []x509.ExtKeyUsage // ExtKeyUsage extra flags for special usage of the cert
-	KeyBits     int                // KeyBits is used to set the lenght of the RSA key, default value 2048 bytes
 	Client      bool               // generate client certificate for certificate authentication
 }
 
@@ -58,7 +59,7 @@ type Config struct {
 func NewLeaf(cfg *Config) (certPEM, keyPEM string, err error) {
 	var (
 		caCert *x509.Certificate
-		caKey  *rsa.PrivateKey
+		caKey  ed25519.PrivateKey
 	)
 
 	if cfg.CA != nil && cfg.CAKey != nil && !cfg.IsCA {
@@ -78,19 +79,14 @@ func NewLeaf(cfg *Config) (certPEM, keyPEM string, err error) {
 			return "", "", errors.Errorf("CA certificate is not a valid CA")
 		}
 		var ok bool
-		caKey, ok = tlsCert.PrivateKey.(*rsa.PrivateKey)
+		caKey, ok = tlsCert.PrivateKey.(ed25519.PrivateKey)
 		if !ok {
 			return "", "", errors.Errorf("CA private key has unexpected type %T", tlsCert.PrivateKey)
 		}
 	}
 
-	// if none assign default
-	if cfg.KeyBits == 0 {
-		cfg.KeyBits = 2048
-	}
-
 	// generate private key
-	key, err := rsa.GenerateKey(rand.Reader, cfg.KeyBits)
+	_, key, err := ed25519.GenerateKey(rand.Reader)
 	if err != nil {
 		return "", "", errors.Errorf("cannot generate key: %v", err)
 	}
@@ -121,7 +117,7 @@ func NewLeaf(cfg *Config) (certPEM, keyPEM string, err error) {
 		NotBefore:    now.UTC().AddDate(0, 0, -7),
 		Version:      2,
 		NotAfter:     cfg.Expiry.UTC(),
-		SubjectKeyId: bigIntHash(key.N),
+		SubjectKeyId: sha512.New384().Sum(key),
 		KeyUsage:     x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature | x509.KeyUsageKeyAgreement,
 		ExtKeyUsage:  cfg.ExtKeyUsage,
 	}
@@ -161,9 +157,13 @@ func NewLeaf(cfg *Config) (certPEM, keyPEM string, err error) {
 		Bytes: certDER,
 	})
 
+	keyData, err := x509.MarshalPKCS8PrivateKey(key)
+	if err != nil {
+		return "", "", err
+	}
 	keyPEMData := pem.EncodeToMemory(&pem.Block{
-		Type:  "RSA PRIVATE KEY",
-		Bytes: x509.MarshalPKCS1PrivateKey(key),
+		Type:  "PRIVATE KEY",
+		Bytes: keyData,
 	})
 	return string(certPEMData), string(keyPEMData), nil
 }
@@ -185,7 +185,6 @@ func NewCA(commonName, UUID string, expiry time.Time, keyBits int) (certPEM, key
 		UUID:       UUID,
 		Expiry:     expiry,
 		IsCA:       true,
-		KeyBits:    keyBits,
 	})
 	if err != nil {
 		return "", "", errors.Annotatef(err, "cannot generate ca certificate")
@@ -194,13 +193,12 @@ func NewCA(commonName, UUID string, expiry time.Time, keyBits int) (certPEM, key
 }
 
 // NewClientCert generates a x509 client certificate used for https authentication sessions.
-func NewClientCert(commonName, UUID string, expiry time.Time, keyBits int) (certPEM string, keyPEM string, err error) {
+func NewClientCert(commonName, UUID string, expiry time.Time) (certPEM string, keyPEM string, err error) {
 	certPEM, keyPEM, err = NewLeaf(&Config{
 		CommonName:  commonName,
 		UUID:        UUID,
 		Expiry:      expiry,
 		ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
-		KeyBits:     keyBits,
 		Client:      true,
 	})
 	if err != nil {
@@ -249,7 +247,7 @@ func newSerialNumber() (*big.Int, error) {
 // this will return nil if the key is not RSA type
 func getPublicKey(p interface{}) interface{} {
 	switch t := p.(type) {
-	case *rsa.PrivateKey:
+	case ed25519.PrivateKey:
 		return t.Public()
 	default:
 		return nil
@@ -275,7 +273,7 @@ func ParseCert(certPEM string) (*x509.Certificate, error) {
 
 // ParseCertAndKey parses the given PEM-formatted X509 certificate
 // and RSA private key.
-func ParseCertAndKey(certPEM, keyPEM string) (*x509.Certificate, *rsa.PrivateKey, error) {
+func ParseCertAndKey(certPEM, keyPEM string) (*x509.Certificate, crypto.Signer, error) {
 	tlsCert, err := tls.X509KeyPair([]byte(certPEM), []byte(keyPEM))
 	if err != nil {
 		return nil, nil, err
@@ -286,9 +284,9 @@ func ParseCertAndKey(certPEM, keyPEM string) (*x509.Certificate, *rsa.PrivateKey
 		return nil, nil, err
 	}
 
-	key, ok := tlsCert.PrivateKey.(*rsa.PrivateKey)
+	key, ok := tlsCert.PrivateKey.(crypto.Signer)
 	if !ok {
-		return nil, nil, fmt.Errorf("private key with unexpected type %T", key)
+		return nil, nil, fmt.Errorf("private key with unexpected type %T", tlsCert.PrivateKey)
 	}
 	return cert, key, nil
 }

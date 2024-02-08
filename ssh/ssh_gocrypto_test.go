@@ -135,13 +135,13 @@ func (s *SSHGoCryptoCommandSuite) SetUpSuite(c *gc.C) {
 		ValidBefore:     cryptossh.CertTimeInfinity,     // The end of currently representable time.
 		Reserved:        []byte{},                       // To pass reflect.DeepEqual after marshal & parse, this must be non-nil
 		Key:             s.testPublicKeys["ecdsa"],
-		SignatureKey:    s.testPublicKeys["rsa"],
+		SignatureKey:    s.testPublicKeys["ed25519"],
 		Permissions: cryptossh.Permissions{
 			CriticalOptions: map[string]string{},
 			Extensions:      map[string]string{},
 		},
 	}
-	err = testCert.SignCert(rand.Reader, s.testSigners["rsa"])
+	err = testCert.SignCert(rand.Reader, s.testSigners["ed25519"])
 	c.Assert(err, jc.ErrorIsNil)
 	s.testPrivateKeys["cert"] = s.testPrivateKeys["ecdsa"]
 	s.testSigners["cert"], err = cryptossh.NewCertSigner(testCert, s.testSigners["ecdsa"])
@@ -164,13 +164,13 @@ func (s *SSHGoCryptoCommandSuite) SetUpTest(c *gc.C) {
 
 func (s *SSHGoCryptoCommandSuite) newServer(c *gc.C, serverConfig cryptossh.ServerConfig) (*sshServer, cryptossh.PublicKey) {
 	server := &sshServer{cfg: &serverConfig}
-	server.cfg.AddHostKey(s.testSigners["rsa"])
+	server.cfg.AddHostKey(s.testSigners["ed25519"])
 	var err error
 	server.listener, err = net.Listen("tcp", "127.0.0.1:0")
 	c.Assert(err, jc.ErrorIsNil)
 	c.Logf("Server listening on %s", server.listener.Addr().String())
 
-	return server, s.testPublicKeys["rsa"]
+	return server, s.testPublicKeys["ed25519"]
 }
 
 func (s *SSHGoCryptoCommandSuite) TestNewGoCryptoClient(c *gc.C) {
@@ -284,7 +284,7 @@ func (s *SSHGoCryptoCommandSuite) TestStrictHostChecksYes(c *gc.C) {
 	cmd := client.Command("127.0.0.1", testCommand, &opts)
 	_, err := cmd.Output()
 	c.Assert(err, gc.ErrorMatches, fmt.Sprintf(
-		"ssh: handshake failed: no ssh-rsa host key is known for 127.0.0.1:%d and you have requested strict checking",
+		"ssh: handshake failed: no ssh-ed25519 host key is known for 127.0.0.1:%d and you have requested strict checking",
 		serverPort,
 	))
 	_, err = os.Stat(s.knownHostsFile)
@@ -335,7 +335,7 @@ func (s *SSHGoCryptoCommandSuite) TestStrictHostChecksAskTerminalYes(c *gc.C) {
 
 	c.Assert(readLineWriter.written.String(), gc.Equals, fmt.Sprintf(`
 The authenticity of host '127.0.0.1:%[1]d (127.0.0.1:%[1]d)' can't be established.
-ssh-rsa key fingerprint is %[2]s.
+ssh-ed25519 key fingerprint is %[2]s.
 Are you sure you want to continue connecting (yes/no)? Please type 'yes' or 'no': `[1:],
 		serverPort, cryptossh.FingerprintSHA256(serverKey)))
 }
@@ -362,7 +362,7 @@ func (s *SSHGoCryptoCommandSuite) TestStrictHostChecksAskTerminalNo(c *gc.C) {
 
 	c.Assert(readLineWriter.written.String(), gc.Equals, fmt.Sprintf(`
 The authenticity of host '127.0.0.1:%[1]d (127.0.0.1:%[1]d)' can't be established.
-ssh-rsa key fingerprint is %[2]s.
+ssh-ed25519 key fingerprint is %[2]s.
 Are you sure you want to continue connecting (yes/no)? `[1:],
 		serverPort, cryptossh.FingerprintSHA256(serverKey)))
 }
@@ -378,9 +378,9 @@ func (s *SSHGoCryptoCommandSuite) TestStrictHostChecksNoMismatch(c *gc.C) {
 	// Write a mismatching key to the known_hosts file. Even with
 	// StrictHostChecksNo, we should be verifying against an existing
 	// host key.
-	alternativeRSAKey, err := generateRSAKey(rand.Reader)
+	_, alternativeKey, err := generateED25519Key(rand.Reader)
 	c.Assert(err, jc.ErrorIsNil)
-	alternativePublicKey, err := cryptossh.NewPublicKey(alternativeRSAKey.Public())
+	alternativePublicKey, err := cryptossh.NewPublicKey(alternativeKey.Public())
 	c.Assert(err, jc.ErrorIsNil)
 	err = ioutil.WriteFile(s.knownHostsFile, []byte(fmt.Sprintf(
 		"[127.0.0.1]:%d %s",
@@ -404,11 +404,11 @@ func (s *SSHGoCryptoCommandSuite) TestStrictHostChecksNoMismatch(c *gc.C) {
 IT IS POSSIBLE THAT SOMEONE IS DOING SOMETHING NASTY!
 Someone could be eavesdropping on you right now \(man-in-the-middle attack\)!
 It is also possible that a host key has just been changed.
-The fingerprint for the ssh-rsa key sent by the remote host is
+The fingerprint for the ssh-ed25519 key sent by the remote host is
 %s.
 Please contact your system administrator.
 Add correct host key in .*/known_hosts to get rid of this message.
-Offending ssh-rsa key in .*/known_hosts:1
+Offending ssh-ed25519 key in .*/known_hosts:1
 `[1:], regexp.QuoteMeta(cryptossh.FingerprintSHA256(serverKey))))
 }
 
@@ -450,7 +450,7 @@ func (s *SSHGoCryptoCommandSuite) TestStrictHostChecksDifferentKeyTypes(c *gc.C)
 IT IS POSSIBLE THAT SOMEONE IS DOING SOMETHING NASTY!
 Someone could be eavesdropping on you right now \(man-in-the-middle attack\)!
 It is also possible that a host key has just been changed.
-The fingerprint for the ssh-rsa key sent by the remote host is
+The fingerprint for the ssh-ed25519 key sent by the remote host is
 %s.
 Please contact your system administrator.
 Add correct host key in .*/known_hosts to get rid of this message.

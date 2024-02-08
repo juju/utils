@@ -5,7 +5,7 @@ package ssh_test
 
 import (
 	"crypto/dsa"
-	"crypto/rsa"
+	"crypto/ed25519"
 	"io"
 
 	"github.com/juju/testing"
@@ -22,35 +22,33 @@ type GenerateSuite struct {
 var _ = gc.Suite(&GenerateSuite{})
 
 var (
-	pregeneratedKey   *rsa.PrivateKey
-	alternativeRSAKey *rsa.PrivateKey
+	pregeneratedKey ed25519.PrivateKey
 )
 
 // overrideGenerateKey patches out rsa.GenerateKey to create a single testing
 // key which is saved and used between tests to save computation time.
 func overrideGenerateKey(c *gc.C) testing.Restorer {
-	restorer := testing.PatchValue(ssh.RSAGenerateKey, func(random io.Reader, bits int) (*rsa.PrivateKey, error) {
+	restorer := testing.PatchValue(ssh.ED25519GenerateKey, func(random io.Reader) (ed25519.PublicKey, ed25519.PrivateKey, error) {
 		if pregeneratedKey != nil {
-			return pregeneratedKey, nil
+			return ed25519.PublicKey{}, pregeneratedKey, nil
 		}
-		key, err := generateRSAKey(random)
+		public, private, err := generateED25519Key(random)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
-		pregeneratedKey = key
-		return key, nil
+		pregeneratedKey = private
+		return public, private, nil
 	})
 	return restorer
 }
 
-func generateRSAKey(random io.Reader) (*rsa.PrivateKey, error) {
+func generateED25519Key(random io.Reader) (ed25519.PublicKey, ed25519.PrivateKey, error) {
 	// Ignore requested bits and just use 512 bits for speed
-	key, err := rsa.GenerateKey(random, 512)
+	public, private, err := ed25519.GenerateKey(random)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	key.Precompute()
-	return key, nil
+	return public, private, nil
 }
 
 func generateDSAKey(random io.Reader) (*dsa.PrivateKey, error) {
@@ -67,10 +65,9 @@ func generateDSAKey(random io.Reader) (*dsa.PrivateKey, error) {
 func (s *GenerateSuite) TestGenerate(c *gc.C) {
 	defer overrideGenerateKey(c).Restore()
 	private, public, err := ssh.GenerateKey("some-comment")
-
 	c.Check(err, jc.ErrorIsNil)
-	c.Check(private, jc.HasPrefix, "-----BEGIN RSA PRIVATE KEY-----\n")
-	c.Check(private, jc.HasSuffix, "-----END RSA PRIVATE KEY-----\n")
-	c.Check(public, jc.HasPrefix, "ssh-rsa ")
+	c.Check(private, jc.HasPrefix, "-----BEGIN PRIVATE KEY-----\n")
+	c.Check(private, jc.HasSuffix, "-----END PRIVATE KEY-----\n")
+	c.Check(public, jc.HasPrefix, "ssh-ed25519 ")
 	c.Check(public, jc.HasSuffix, " some-comment\n")
 }

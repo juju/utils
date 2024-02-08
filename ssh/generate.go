@@ -4,8 +4,8 @@
 package ssh
 
 import (
+	"crypto/ed25519"
 	"crypto/rand"
-	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
@@ -15,28 +15,27 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-// rsaGenerateKey allows for tests to patch out rsa key generation
-var rsaGenerateKey = rsa.GenerateKey
+// ed25519GenerateKey allows for tests to patch out ed25519 key generation
+var ed25519GenerateKey = ed25519.GenerateKey
 
-// KeyBits is used to determine the number of bits to use for the RSA keys
-// created using the GenerateKey function.
-var KeyBits = 4096
-
-// GenerateKey makes a 4096 bit RSA no-passphrase SSH capable key.  The bit
-// size is actually controlled by the KeyBits var. The private key returned is
-// encoded to ASCII using the PKCS1 encoding.  The public key is suitable to
-// be added into an authorized_keys file, and has the comment passed in as the
-// comment part of the key.
+// GenerateKey makes a ED25519 no-passphrase SSH capable key.
+// The private key returned is encoded to ASCII using the PKCS1 encoding.
+// The public key is suitable to be added into an authorized_keys file,
+// and has the comment passed in as the comment part of the key.
 func GenerateKey(comment string) (private, public string, err error) {
-	key, err := rsaGenerateKey(rand.Reader, KeyBits)
+	_, privateKey, err := ed25519GenerateKey(rand.Reader)
 	if err != nil {
 		return "", "", errors.Trace(err)
 	}
 
+	keyData, err := x509.MarshalPKCS8PrivateKey(privateKey)
+	if err != nil {
+		return "", "", errors.Trace(err)
+	}
 	identity := pem.EncodeToMemory(
 		&pem.Block{
-			Type:  "RSA PRIVATE KEY",
-			Bytes: x509.MarshalPKCS1PrivateKey(key),
+			Type:  "PRIVATE KEY",
+			Bytes: keyData,
 		})
 
 	public, err = PublicKey(identity, comment)

@@ -12,7 +12,8 @@ import (
 
 	"github.com/juju/clock"
 	"github.com/juju/errors"
-	utilexec "github.com/juju/utils/v3/exec"
+
+	utilexec "github.com/juju/utils/v4/exec"
 )
 
 // ExecParams are used for the parameters for ExecuteCommandOnMachine.

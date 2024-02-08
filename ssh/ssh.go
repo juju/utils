@@ -4,7 +4,6 @@
 // Package ssh contains utilities for dealing with SSH connections,
 // key management, and so on. All SSH-based command executions in
 // Juju should use the Command/ScpCommand functions in this package.
-//
 package ssh
 
 import (
@@ -13,8 +12,9 @@ import (
 	"os/exec"
 	"syscall"
 
-	"github.com/juju/cmd/v3"
 	"github.com/juju/errors"
+
+	"github.com/juju/utils/v4"
 )
 
 // StrictHostChecksOption defines the possible values taken by
@@ -202,7 +202,7 @@ func (c *Cmd) Run() error {
 	if exitError, ok := err.(*exec.ExitError); ok && exitError != nil {
 		status := exitError.ProcessState.Sys().(syscall.WaitStatus)
 		if status.Exited() {
-			return cmd.NewRcPassthroughError(status.ExitStatus())
+			return utils.NewRcPassthroughError(status.ExitStatus())
 		}
 	}
 	return err

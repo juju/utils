@@ -11,7 +11,8 @@ import (
 	"golang.org/x/text/encoding/unicode"
 
 	"github.com/juju/errors"
-	"github.com/juju/utils/v3"
+
+	"github.com/juju/utils/v4"
 )
 
 // PowershellRenderer is a shell renderer for Windows Powershell.
@@ -59,9 +60,10 @@ func (pr *PowershellRenderer) ScriptFilename(name, dirname string) string {
 // By default, winrm executes command usind cmd. Prefix the command we send over WinRM with powershell.exe.
 // the powershell.exe it's a program that will execute the "%s" encoded command.
 // A breakdown of the parameters:
-//    -NonInteractive - prevent any prompts from stopping the execution of the scrips
-//    -ExecutionPolicy - sets the execution policy for the current command, regardless of the default ExecutionPolicy on the system.
-//    -EncodedCommand - allows us to run a base64 encoded script. This spares us from having to quote/escape shell special characters.
+//
+//	-NonInteractive - prevent any prompts from stopping the execution of the scrips
+//	-ExecutionPolicy - sets the execution policy for the current command, regardless of the default ExecutionPolicy on the system.
+//	-EncodedCommand - allows us to run a base64 encoded script. This spares us from having to quote/escape shell special characters.
 const psRemoteWrapper = "powershell.exe -Sta -NonInteractive -ExecutionPolicy RemoteSigned -EncodedCommand %s"
 
 // newEncodedPSScript returns a UTF16-LE, base64 encoded script.

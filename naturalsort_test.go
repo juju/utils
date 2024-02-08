@@ -9,7 +9,7 @@ import (
 	gc "gopkg.in/check.v1"
 
 	"github.com/juju/testing"
-	"github.com/juju/utils/v3"
+	"github.com/juju/utils/v4"
 )
 
 type naturalSortSuite struct {

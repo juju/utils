@@ -15,9 +15,10 @@ import (
 	"sync"
 
 	"github.com/juju/errors"
-	"github.com/juju/loggo"
-	"github.com/juju/utils/v3"
+	"github.com/juju/loggo/v2"
 	"golang.org/x/crypto/ssh"
+
+	"github.com/juju/utils/v4"
 )
 
 var logger = loggo.GetLogger("juju.utils.ssh")

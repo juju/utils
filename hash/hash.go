@@ -10,8 +10,8 @@
 //
 // Here are some hash-related recipes that bring it all together:
 //
-// * Extract the SHA384 hash while writing to elsewhere, then get the
-//   raw checksum:
+//   - Extract the SHA384 hash while writing to elsewhere, then get the
+//     raw checksum:
 //
 //     newHash, _ := hash.SHA384()
 //     h := newHash()
@@ -20,8 +20,8 @@
 //     fp := hash.NewValidFingerprint(h)
 //     checksum := fp.Bytes()
 //
-// * Extract the SHA384 hash while reading from elsewhere, then get the
-//   hex-encoded checksum to send over the wire:
+//   - Extract the SHA384 hash while reading from elsewhere, then get the
+//     hex-encoded checksum to send over the wire:
 //
 //     newHash, _ := hash.SHA384()
 //     h := newHash()
@@ -33,16 +33,16 @@
 //
 // * Turn a checksum sent over the wire back into a fingerprint:
 //
-//     _, validate := hash.SHA384()
-//     hexSum := req.Header.Get("Content-Sha384")
-//     var fp hash.Fingerprint
-//     if len(hexSum) != 0 {
-//         fp, err = hash.ParseHexFingerprint(hexSum, validate)
-//         ...
-//     }
-//     if fp.IsZero() {
-//         ...
-//     }
+//	_, validate := hash.SHA384()
+//	hexSum := req.Header.Get("Content-Sha384")
+//	var fp hash.Fingerprint
+//	if len(hexSum) != 0 {
+//	    fp, err = hash.ParseHexFingerprint(hexSum, validate)
+//	    ...
+//	}
+//	if fp.IsZero() {
+//	    ...
+//	}
 package hash
 
 import (
@@ -50,10 +50,7 @@ import (
 	"hash"
 
 	"github.com/juju/errors"
-	"github.com/juju/loggo"
 )
-
-var logger = loggo.GetLogger("utils.hash")
 
 // SHA384 returns the newHash and validate functions for use
 // with SHA384 hashes. SHA384 is used in several key places in Juju.

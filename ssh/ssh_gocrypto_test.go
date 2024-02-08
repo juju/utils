@@ -17,6 +17,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"sync"
+	"time"
 
 	"github.com/juju/testing"
 	jc "github.com/juju/testing/checkers"
@@ -24,7 +25,7 @@ import (
 	"golang.org/x/crypto/ssh/testdata"
 	gc "gopkg.in/check.v1"
 
-	"github.com/juju/utils/v3/ssh"
+	"github.com/juju/utils/v4/ssh"
 )
 
 var (
@@ -38,26 +39,42 @@ type sshServer struct {
 	client   *cryptossh.Client
 }
 
-func (s *sshServer) run(c *gc.C) {
+func (s *sshServer) run(errorCh chan error, done chan bool) {
 	netconn, err := s.listener.Accept()
-	c.Assert(err, jc.ErrorIsNil)
+	if err != nil {
+		errorCh <- fmt.Errorf("accepting connection: %w", err)
+		return
+	}
 	defer netconn.Close()
 
 	conn, chans, reqs, err := cryptossh.NewServerConn(netconn, s.cfg)
-	c.Assert(err, jc.ErrorIsNil)
+	if err != nil {
+		errorCh <- fmt.Errorf("getting ssh server connection: %w", err)
+		return
+	}
 	s.client = cryptossh.NewClient(conn, chans, reqs)
 
 	var wg sync.WaitGroup
-	defer wg.Wait()
+	defer func() {
+		wg.Wait()
+		close(errorCh)
+	}()
 
 	sessionChannels := s.client.HandleChannelOpen("session")
-	c.Assert(sessionChannels, gc.NotNil)
-	for newChannel := range sessionChannels {
-		c.Assert(newChannel.ChannelType(), gc.Equals, "session")
+	select {
+	case <-done:
+		return
+	case newChannel := <-sessionChannels:
+		if sCh := newChannel.ChannelType(); sCh != "session" {
+			errorCh <- fmt.Errorf("unexpected session channel %q", sCh)
+			return
+		}
 
 		channel, reqs, err := newChannel.Accept()
-
-		c.Assert(err, jc.ErrorIsNil)
+		if err != nil {
+			errorCh <- fmt.Errorf("accepting session connection: %w", err)
+			return
+		}
 		wg.Add(1)
 
 		go func() {
@@ -67,18 +84,30 @@ func (s *sshServer) run(c *gc.C) {
 			for req := range reqs {
 				switch req.Type {
 				case "exec":
-					c.Assert(req.WantReply, jc.IsTrue)
+					if !req.WantReply {
+						errorCh <- fmt.Errorf("no reply wanted for request %+v", req)
+						return
+					}
 					n := binary.BigEndian.Uint32(req.Payload[:4])
 					command := string(req.Payload[4 : n+4])
-					c.Assert(command, gc.Equals, testCommandFlat)
-					req.Reply(true, nil)
+					if command != testCommandFlat {
+						errorCh <- fmt.Errorf("unexpected request command: %q", command)
+						return
+					}
+					err = req.Reply(true, nil)
+					if err != nil {
+						errorCh <- fmt.Errorf("error sending reply: %w", err)
+						return
+					}
 					channel.Write([]byte("abc value\n"))
 					_, err := channel.SendRequest("exit-status", false, cryptossh.Marshal(&struct{ n uint32 }{0}))
-					c.Check(err, jc.ErrorIsNil)
+					if err != nil {
+						errorCh <- fmt.Errorf("error sending request: %w", err)
+					}
 					return
 
 				default:
-					c.Errorf("Unexpected request type: %v", req.Type)
+					errorCh <- fmt.Errorf("unexpected request type: %q", req.Type)
 					return
 				}
 			}
@@ -135,13 +164,13 @@ func (s *SSHGoCryptoCommandSuite) SetUpSuite(c *gc.C) {
 		ValidBefore:     cryptossh.CertTimeInfinity,     // The end of currently representable time.
 		Reserved:        []byte{},                       // To pass reflect.DeepEqual after marshal & parse, this must be non-nil
 		Key:             s.testPublicKeys["ecdsa"],
-		SignatureKey:    s.testPublicKeys["rsa"],
+		SignatureKey:    s.testPublicKeys["ed25519"],
 		Permissions: cryptossh.Permissions{
 			CriticalOptions: map[string]string{},
 			Extensions:      map[string]string{},
 		},
 	}
-	err = testCert.SignCert(rand.Reader, s.testSigners["rsa"])
+	err = testCert.SignCert(rand.Reader, s.testSigners["ed25519"])
 	c.Assert(err, jc.ErrorIsNil)
 	s.testPrivateKeys["cert"] = s.testPrivateKeys["ecdsa"]
 	s.testSigners["cert"], err = cryptossh.NewCertSigner(testCert, s.testSigners["ecdsa"])
@@ -164,13 +193,13 @@ func (s *SSHGoCryptoCommandSuite) SetUpTest(c *gc.C) {
 
 func (s *SSHGoCryptoCommandSuite) newServer(c *gc.C, serverConfig cryptossh.ServerConfig) (*sshServer, cryptossh.PublicKey) {
 	server := &sshServer{cfg: &serverConfig}
-	server.cfg.AddHostKey(s.testSigners["rsa"])
+	server.cfg.AddHostKey(s.testSigners["ed25519"])
 	var err error
 	server.listener, err = net.Listen("tcp", "127.0.0.1:0")
 	c.Assert(err, jc.ErrorIsNil)
 	c.Logf("Server listening on %s", server.listener.Addr().String())
 
-	return server, s.testPublicKeys["rsa"]
+	return server, s.testPublicKeys["ed25519"]
 }
 
 func (s *SSHGoCryptoCommandSuite) TestNewGoCryptoClient(c *gc.C) {
@@ -206,6 +235,16 @@ func (s *SSHGoCryptoCommandSuite) TestClientNoKeys(c *gc.C) {
 	c.Assert(err, gc.ErrorMatches, "ssh.Dial failed")
 }
 
+func waitForServer(c *gc.C, errorCh chan error) error {
+	select {
+	case err, _ := <-errorCh:
+		return err
+	case <-time.After(testing.LongWait):
+		c.Fatal("timed out waiting for ssh server")
+		return nil
+	}
+}
+
 func (s *SSHGoCryptoCommandSuite) TestCommand(c *gc.C) {
 	client, clientKey := newClient(c)
 	server, serverKey := s.newServer(c, cryptossh.ServerConfig{})
@@ -220,7 +259,11 @@ func (s *SSHGoCryptoCommandSuite) TestCommand(c *gc.C) {
 		checkedKey = true
 		return nil, nil
 	}
-	go server.run(c)
+	errorCh := make(chan error, 1)
+	done := make(chan bool)
+	defer close(done)
+	go server.run(errorCh, done)
+
 	out, err := cmd.Output()
 	c.Assert(err, jc.ErrorIsNil)
 	c.Assert(string(out), gc.Equals, "abc value\n")
@@ -233,6 +276,7 @@ func (s *SSHGoCryptoCommandSuite) TestCommand(c *gc.C) {
 		serverPort,
 		cryptossh.MarshalAuthorizedKey(serverKey)),
 	)
+	c.Assert(waitForServer(c, errorCh), jc.ErrorIsNil)
 }
 
 func (s *SSHGoCryptoCommandSuite) TestCopy(c *gc.C) {
@@ -262,7 +306,11 @@ func (s *SSHGoCryptoCommandSuite) TestProxyCommand(c *gc.C) {
 	server.cfg.PublicKeyCallback = func(_ cryptossh.ConnMetadata, pubkey cryptossh.PublicKey) (*cryptossh.Permissions, error) {
 		return nil, nil
 	}
-	go server.run(c)
+	errorCh := make(chan error, 1)
+	done := make(chan bool)
+	defer close(done)
+	go server.run(errorCh, done)
+
 	out, err := cmd.Output()
 	c.Assert(err, jc.ErrorIsNil)
 	c.Assert(string(out), gc.Equals, "abc value\n")
@@ -270,12 +318,16 @@ func (s *SSHGoCryptoCommandSuite) TestProxyCommand(c *gc.C) {
 	data, err := ioutil.ReadFile(netcat + ".args")
 	c.Assert(err, jc.ErrorIsNil)
 	c.Assert(string(data), gc.Equals, fmt.Sprintf("%s -q0 127.0.0.1 %v\n", netcat, port))
+	c.Assert(waitForServer(c, errorCh), jc.ErrorIsNil)
 }
 
 func (s *SSHGoCryptoCommandSuite) TestStrictHostChecksYes(c *gc.C) {
 	server, _ := s.newServer(c, cryptossh.ServerConfig{NoClientAuth: true})
 	serverPort := server.listener.Addr().(*net.TCPAddr).Port
-	go server.run(c)
+	errorCh := make(chan error, 1)
+	done := make(chan bool)
+	defer close(done)
+	go server.run(errorCh, done)
 
 	var opts ssh.Options
 	opts.SetPort(serverPort)
@@ -284,17 +336,21 @@ func (s *SSHGoCryptoCommandSuite) TestStrictHostChecksYes(c *gc.C) {
 	cmd := client.Command("127.0.0.1", testCommand, &opts)
 	_, err := cmd.Output()
 	c.Assert(err, gc.ErrorMatches, fmt.Sprintf(
-		"ssh: handshake failed: no ssh-rsa host key is known for 127.0.0.1:%d and you have requested strict checking",
+		"ssh: handshake failed: no ssh-ed25519 host key is known for 127.0.0.1:%d and you have requested strict checking",
 		serverPort,
 	))
 	_, err = os.Stat(s.knownHostsFile)
 	c.Assert(err, jc.Satisfies, os.IsNotExist)
+	_ = waitForServer(c, errorCh)
 }
 
 func (s *SSHGoCryptoCommandSuite) TestStrictHostChecksAskNonTerminal(c *gc.C) {
 	server, _ := s.newServer(c, cryptossh.ServerConfig{NoClientAuth: true})
 	serverPort := server.listener.Addr().(*net.TCPAddr).Port
-	go server.run(c)
+	errorCh := make(chan error, 1)
+	done := make(chan bool)
+	defer close(done)
+	go server.run(errorCh, done)
 
 	var opts ssh.Options
 	opts.SetPort(serverPort)
@@ -305,6 +361,7 @@ func (s *SSHGoCryptoCommandSuite) TestStrictHostChecksAskNonTerminal(c *gc.C) {
 	c.Assert(err, gc.ErrorMatches, "ssh: handshake failed: not running in a terminal, cannot prompt for verification")
 	_, err = os.Stat(s.knownHostsFile)
 	c.Assert(err, jc.Satisfies, os.IsNotExist)
+	_ = waitForServer(c, errorCh)
 }
 
 func (s *SSHGoCryptoCommandSuite) TestStrictHostChecksAskTerminalYes(c *gc.C) {
@@ -315,7 +372,10 @@ func (s *SSHGoCryptoCommandSuite) TestStrictHostChecksAskTerminalYes(c *gc.C) {
 
 	server, serverKey := s.newServer(c, cryptossh.ServerConfig{NoClientAuth: true})
 	serverPort := server.listener.Addr().(*net.TCPAddr).Port
-	go server.run(c)
+	errorCh := make(chan error, 1)
+	done := make(chan bool)
+	defer close(done)
+	go server.run(errorCh, done)
 
 	var opts ssh.Options
 	opts.SetPort(serverPort)
@@ -335,9 +395,10 @@ func (s *SSHGoCryptoCommandSuite) TestStrictHostChecksAskTerminalYes(c *gc.C) {
 
 	c.Assert(readLineWriter.written.String(), gc.Equals, fmt.Sprintf(`
 The authenticity of host '127.0.0.1:%[1]d (127.0.0.1:%[1]d)' can't be established.
-ssh-rsa key fingerprint is %[2]s.
+ssh-ed25519 key fingerprint is %[2]s.
 Are you sure you want to continue connecting (yes/no)? Please type 'yes' or 'no': `[1:],
 		serverPort, cryptossh.FingerprintSHA256(serverKey)))
+	c.Assert(waitForServer(c, errorCh), jc.ErrorIsNil)
 }
 
 func (s *SSHGoCryptoCommandSuite) TestStrictHostChecksAskTerminalNo(c *gc.C) {
@@ -347,7 +408,10 @@ func (s *SSHGoCryptoCommandSuite) TestStrictHostChecksAskTerminalNo(c *gc.C) {
 
 	server, serverKey := s.newServer(c, cryptossh.ServerConfig{NoClientAuth: true})
 	serverPort := server.listener.Addr().(*net.TCPAddr).Port
-	go server.run(c)
+	errorCh := make(chan error, 1)
+	done := make(chan bool)
+	defer close(done)
+	go server.run(errorCh, done)
 
 	var opts ssh.Options
 	opts.SetPort(serverPort)
@@ -362,9 +426,10 @@ func (s *SSHGoCryptoCommandSuite) TestStrictHostChecksAskTerminalNo(c *gc.C) {
 
 	c.Assert(readLineWriter.written.String(), gc.Equals, fmt.Sprintf(`
 The authenticity of host '127.0.0.1:%[1]d (127.0.0.1:%[1]d)' can't be established.
-ssh-rsa key fingerprint is %[2]s.
+ssh-ed25519 key fingerprint is %[2]s.
 Are you sure you want to continue connecting (yes/no)? `[1:],
 		serverPort, cryptossh.FingerprintSHA256(serverKey)))
+	_ = waitForServer(c, errorCh)
 }
 
 func (s *SSHGoCryptoCommandSuite) TestStrictHostChecksNoMismatch(c *gc.C) {
@@ -373,14 +438,17 @@ func (s *SSHGoCryptoCommandSuite) TestStrictHostChecksNoMismatch(c *gc.C) {
 
 	server, serverKey := s.newServer(c, cryptossh.ServerConfig{NoClientAuth: true})
 	serverPort := server.listener.Addr().(*net.TCPAddr).Port
-	go server.run(c)
+	errorCh := make(chan error, 1)
+	done := make(chan bool)
+	defer close(done)
+	go server.run(errorCh, done)
 
 	// Write a mismatching key to the known_hosts file. Even with
 	// StrictHostChecksNo, we should be verifying against an existing
 	// host key.
-	alternativeRSAKey, err := generateRSAKey(rand.Reader)
+	_, alternativeKey, err := generateED25519Key(rand.Reader)
 	c.Assert(err, jc.ErrorIsNil)
-	alternativePublicKey, err := cryptossh.NewPublicKey(alternativeRSAKey.Public())
+	alternativePublicKey, err := cryptossh.NewPublicKey(alternativeKey.Public())
 	c.Assert(err, jc.ErrorIsNil)
 	err = ioutil.WriteFile(s.knownHostsFile, []byte(fmt.Sprintf(
 		"[127.0.0.1]:%d %s",
@@ -404,12 +472,13 @@ func (s *SSHGoCryptoCommandSuite) TestStrictHostChecksNoMismatch(c *gc.C) {
 IT IS POSSIBLE THAT SOMEONE IS DOING SOMETHING NASTY!
 Someone could be eavesdropping on you right now \(man-in-the-middle attack\)!
 It is also possible that a host key has just been changed.
-The fingerprint for the ssh-rsa key sent by the remote host is
+The fingerprint for the ssh-ed25519 key sent by the remote host is
 %s.
 Please contact your system administrator.
 Add correct host key in .*/known_hosts to get rid of this message.
-Offending ssh-rsa key in .*/known_hosts:1
+Offending ssh-ed25519 key in .*/known_hosts:1
 `[1:], regexp.QuoteMeta(cryptossh.FingerprintSHA256(serverKey))))
+	_ = waitForServer(c, errorCh)
 }
 
 func (s *SSHGoCryptoCommandSuite) TestStrictHostChecksDifferentKeyTypes(c *gc.C) {
@@ -418,7 +487,10 @@ func (s *SSHGoCryptoCommandSuite) TestStrictHostChecksDifferentKeyTypes(c *gc.C)
 
 	server, serverKey := s.newServer(c, cryptossh.ServerConfig{NoClientAuth: true})
 	serverPort := server.listener.Addr().(*net.TCPAddr).Port
-	go server.run(c)
+	errorCh := make(chan error, 1)
+	done := make(chan bool)
+	defer close(done)
+	go server.run(errorCh, done)
 
 	// Write a mismatching key to the known_hosts file with a different
 	// key type. Even with StrictHostChecksNo, we should be verifying
@@ -450,13 +522,14 @@ func (s *SSHGoCryptoCommandSuite) TestStrictHostChecksDifferentKeyTypes(c *gc.C)
 IT IS POSSIBLE THAT SOMEONE IS DOING SOMETHING NASTY!
 Someone could be eavesdropping on you right now \(man-in-the-middle attack\)!
 It is also possible that a host key has just been changed.
-The fingerprint for the ssh-rsa key sent by the remote host is
+The fingerprint for the ssh-ed25519 key sent by the remote host is
 %s.
 Please contact your system administrator.
 Add correct host key in .*/known_hosts to get rid of this message.
 Host was previously using different host key algorithms:
  - ssh-dss key in .*/known_hosts:1
 `[1:], regexp.QuoteMeta(cryptossh.FingerprintSHA256(serverKey))))
+	_ = waitForServer(c, errorCh)
 }
 
 type mockReadLineWriter struct {

@@ -14,8 +14,9 @@ import (
 	"time"
 
 	"github.com/juju/errors"
-	"github.com/juju/utils/v3"
-	"github.com/juju/utils/v3/cert"
+
+	"github.com/juju/utils/v4"
+	"github.com/juju/utils/v4/cert"
 )
 
 // List of exported internal errors
@@ -170,7 +171,7 @@ func newCredentials() ([]byte, []byte, error) {
 	expiry := now.AddDate(10, 0, 0) // 10 years is enough
 	cert, key, err := cert.NewClientCert(
 		fmt.Sprintf("juju-generated client cert for model %s", "Administrator"),
-		"", expiry, 2048)
+		"", expiry)
 	return []byte(cert), []byte(key), err
 }
 

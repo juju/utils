@@ -6,7 +6,6 @@ package ssh
 import (
 	"crypto/ed25519"
 	"crypto/rand"
-	"crypto/x509"
 	"encoding/pem"
 	"fmt"
 	"strings"
@@ -28,15 +27,11 @@ func GenerateKey(comment string) (private, public string, err error) {
 		return "", "", errors.Trace(err)
 	}
 
-	keyData, err := x509.MarshalPKCS8PrivateKey(privateKey)
+	pemBlock, err := ssh.MarshalPrivateKey(privateKey, comment)
 	if err != nil {
 		return "", "", errors.Trace(err)
 	}
-	identity := pem.EncodeToMemory(
-		&pem.Block{
-			Type:  "PRIVATE KEY",
-			Bytes: keyData,
-		})
+	identity := pem.EncodeToMemory(pemBlock)
 
 	public, err = PublicKey(identity, comment)
 	if err != nil {

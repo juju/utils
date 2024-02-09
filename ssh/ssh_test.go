@@ -205,12 +205,12 @@ func (s *SSHCommandSuite) TestCopy(c *gc.C) {
 }
 
 func (s *SSHCommandSuite) TestCommandClientKeys(c *gc.C) {
-	defer overrideGenerateKey(c).Restore()
+	defer overrideGenerateKey().Restore()
 	clientKeysDir := c.MkDir()
 	defer ssh.ClearClientKeys()
 	err := ssh.LoadClientKeys(clientKeysDir)
 	c.Assert(err, jc.ErrorIsNil)
-	ck := filepath.Join(clientKeysDir, "juju_id_rsa")
+	ck := filepath.Join(clientKeysDir, "juju_id_ed25519")
 	var opts ssh.Options
 	opts.SetIdentities("x", "y")
 	s.assertCommandArgs(c, s.commandOptions([]string{echoCommand, "123"}, &opts),

@@ -180,7 +180,7 @@ func (s *SSHGoCryptoCommandSuite) SetUpSuite(c *gc.C) {
 func (s *SSHGoCryptoCommandSuite) SetUpTest(c *gc.C) {
 	s.IsolationSuite.SetUpTest(c)
 
-	generateKeyRestorer := overrideGenerateKey(c)
+	generateKeyRestorer := overrideGenerateKey()
 	s.AddCleanup(func(*gc.C) { generateKeyRestorer.Restore() })
 
 	client, err := ssh.NewGoCryptoClient()

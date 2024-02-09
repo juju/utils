@@ -27,7 +27,7 @@ var (
 
 // overrideGenerateKey patches out rsa.GenerateKey to create a single testing
 // key which is saved and used between tests to save computation time.
-func overrideGenerateKey(c *gc.C) testing.Restorer {
+func overrideGenerateKey() testing.Restorer {
 	restorer := testing.PatchValue(ssh.ED25519GenerateKey, func(random io.Reader) (ed25519.PublicKey, ed25519.PrivateKey, error) {
 		if pregeneratedKey != nil {
 			return ed25519.PublicKey{}, pregeneratedKey, nil
@@ -63,11 +63,11 @@ func generateDSAKey(random io.Reader) (*dsa.PrivateKey, error) {
 }
 
 func (s *GenerateSuite) TestGenerate(c *gc.C) {
-	defer overrideGenerateKey(c).Restore()
+	defer overrideGenerateKey().Restore()
 	private, public, err := ssh.GenerateKey("some-comment")
 	c.Check(err, jc.ErrorIsNil)
-	c.Check(private, jc.HasPrefix, "-----BEGIN PRIVATE KEY-----\n")
-	c.Check(private, jc.HasSuffix, "-----END PRIVATE KEY-----\n")
+	c.Check(private, jc.HasPrefix, "-----BEGIN OPENSSH PRIVATE KEY-----\n")
+	c.Check(private, jc.HasSuffix, "-----END OPENSSH PRIVATE KEY-----\n")
 	c.Check(public, jc.HasPrefix, "ssh-ed25519 ")
 	c.Check(public, jc.HasSuffix, " some-comment\n")
 }

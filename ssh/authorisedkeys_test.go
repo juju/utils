@@ -260,6 +260,9 @@ func (s *AuthorisedKeysKeysSuite) TestParseAuthorisedKey(c *gc.C) {
 	}, {
 		line: "ssh-rsa",
 		err:  "invalid authorized_key \"ssh-rsa\"",
+	}, {
+		line: sshtesting.ValidKeyOne.Key + " line1\nline2",
+		err:  "newline in authorized_key \".*",
 	}} {
 		c.Logf("test %d: %s", i, test.line)
 		ak, err := ssh.ParseAuthorisedKey(test.line)

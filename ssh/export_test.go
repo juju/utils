@@ -37,3 +37,9 @@ func PatchTerminal(s *testing.CleanupSuite, rlw ReadLineWriter) {
 		c.Assert(atomic.LoadInt64(&balance), gc.Equals, int64(0))
 	})
 }
+
+func PatchNilTerminal(s *testing.CleanupSuite) {
+	s.PatchValue(&getTerminal, func() (readLineWriter, func(), error) {
+		return nil, func() {}, nil
+	})
+}

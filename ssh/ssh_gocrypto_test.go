@@ -183,12 +183,9 @@ func (s *SSHGoCryptoCommandSuite) SetUpTest(c *gc.C) {
 	generateKeyRestorer := overrideGenerateKey()
 	s.AddCleanup(func(*gc.C) { generateKeyRestorer.Restore() })
 
-	client, err := ssh.NewGoCryptoClient()
-	c.Assert(err, jc.ErrorIsNil)
-	s.client = client
-
 	s.knownHostsFile = filepath.Join(c.MkDir(), "known_hosts")
 	ssh.SetGoCryptoKnownHostsFile(s.knownHostsFile)
+	ssh.PatchNilTerminal(&s.CleanupSuite)
 }
 
 func (s *SSHGoCryptoCommandSuite) newServer(c *gc.C, serverConfig cryptossh.ServerConfig) (*sshServer, cryptossh.PublicKey) {

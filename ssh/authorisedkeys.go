@@ -56,6 +56,9 @@ func authKeysDir(username string) (string, error) {
 // authorized_keys file and returns the constituent parts.
 // Based on description in "man sshd".
 func ParseAuthorisedKey(line string) (*AuthorisedKey, error) {
+	if strings.Contains(line, "\n") {
+		return nil, errors.NotValidf("newline in authorized_key %q", line)
+	}
 	key, comment, _, _, err := ssh.ParseAuthorizedKey([]byte(line))
 	if err != nil {
 		return nil, errors.Errorf("invalid authorized_key %q", line)

@@ -3,7 +3,7 @@ PROJECT := github.com/juju/utils/v3
 .PHONY: check-licence check-go check
 
 check: check-licence check-go
-	go test $(PROJECT)/...
+	go test -v $(PROJECT)/... -check.v
 
 check-licence:
 	@(grep -rFl "Licensed under the LGPLv3" .;\

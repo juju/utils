@@ -344,5 +344,5 @@ func (s *AuthorisedKeysKeysSuite) TestDeleteSomeKeysFromFile(c *gc.C) {
 	keys, err := ssh.ListKeysFromFile(testSSHUser, alternativeKeysFile2, ssh.FullKeys)
 	c.Assert(err, jc.ErrorIsNil)
 	c.Assert(keys, gc.HasLen, 2)
-	c.Assert(keys, jc.DeepEquals, []string{key1, key3})
+	c.Assert(keys, jc.SameContents, []string{key1, key3})
 }

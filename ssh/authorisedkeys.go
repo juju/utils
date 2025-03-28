@@ -30,7 +30,7 @@ var (
 )
 
 const (
-	authKeysFile = "authorized_keys"
+	defaultAuthKeysFile = "authorized_keys"
 )
 
 type AuthorisedKey struct {
@@ -193,11 +193,11 @@ var keysMutex sync.Mutex
 func AddKeys(user string, newKeys ...string) error {
 	keysMutex.Lock()
 	defer keysMutex.Unlock()
-	existingKeys, err := readAuthorisedKeys(user, authKeysFile)
+	existingKeys, err := readAuthorisedKeys(user, defaultAuthKeysFile)
 	if err != nil {
 		return err
 	}
-	return addKeys(user, authKeysFile, newKeys, existingKeys)
+	return addKeys(user, defaultAuthKeysFile, newKeys, existingKeys)
 }
 
 // DeleteKeys removes the specified ssh keys from the authorized ssh keys file for user.
@@ -206,11 +206,11 @@ func AddKeys(user string, newKeys ...string) error {
 func DeleteKeys(user string, keyIds ...string) error {
 	keysMutex.Lock()
 	defer keysMutex.Unlock()
-	existingKeys, err := readAuthorisedKeys(user, authKeysFile)
+	existingKeys, err := readAuthorisedKeys(user, defaultAuthKeysFile)
 	if err != nil {
 		return err
 	}
-	return deleteKeys(user, authKeysFile, existingKeys, keyIds, false)
+	return deleteKeys(user, defaultAuthKeysFile, existingKeys, keyIds, false)
 }
 
 // ReplaceKeys writes the specified ssh keys to the authorized_keys file for user,
@@ -220,7 +220,7 @@ func ReplaceKeys(user string, newKeys ...string) error {
 	keysMutex.Lock()
 	defer keysMutex.Unlock()
 
-	existingKeyData, err := readAuthorisedKeys(user, authKeysFile)
+	existingKeyData, err := readAuthorisedKeys(user, defaultAuthKeysFile)
 	if err != nil {
 		return err
 	}
@@ -231,14 +231,14 @@ func ReplaceKeys(user string, newKeys ...string) error {
 			existingNonKeyLines = append(existingNonKeyLines, line)
 		}
 	}
-	return writeAuthorisedKeys(user, authKeysFile, append(existingNonKeyLines, newKeys...))
+	return writeAuthorisedKeys(user, defaultAuthKeysFile, append(existingNonKeyLines, newKeys...))
 }
 
 // ListKeys returns either the full keys or key comments from the authorized ssh keys file for user.
 func ListKeys(user string, mode ListMode) ([]string, error) {
 	keysMutex.Lock()
 	defer keysMutex.Unlock()
-	keyData, err := readAuthorisedKeys(user, authKeysFile)
+	keyData, err := readAuthorisedKeys(user, defaultAuthKeysFile)
 	if err != nil {
 		return nil, err
 	}

@@ -52,7 +52,7 @@ type mockClock struct {
 	stub             *testing.Stub
 	c                *gc.C
 	afterFuncCalls   *int64
-	properFuncCalled bool
+	properFuncCalled *bool
 }
 
 // These 2 methods are not used here but are needed to satisfy the intergface
@@ -65,13 +65,18 @@ func (c *mockClock) NewTimer(d time.Duration) clock.Timer {
 func (c *mockClock) AfterFunc(d time.Duration, f func()) clock.Timer {
 	*c.afterFuncCalls++
 	f()
-	c.c.Assert(c.properFuncCalled, jc.IsTrue)
-	c.properFuncCalled = false
+	c.c.Assert(*c.properFuncCalled, jc.IsTrue)
+	*c.properFuncCalled = false
 	return &TestStdTimer{c.stub}
 }
 
 func (s *timerSuite) SetUpTest(c *gc.C) {
 	s.baseSuite.SetUpTest(c)
+	s.stub = nil
+	s.timer = nil
+}
+
+func (s *timerSuite) setup(c *gc.C) {
 	s.afterFuncCalls = 0
 	s.stub = &testing.Stub{}
 
@@ -83,7 +88,7 @@ func (s *timerSuite) SetUpTest(c *gc.C) {
 		stub:             s.stub,
 		c:                c,
 		afterFuncCalls:   &s.afterFuncCalls,
-		properFuncCalled: s.properFuncCalled,
+		properFuncCalled: &s.properFuncCalled,
 	}
 
 	s.min = 2 * time.Second
@@ -102,11 +107,13 @@ func (s *timerSuite) SetUpTest(c *gc.C) {
 }
 
 func (s *timerSuite) TestStart(c *gc.C) {
+	s.setup(c)
 	s.timer.Start()
 	s.testStart(c, 1, 1)
 }
 
 func (s *timerSuite) TestMultipleStarts(c *gc.C) {
+	s.setup(c)
 	s.timer.Start()
 	s.testStart(c, 1, 1)
 
@@ -120,12 +127,14 @@ func (s *timerSuite) TestMultipleStarts(c *gc.C) {
 }
 
 func (s *timerSuite) TestResetNoStart(c *gc.C) {
+	s.setup(c)
 	s.timer.Reset()
 	currentDuration := utils.ExposeBackoffTimerDuration(s.timer)
 	c.Assert(currentDuration, gc.Equals, s.min)
 }
 
 func (s *timerSuite) TestResetAndStart(c *gc.C) {
+	s.setup(c)
 	s.timer.Reset()
 	currentDuration := utils.ExposeBackoffTimerDuration(s.timer)
 	c.Assert(currentDuration, gc.Equals, s.min)

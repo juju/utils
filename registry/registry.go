@@ -36,7 +36,7 @@ type Description struct {
 }
 
 // Versions maps concrete versions of the objects.
-type Versions map[int]interface{}
+type Versions map[int]any
 
 // Register records the factory that can be used to produce an instance of the
 // facade at the supplied version.
@@ -44,7 +44,7 @@ type Versions map[int]interface{}
 // error is returned.
 // An error is also returned if an object is already registered with the given
 // name and version.
-func (r *TypedNameVersion) Register(name string, version int, obj interface{}) error {
+func (r *TypedNameVersion) Register(name string, version int, obj any) error {
 	if !reflect.TypeOf(obj).ConvertibleTo(r.requiredType) {
 		return fmt.Errorf("object of type %T cannot be converted to type %s.%s", obj, r.requiredType.PkgPath(), r.requiredType.Name())
 	}
@@ -95,7 +95,7 @@ func (r *TypedNameVersion) List() []Description {
 
 // Get returns the object for a single name and version. If the requested
 // facade is not found, it returns error.NotFound
-func (r *TypedNameVersion) Get(name string, version int) (interface{}, error) {
+func (r *TypedNameVersion) Get(name string, version int) (any, error) {
 	if versions, ok := r.versions[name]; ok {
 		if factory, ok := versions[version]; ok {
 			return factory, nil

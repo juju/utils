@@ -247,7 +247,7 @@ func newSerialNumber() (*big.Int, error) {
 
 // getPublicKey fetch public key from a PrivateKey type
 // this will return nil if the key is not RSA type
-func getPublicKey(p interface{}) interface{} {
+func getPublicKey(p any) any {
 	switch t := p.(type) {
 	case *rsa.PrivateKey:
 		return t.Public()

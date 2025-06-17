@@ -88,7 +88,7 @@ func (s *Settings) AsEnvironmentValues() []string {
 	return lines
 }
 
-// AsSystemdEnvSettings returns a string in the format understood by systemd:
+// AsSystemdDefaultEnv returns a string in the format understood by systemd:
 // DefaultEnvironment="http_proxy=...." "HTTP_PROXY=..." ...
 func (s *Settings) AsSystemdDefaultEnv() string {
 	lines := s.AsEnvironmentValues()

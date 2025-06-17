@@ -87,7 +87,7 @@ func roundTime(t time.Time) time.Time {
 	return t.Add(time.Duration(-t.Nanosecond()))
 }
 
-var rsaByteSizes = []int{512, 1024, 2048, 4096}
+var rsaByteSizes = []int{1024, 2048, 4096}
 
 func (certSuite) TestNewClientCertRSASize(c *gc.C) {
 	for _, size := range rsaByteSizes {

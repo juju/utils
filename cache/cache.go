@@ -11,19 +11,19 @@ import (
 	"sync"
 	"time"
 
-	"gopkg.in/errgo.v1"
+	"github.com/juju/errors"
 )
 
 // entry holds a cache entry. The expire field
 // holds the time after which the entry will be
 // considered invalid.
 type entry struct {
-	value  interface{}
+	value  any
 	expire time.Time
 }
 
 // Key represents a cache key. It must be a comparable type.
-type Key interface{}
+type Key any
 
 // Cache holds a time-limited set of values for arbitrary keys.
 type Cache struct {
@@ -49,7 +49,7 @@ type Cache struct {
 // be used to avoid an extra call to the fetch function.
 type fetchCall struct {
 	wg  sync.WaitGroup
-	val interface{}
+	val any
 	err error
 }
 
@@ -93,13 +93,13 @@ func (c *Cache) EvictAll() {
 // the value if it is not found in the cache.
 // If fetch returns an error, the returned error from Get will have
 // the same cause.
-func (c *Cache) Get(key Key, fetch func() (interface{}, error)) (interface{}, error) {
+func (c *Cache) Get(key Key, fetch func() (any, error)) (any, error) {
 	return c.getAtTime(key, fetch, time.Now())
 }
 
 // getAtTime is the internal version of Get, useful for testing; now represents the current
 // time.
-func (c *Cache) getAtTime(key Key, fetch func() (interface{}, error), now time.Time) (interface{}, error) {
+func (c *Cache) getAtTime(key Key, fetch func() (any, error), now time.Time) (any, error) {
 	if val, ok := c.cachedValue(key, now); ok {
 		return val, nil
 	}
@@ -114,7 +114,7 @@ func (c *Cache) getAtTime(key Key, fetch func() (interface{}, error), now time.T
 		if f.err == nil {
 			return f.val, nil
 		}
-		return nil, errgo.Mask(f.err, errgo.Any)
+		return nil, errors.Trace(f.err)
 	}
 	var f fetchCall
 	f.wg.Add(1)
@@ -151,12 +151,12 @@ func (c *Cache) getAtTime(key Key, fetch func() (interface{}, error), now time.T
 	if err == nil {
 		return f.val, nil
 	}
-	return nil, errgo.Mask(f.err, errgo.Any)
+	return nil, errors.Trace(err)
 }
 
 // cachedValue returns any cached value for the given key
 // and whether it was found.
-func (c *Cache) cachedValue(key Key, now time.Time) (interface{}, bool) {
+func (c *Cache) cachedValue(key Key, now time.Time) (any, bool) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if now.After(c.expire) {

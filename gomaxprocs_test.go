@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/juju/testing"
+	jc "github.com/juju/testing/checkers"
 	gc "gopkg.in/check.v1"
 
 	"github.com/juju/utils/v3"
@@ -37,7 +38,8 @@ func (s *gomaxprocsSuite) SetUpTest(c *gc.C) {
 }
 
 func (s *gomaxprocsSuite) TestUseMultipleCPUsDoesNothingWhenGOMAXPROCSSet(c *gc.C) {
-	os.Setenv("GOMAXPROCS", "1")
+	err := os.Setenv("GOMAXPROCS", "1")
+	c.Assert(err, jc.ErrorIsNil)
 	utils.UseMultipleCPUs()
 	c.Check(s.setMaxProcs, gc.Equals, 0)
 }

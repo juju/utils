@@ -123,14 +123,14 @@ func AtomicWriteFileAndChange(filename string, contents []byte, change func(stri
 	if err != nil {
 		return fmt.Errorf("cannot create temp file: %v", err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	defer func() {
 		if err != nil {
 			// Don't leave the temp file lying around on error.
 			// Close the file before removing. Trying to remove an open file on
 			// Windows will fail.
-			f.Close()
-			os.Remove(f.Name())
+			_ = f.Close()
+			_ = os.Remove(f.Name())
 		}
 	}()
 	if _, err := f.Write(contents); err != nil {

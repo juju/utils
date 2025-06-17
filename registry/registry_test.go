@@ -20,9 +20,9 @@ type registrySuite struct {
 
 var _ = gc.Suite(&registrySuite{})
 
-type Factory func() (interface{}, error)
+type Factory func() (any, error)
 
-func nilFactory() (interface{}, error) {
+func nilFactory() (any, error) {
 	return nil, nil
 }
 
@@ -104,11 +104,11 @@ func (s *registrySuite) TestRegisterWrongType(c *gc.C) {
 
 func (s *registrySuite) TestRegisterAlreadyPresent(c *gc.C) {
 	r := registry.NewTypedNameVersion(factoryType)
-	err := r.Register("name", 0, func() (interface{}, error) {
+	err := r.Register("name", 0, func() (any, error) {
 		return "orig", nil
 	})
 	c.Assert(err, gc.IsNil)
-	err = r.Register("name", 0, func() (interface{}, error) {
+	err = r.Register("name", 0, func() (any, error) {
 		return "broken", nil
 	})
 	c.Check(err, gc.ErrorMatches, `object "name\(0\)" already registered`)
@@ -121,7 +121,7 @@ func (s *registrySuite) TestRegisterAlreadyPresent(c *gc.C) {
 
 func (s *registrySuite) TestGet(c *gc.C) {
 	r := registry.NewTypedNameVersion(factoryType)
-	customFactory := func() (interface{}, error) {
+	customFactory := func() (any, error) {
 		return 10, nil
 	}
 	c.Assert(r.Register("name", 0, customFactory), gc.IsNil)

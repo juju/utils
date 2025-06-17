@@ -47,7 +47,7 @@ func (s *usernameSuite) TestResolveUsername(c *gc.C) {
 
 	resolveUsername := func(t test) (string, error) {
 		if t.err != "" {
-			return "", errors.Errorf(t.err)
+			return "", errors.New(t.err)
 		}
 
 		var funcs []func() (string, error)

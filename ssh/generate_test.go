@@ -44,8 +44,8 @@ func overrideGenerateKey(c *gc.C) testing.Restorer {
 }
 
 func generateRSAKey(random io.Reader) (*rsa.PrivateKey, error) {
-	// Ignore requested bits and just use 512 bits for speed
-	key, err := rsa.GenerateKey(random, 512)
+	// Ignore requested bits and just use 1024 bits for speed
+	key, err := rsa.GenerateKey(random, 1024)
 	if err != nil {
 		return nil, err
 	}

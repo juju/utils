@@ -42,7 +42,7 @@ func (ctx *timerCtx) Err() error {
 	return ctx.err
 }
 
-func (ctx *timerCtx) Value(key interface{}) interface{} {
+func (ctx *timerCtx) Value(key any) any {
 	return ctx.parent.Value(key)
 }
 

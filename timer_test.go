@@ -61,6 +61,17 @@ func (c *mockClock) After(d time.Duration) <-chan time.Time { return time.After(
 func (c *mockClock) NewTimer(d time.Duration) clock.Timer {
 	panic("should not be called")
 }
+func (c *mockClock) At(t time.Time) <-chan time.Time {
+	panic("should not be called")
+}
+
+func (c *mockClock) AtFunc(t time.Time, f func()) clock.Alarm {
+	panic("should not be called")
+}
+
+func (c *mockClock) NewAlarm(t time.Time) clock.Alarm {
+	panic("should not be called")
+}
 
 func (c *mockClock) AfterFunc(d time.Duration, f func()) clock.Timer {
 	*c.afterFuncCalls++

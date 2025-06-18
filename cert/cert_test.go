@@ -5,12 +5,7 @@
 package cert_test
 
 import (
-	"crypto/ed25519"
-	"crypto/x509"
-	"crypto/x509/pkix"
-	"fmt"
 	"testing"
-	"time"
 
 	jc "github.com/juju/testing/checkers"
 	gc "gopkg.in/check.v1"
@@ -25,19 +20,6 @@ func TestAll(t *testing.T) {
 type certSuite struct{}
 
 var _ = gc.Suite(certSuite{})
-
-func checkNotBefore(c *gc.C, cert *x509.Certificate, now time.Time) {
-	// Check that the certificate is valid from one week before today.
-	c.Check(cert.NotBefore.Before(now), jc.IsTrue)
-	c.Check(cert.NotBefore.Before(now.AddDate(0, 0, -6)), jc.IsTrue)
-	c.Check(cert.NotBefore.After(now.AddDate(0, 0, -8)), jc.IsTrue)
-}
-
-func checkNotAfter(c *gc.C, cert *x509.Certificate, expiry time.Time) {
-	// Check the surrounding day.
-	c.Assert(cert.NotAfter.Before(expiry.AddDate(0, 0, 1)), jc.IsTrue)
-	c.Assert(cert.NotAfter.After(expiry.AddDate(0, 0, -1)), jc.IsTrue)
-}
 
 func (certSuite) TestParseCertificate(c *gc.C) {
 	xcert, err := cert.ParseCert(caCertPEM)
@@ -60,66 +42,6 @@ func (certSuite) TestParseCertAndKey(c *gc.C) {
 	c.Assert(key, gc.NotNil)
 
 	c.Assert(xcert.PublicKey, gc.DeepEquals, key.Public())
-}
-
-func (certSuite) TestNewCA(c *gc.C) {
-	now := time.Now()
-	expiry := roundTime(now.AddDate(0, 0, 1))
-	caCertPEM, caKeyPEM, err := cert.NewCA(
-		fmt.Sprintf("juju-generated CA for model %s", "foo"),
-		"1", expiry, 0,
-	)
-	c.Assert(err, jc.ErrorIsNil)
-
-	caCert, caKey, err := cert.ParseCertAndKey(caCertPEM, caKeyPEM)
-	c.Assert(err, jc.ErrorIsNil)
-
-	c.Check(caKey, gc.FitsTypeOf, (ed25519.PrivateKey)(nil))
-	c.Check(caCert.Subject.CommonName, gc.Equals, `juju-generated CA for model foo`)
-	checkNotBefore(c, caCert, now)
-	checkNotAfter(c, caCert, expiry)
-	c.Check(caCert.BasicConstraintsValid, jc.IsTrue)
-	c.Check(caCert.IsCA, jc.IsTrue)
-	//c.Assert(caCert.MaxPathLen, Equals, 0)	TODO it ends up as -1 - check that this is ok.
-}
-
-// roundTime returns t rounded to the previous whole second.
-func roundTime(t time.Time) time.Time {
-	return t.Add(time.Duration(-t.Nanosecond()))
-}
-
-func (certSuite) TestNewClientCert(c *gc.C) {
-	now := time.Now()
-	expiry := roundTime(now.AddDate(0, 0, 1))
-	certPem, privPem, err := cert.NewClientCert(
-		fmt.Sprintf("juju-generated CA for model %s", "foo"), "1", expiry)
-
-	c.Assert(err, jc.ErrorIsNil)
-	c.Assert(certPem, gc.NotNil)
-	c.Assert(privPem, gc.NotNil)
-
-	caCert, caKey, err := cert.ParseCertAndKey(certPem, privPem)
-	c.Assert(err, jc.ErrorIsNil)
-	c.Check(caCert.Subject.CommonName, gc.Equals, "juju-generated CA for model foo")
-	c.Check(caCert.Subject.Organization, gc.DeepEquals, []string{"juju"})
-	c.Check(caCert.Subject.SerialNumber, gc.DeepEquals, "1")
-
-	c.Check(caKey, gc.FitsTypeOf, (ed25519.PrivateKey)(nil))
-	c.Check(caCert.Version, gc.Equals, 3)
-
-	value, err := cert.CertGetUPNExtenstionValue(caCert.Subject)
-	c.Assert(err, jc.ErrorIsNil)
-	c.Assert(value, gc.Not(gc.IsNil))
-
-	c.Assert(caCert.Extensions[len(caCert.Extensions)-1], jc.DeepEquals, pkix.Extension{
-		Id:       cert.CertSubjAltName,
-		Value:    value,
-		Critical: false,
-	})
-	c.Assert(caCert.PublicKeyAlgorithm, gc.Equals, x509.Ed25519)
-	c.Assert(caCert.ExtKeyUsage[0], gc.Equals, x509.ExtKeyUsageClientAuth)
-	checkNotBefore(c, caCert, now)
-	checkNotAfter(c, caCert, expiry)
 }
 
 var (

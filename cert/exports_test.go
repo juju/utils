@@ -3,8 +3,3 @@
 // Licensed under the LGPLv3, see LICENCE file for details.
 
 package cert
-
-var (
-	CertSubjAltName           = subjAltName
-	CertGetUPNExtenstionValue = getUPNExtensionValue
-)

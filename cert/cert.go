@@ -6,19 +6,12 @@ package cert
 
 import (
 	"crypto"
-	"crypto/ed25519"
-	"crypto/rand"
-	"crypto/sha1"
-	"crypto/sha512"
 	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/asn1"
 	"encoding/pem"
 	"fmt"
-	"math/big"
-	"net"
-	"time"
 
 	"github.com/juju/errors"
 )
@@ -39,135 +32,6 @@ type GeneralNames struct {
 	GeneralName `asn1:"tag:0"`
 }
 
-// Config type used for specifing different params for NewLeaf func
-// This will effect the generation of certificates.
-type Config struct {
-	CommonName  string             // CommonName common name of the certificate
-	UUID        string             // UUID for a specific model
-	Expiry      time.Time          // Expiry when the certificate will expire
-	CA          []byte             // CA certifiacte authority to add a new leaf cert to it
-	CAKey       []byte             // CAKey private key of the CA to add a new leaf cert to it
-	IsCA        bool               // IsCA if we want to generate new a CA cert
-	Hostnames   []string           // Hostnames , list of hostnames for the certificate
-	ExtKeyUsage []x509.ExtKeyUsage // ExtKeyUsage extra flags for special usage of the cert
-	Client      bool               // generate client certificate for certificate authentication
-}
-
-// NewLeaf generates a certificate/key pair suitable for use
-// by a server, leaf node, client authentication, etc.
-// In order to generate certs for multiple purposes please consult the Config type.
-func NewLeaf(cfg *Config) (certPEM, keyPEM string, err error) {
-	var (
-		caCert *x509.Certificate
-		caKey  ed25519.PrivateKey
-	)
-
-	if cfg.CA != nil && cfg.CAKey != nil && !cfg.IsCA {
-		tlsCert, err := tls.X509KeyPair(cfg.CA, cfg.CAKey)
-		if err != nil {
-			return "", "", errors.Trace(err)
-		}
-		if len(tlsCert.Certificate) != 1 {
-			return "", "", fmt.Errorf("more than one certificate for CA")
-		}
-
-		caCert, err = x509.ParseCertificate(tlsCert.Certificate[0])
-		if err != nil {
-			return "", "", errors.Trace(err)
-		}
-		if !caCert.BasicConstraintsValid || !caCert.IsCA {
-			return "", "", errors.Errorf("CA certificate is not a valid CA")
-		}
-		var ok bool
-		caKey, ok = tlsCert.PrivateKey.(ed25519.PrivateKey)
-		if !ok {
-			return "", "", errors.Errorf("CA private key has unexpected type %T", tlsCert.PrivateKey)
-		}
-	}
-
-	// generate private key
-	_, key, err := ed25519.GenerateKey(rand.Reader)
-	if err != nil {
-		return "", "", errors.Errorf("cannot generate key: %v", err)
-	}
-	serialNumber, err := newSerialNumber()
-	if err != nil {
-		return "", "", errors.Trace(err)
-	}
-	subject := pkix.Name{
-		CommonName:   cfg.CommonName,
-		Organization: []string{"juju"},
-		SerialNumber: cfg.UUID,
-	}
-
-	var value []byte
-	// get asn1 encoded info of the subject pkix
-	if cfg.Client {
-		value, err = getUPNExtensionValue(subject)
-		if err != nil {
-			return "", "", fmt.Errorf("Can't marshal asn1 encoded %s", err)
-		}
-	}
-
-	// TODO(perrito666) 2016-05-02 lp:1558657
-	now := time.Now()
-	template := &x509.Certificate{
-		Subject:      subject,
-		SerialNumber: serialNumber,
-		NotBefore:    now.UTC().AddDate(0, 0, -7),
-		Version:      2,
-		NotAfter:     cfg.Expiry.UTC(),
-		SubjectKeyId: sha512.New384().Sum(key),
-		KeyUsage:     x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature | x509.KeyUsageKeyAgreement,
-		ExtKeyUsage:  cfg.ExtKeyUsage,
-	}
-
-	if cfg.Client {
-		template.ExtraExtensions = []pkix.Extension{
-			{Id: subjAltName, Critical: false, Value: value},
-		}
-	}
-
-	if cfg.IsCA {
-		template.BasicConstraintsValid = true
-		template.IsCA = true
-		template.KeyUsage = x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign
-	}
-
-	for _, hostname := range cfg.Hostnames {
-		if ip := net.ParseIP(hostname); ip != nil {
-			template.IPAddresses = append(template.IPAddresses, ip)
-		} else {
-			template.DNSNames = append(template.DNSNames, hostname)
-		}
-	}
-
-	if caKey == nil && caCert == nil {
-		caCert = template
-		caKey = key
-	}
-
-	certDER, err := x509.CreateCertificate(rand.Reader, template, caCert, getPublicKey(key), caKey)
-	if err != nil {
-		return "", "", err
-	}
-
-	certPEMData := pem.EncodeToMemory(&pem.Block{
-		Type:  "CERTIFICATE",
-		Bytes: certDER,
-	})
-
-	keyData, err := x509.MarshalPKCS8PrivateKey(key)
-	if err != nil {
-		return "", "", err
-	}
-	keyPEMData := pem.EncodeToMemory(&pem.Block{
-		Type:  "PRIVATE KEY",
-		Bytes: keyData,
-	})
-	return string(certPEMData), string(keyPEMData), nil
-}
-
 var (
 	// https://support.microsoft.com/en-us/kb/287547
 	//  szOID_NT_PRINCIPAL_NAME 1.3.6.1.4.1.311.20.2.3
@@ -176,42 +40,6 @@ var (
 	// 2 5 29 17  subjectAltName
 	subjAltName = asn1.ObjectIdentifier{2, 5, 29, 17}
 )
-
-// NewCA generates a CA certificate/key pair suitable for signing server
-// keys for an environment with the given name.
-func NewCA(commonName, UUID string, expiry time.Time, keyBits int) (certPEM, keyPEM string, err error) {
-	certPEM, keyPEM, err = NewLeaf(&Config{
-		CommonName: commonName,
-		UUID:       UUID,
-		Expiry:     expiry,
-		IsCA:       true,
-	})
-	if err != nil {
-		return "", "", errors.Annotatef(err, "cannot generate ca certificate")
-	}
-	return
-}
-
-// NewClientCert generates a x509 client certificate used for https authentication sessions.
-func NewClientCert(commonName, UUID string, expiry time.Time) (certPEM string, keyPEM string, err error) {
-	certPEM, keyPEM, err = NewLeaf(&Config{
-		CommonName:  commonName,
-		UUID:        UUID,
-		Expiry:      expiry,
-		ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
-		Client:      true,
-	})
-	if err != nil {
-		return "", "", errors.Annotatef(err, "Cannot generate client certificate")
-	}
-
-	return
-}
-func bigIntHash(n *big.Int) []byte {
-	h := sha1.New()
-	h.Write(n.Bytes())
-	return h.Sum(nil)
-}
 
 // getUPNExtensionValue returns marsheled asn1 encoded info
 func getUPNExtensionValue(subject pkix.Name) ([]byte, error) {
@@ -229,29 +57,6 @@ func getUPNExtensionValue(subject pkix.Name) ([]byte, error) {
 			},
 		},
 	})
-}
-
-// newSerialNumber returns a new random serial number suitable
-// for use in a certificate.
-func newSerialNumber() (*big.Int, error) {
-	// A serial number can be up to 20 octets in size.
-	// https://tools.ietf.org/html/rfc5280#section-4.1.2.2
-	n, err := rand.Int(rand.Reader, new(big.Int).Lsh(big.NewInt(1), 8*20))
-	if err != nil {
-		return nil, errors.Annotatef(err, "failed to generate serial number")
-	}
-	return n, nil
-}
-
-// getPublicKey fetch public key from a PrivateKey type
-// this will return nil if the key is not RSA type
-func getPublicKey(p interface{}) interface{} {
-	switch t := p.(type) {
-	case ed25519.PrivateKey:
-		return t.Public()
-	default:
-		return nil
-	}
 }
 
 // ParseCert parses the given PEM-formatted X509 certificate.

@@ -9,7 +9,6 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"io"
-	"io/ioutil"
 	"os"
 	"strings"
 	"unicode"
@@ -89,10 +88,10 @@ func CommandString(args ...string) string {
 		}
 		if needsQuotes {
 			buf.WriteByte('"')
-			argBuf.WriteTo(&buf)
+			_, _ = argBuf.WriteTo(&buf)
 			buf.WriteByte('"')
 		} else {
-			argBuf.WriteTo(&buf)
+			_, _ = argBuf.WriteTo(&buf)
 		}
 	}
 	return buf.String()
@@ -120,7 +119,7 @@ func Gunzip(data []byte) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return ioutil.ReadAll(r)
+	return io.ReadAll(r)
 }
 
 // ReadSHA256 returns the SHA256 hash of the contents read from source
@@ -142,6 +141,6 @@ func ReadFileSHA256(filename string) (string, int64, error) {
 	if err != nil {
 		return "", 0, err
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	return ReadSHA256(f)
 }

@@ -133,7 +133,7 @@ type SSHGoCryptoCommandSuite struct {
 	client         ssh.Client
 	knownHostsFile string
 
-	testPrivateKeys map[string]interface{}
+	testPrivateKeys map[string]any
 	testSigners     map[string]cryptossh.Signer
 	testPublicKeys  map[string]cryptossh.PublicKey
 }
@@ -145,7 +145,7 @@ func (s *SSHGoCryptoCommandSuite) SetUpSuite(c *gc.C) {
 	var err error
 
 	n := len(testdata.PEMBytes)
-	s.testPrivateKeys = make(map[string]interface{}, n)
+	s.testPrivateKeys = make(map[string]any, n)
 	s.testSigners = make(map[string]cryptossh.Signer, n)
 	s.testPublicKeys = make(map[string]cryptossh.PublicKey, n)
 	for t, k := range testdata.PEMBytes {

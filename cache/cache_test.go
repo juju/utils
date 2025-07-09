@@ -8,10 +8,9 @@ import (
 	"sync"
 	"time"
 
-	gc "gopkg.in/check.v1"
-	"gopkg.in/errgo.v1"
-
+	"github.com/juju/errors"
 	"github.com/juju/utils/v4/cache"
+	gc "gopkg.in/check.v1"
 )
 
 type suite struct{}
@@ -79,10 +78,10 @@ func (*suite) TestEvictOld(c *gc.C) {
 
 func (*suite) TestFetchError(c *gc.C) {
 	p := cache.New(time.Hour)
-	expectErr := errgo.New("hello")
+	expectErr := errors.New("hello")
 	v, err := p.Get("a", fetchError(expectErr))
 	c.Assert(err, gc.ErrorMatches, "hello")
-	c.Assert(errgo.Cause(err), gc.Equals, expectErr)
+	c.Assert(errors.Cause(err), gc.Equals, expectErr)
 	c.Assert(v, gc.Equals, nil)
 }
 
@@ -214,7 +213,7 @@ func (*suite) TestRefreshSpread(c *gc.C) {
 	slot := 0
 	for t := now.Add(0); t.Before(now.Add(time.Minute + 1)); t = t.Add(time.Millisecond * 10) {
 		for i := 0; i < N; i++ {
-			cache.GetAtTime(p, fmt.Sprint(i), func() (interface{}, error) {
+			cache.GetAtTime(p, fmt.Sprint(i), func() (any, error) {
 				counts[slot]++
 				return i, nil
 			}, t)
@@ -249,7 +248,7 @@ func (*suite) TestSingleFlight(c *gc.C) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		x, err := p.Get("x", func() (interface{}, error) {
+		x, err := p.Get("x", func() (any, error) {
 			start <- struct{}{}
 			<-start
 			return 99, nil
@@ -263,7 +262,7 @@ func (*suite) TestSingleFlight(c *gc.C) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		x, err := p.Get("x", func() (interface{}, error) {
+		x, err := p.Get("x", func() (any, error) {
 			c.Errorf("fetch function unexpectedly called with inflight request")
 			return 55, nil
 		})
@@ -273,7 +272,7 @@ func (*suite) TestSingleFlight(c *gc.C) {
 
 	// Check that we can still get other values while the
 	// other fetches are in progress.
-	y, err := p.Get("y", func() (interface{}, error) {
+	y, err := p.Get("y", func() (any, error) {
 		return 88, nil
 	})
 	c.Check(y, gc.Equals, 88)
@@ -287,16 +286,16 @@ func (*suite) TestSingleFlight(c *gc.C) {
 	wg.Wait()
 }
 
-var errUnexpectedFetch = errgo.New("fetch called unexpectedly")
+var errUnexpectedFetch = errors.New("fetch called unexpectedly")
 
-func fetchError(err error) func() (interface{}, error) {
-	return func() (interface{}, error) {
+func fetchError(err error) func() (any, error) {
+	return func() (any, error) {
 		return nil, err
 	}
 }
 
-func fetchValue(val interface{}) func() (interface{}, error) {
-	return func() (interface{}, error) {
+func fetchValue(val any) func() (any, error) {
+	return func() (any, error) {
 		return val, nil
 	}
 }

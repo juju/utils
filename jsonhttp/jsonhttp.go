@@ -1,6 +1,7 @@
 // Copyright 2015 Canonical Ltd.
 // Licensed under the LGPLv3, see LICENCE file for details.
-// The jsonhttp package provides general functions for returning
+
+// Package jsonhttp provides general functions for returning
 // JSON responses to HTTP requests. It is agnostic about
 // the specific form of any returned errors.
 package jsonhttp
@@ -9,13 +10,13 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"gopkg.in/errgo.v1"
+	"github.com/juju/errors"
 )
 
 // ErrorToResponse represents a function that can convert a Go error
 // into a form that can be returned as a JSON body from an HTTP request.
 // The httpStatus value reports the desired HTTP status.
-type ErrorToResponse func(err error) (httpStatus int, errorBody interface{})
+type ErrorToResponse func(err error) (httpStatus int, errorBody any)
 
 // ErrorHandler is like http.Handler except it returns an error
 // which may be returned as the error body of the response.
@@ -84,13 +85,13 @@ var _ http.Flusher = (*responseWriter)(nil)
 func WriteError(errToResp ErrorToResponse) func(w http.ResponseWriter, err error) {
 	return func(w http.ResponseWriter, err error) {
 		status, resp := errToResp(err)
-		WriteJSON(w, status, resp)
+		_ = WriteJSON(w, status, resp)
 	}
 }
 
 // WriteJSON writes the given value to the ResponseWriter
 // and sets the HTTP status to the given code.
-func WriteJSON(w http.ResponseWriter, code int, val interface{}) error {
+func WriteJSON(w http.ResponseWriter, code int, val any) error {
 	// TODO consider marshalling directly to w using json.NewEncoder.
 	// pro: this will not require a full buffer allocation.
 	// con: if there's an error after the first write, it will be lost.
@@ -99,11 +100,11 @@ func WriteJSON(w http.ResponseWriter, code int, val interface{}) error {
 		// TODO(rog) log an error if this fails and lose the
 		// error return, because most callers will need
 		// to do that anyway.
-		return errgo.Mask(err)
+		return errors.Mask(err)
 	}
 	w.Header().Set("content-type", "application/json")
 	w.WriteHeader(code)
-	w.Write(data)
+	_, _ = w.Write(data)
 	return nil
 }
 
@@ -111,7 +112,7 @@ func WriteJSON(w http.ResponseWriter, code int, val interface{}) error {
 // body (to be converted to JSON) and an error.
 // The Header parameter can be used to set
 // custom header on the response.
-type JSONHandler func(http.Header, *http.Request) (interface{}, error)
+type JSONHandler func(http.Header, *http.Request) (any, error)
 
 // HandleJSON returns a function that can be used to convert an JSONHandler
 // into an http.Handler. The given errToResp parameter is used to convert
@@ -123,7 +124,7 @@ func HandleJSON(errToResp ErrorToResponse) func(handle JSONHandler) http.Handler
 		f := func(w http.ResponseWriter, req *http.Request) error {
 			val, err := handle(w.Header(), req)
 			if err != nil {
-				return errgo.Mask(err, errgo.Any)
+				return errors.Trace(err)
 			}
 			return WriteJSON(w, http.StatusOK, val)
 		}

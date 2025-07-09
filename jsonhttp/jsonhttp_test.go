@@ -5,14 +5,12 @@ package jsonhttp_test
 
 import (
 	"encoding/json"
-	"errors"
 	"net/http"
 	"net/http/httptest"
 
-	gc "gopkg.in/check.v1"
-	"gopkg.in/errgo.v1"
-
+	"github.com/juju/errors"
 	"github.com/juju/utils/v4/jsonhttp"
+	gc "gopkg.in/check.v1"
 )
 
 type suite struct{}
@@ -42,12 +40,12 @@ type errorResponse struct {
 	Message string
 }
 
-func errorToResponse(err error) (int, interface{}) {
+func errorToResponse(err error) (int, any) {
 	resp := &errorResponse{
 		Message: err.Error(),
 	}
 	status := http.StatusInternalServerError
-	switch errgo.Cause(err) {
+	switch errors.Cause(err) {
 	case errUnauth:
 		status = http.StatusUnauthorized
 	case errBadReq:
@@ -157,7 +155,7 @@ func (s *suite) TestHandleErrorsWithErrorAfterWriteHeader(c *gc.C) {
 		c.Logf("test %d: %s", i, test.about)
 		handler := handleErrors(func(w http.ResponseWriter, _ *http.Request) error {
 			test.causeWriteHeader(w)
-			return errgo.New("unexpected")
+			return errors.New("unexpected")
 		})
 		rec := httptest.NewRecorder()
 		handler.ServeHTTP(rec, new(http.Request))
@@ -170,7 +168,7 @@ func (s *suite) TestHandleJSON(c *gc.C) {
 	handleJSON := jsonhttp.HandleJSON(errorToResponse)
 
 	// Test when handler returns an error.
-	handler := handleJSON(func(http.Header, *http.Request) (interface{}, error) {
+	handler := handleJSON(func(http.Header, *http.Request) (any, error) {
 		return nil, errUnauth
 	})
 	rec := httptest.NewRecorder()
@@ -182,7 +180,7 @@ func (s *suite) TestHandleJSON(c *gc.C) {
 	c.Assert(rec.Code, gc.Equals, http.StatusUnauthorized)
 
 	// Test when handler returns a body.
-	handler = handleJSON(func(h http.Header, _ *http.Request) (interface{}, error) {
+	handler = handleJSON(func(h http.Header, _ *http.Request) (any, error) {
 		h.Set("Some-Header", "value")
 		return "something", nil
 	})

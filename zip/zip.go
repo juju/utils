@@ -78,6 +78,11 @@ func (x extractor) targetPath(zipFile *zip.File) (string, bool) {
 	if cleanPath == x.sourceRoot {
 		return x.targetRoot, true
 	}
+	cleanPath = strings.TrimPrefix(cleanPath, "/")
+	for strings.HasPrefix(cleanPath, "../") {
+		cleanPath = cleanPath[len("../"):]
+	}
+
 	if x.sourceRoot != "" {
 		mustPrefix := x.sourceRoot + "/"
 		if !strings.HasPrefix(cleanPath, mustPrefix) {

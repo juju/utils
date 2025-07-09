@@ -77,8 +77,8 @@ func splitAtNumber(str string) (string, int, string) {
 }
 
 func indexOfDigit(str string) int {
-	for i, rune := range str {
-		if unicode.IsDigit(rune) {
+	for i, r := range str {
+		if unicode.IsDigit(r) {
 			return i
 		}
 	}
@@ -86,8 +86,8 @@ func indexOfDigit(str string) int {
 }
 
 func indexOfNonDigit(str string) int {
-	for i, rune := range str {
-		if !unicode.IsDigit(rune) {
+	for i, r := range str {
+		if !unicode.IsDigit(r) {
 			return i
 		}
 	}

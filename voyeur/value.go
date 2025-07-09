@@ -14,7 +14,7 @@ import (
 // ok to use, and is equivalent to a NewValue result
 // with a nil initial value.
 type Value struct {
-	val     interface{}
+	val     any
 	version int
 	mu      sync.RWMutex
 	wait    sync.Cond
@@ -23,7 +23,7 @@ type Value struct {
 
 // NewValue creates a new Value holding the given initial value. If initial is
 // nil, any watchers will wait until a value is set.
-func NewValue(initial interface{}) *Value {
+func NewValue(initial any) *Value {
 	v := new(Value)
 	v.init()
 	if initial != nil {
@@ -44,7 +44,7 @@ func (v *Value) init() {
 }
 
 // Set sets the shared value to val.
-func (v *Value) Set(val interface{}) {
+func (v *Value) Set(val any) {
 	v.mu.Lock()
 	v.init()
 	v.val = val
@@ -72,7 +72,7 @@ func (v *Value) Closed() bool {
 }
 
 // Get returns the current value.
-func (v *Value) Get() interface{} {
+func (v *Value) Get() any {
 	v.mu.RLock()
 	defer v.mu.RUnlock()
 	return v.val
@@ -87,7 +87,7 @@ func (v *Value) Watch() *Watcher {
 type Watcher struct {
 	value   *Value
 	version int
-	current interface{}
+	current any
 	closed  bool
 }
 
@@ -142,6 +142,6 @@ func (w *Watcher) Close() {
 
 // Value returns the last value that was retrieved from the watched Value by
 // Next.
-func (w *Watcher) Value() interface{} {
+func (w *Watcher) Value() any {
 	return w.current
 }

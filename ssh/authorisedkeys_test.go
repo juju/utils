@@ -346,3 +346,49 @@ func (s *AuthorisedKeysKeysSuite) TestDeleteSomeKeysFromFile(c *gc.C) {
 	c.Assert(keys, gc.HasLen, 2)
 	c.Assert(keys, jc.SameContents, []string{key1, key3})
 }
+
+func (s *AuthorisedKeysKeysSuite) TestDeleteKeysFromFileIfPresent(c *gc.C) {
+	key1 := sshtesting.ValidKeyOne.Key + " user@host"
+	key2 := sshtesting.ValidKeyTwo.Key + " alice@host"
+	key3 := sshtesting.ValidKeyThree.Key + " bob@host"
+	writeAuthKeysFile(c, []string{key1, key2, key3}, alternativeKeysFile2)
+
+	err := ssh.DeleteKeysFromFileIfPresent(testSSHUser, alternativeKeysFile2, []string{
+		sshtesting.ValidKeyTwo.Fingerprint,
+		"bob@host",
+		"nobody@host",
+	})
+	c.Assert(err, jc.ErrorIsNil)
+
+	keys, err := ssh.ListKeysFromFile(testSSHUser, alternativeKeysFile2, ssh.FullKeys)
+	c.Assert(err, jc.ErrorIsNil)
+	c.Assert(keys, gc.DeepEquals, []string{key1})
+}
+
+func (s *AuthorisedKeysKeysSuite) TestDeleteKeysFromFileIfPresentNoneInstalled(c *gc.C) {
+	key1 := sshtesting.ValidKeyOne.Key + " user@host"
+	writeAuthKeysFile(c, []string{key1}, alternativeKeysFile2)
+
+	err := ssh.DeleteKeysFromFileIfPresent(testSSHUser, alternativeKeysFile2, []string{
+		sshtesting.ValidKeyTwo.Fingerprint,
+	})
+	c.Assert(err, jc.ErrorIsNil)
+
+	keys, err := ssh.ListKeysFromFile(testSSHUser, alternativeKeysFile2, ssh.FullKeys)
+	c.Assert(err, jc.ErrorIsNil)
+	c.Assert(keys, gc.DeepEquals, []string{key1})
+}
+
+func (s *AuthorisedKeysKeysSuite) TestDeleteKeysFromFileIfPresentAllKeys(c *gc.C) {
+	key1 := sshtesting.ValidKeyOne.Key + " user@host"
+	writeAuthKeysFile(c, []string{key1}, alternativeKeysFile2)
+
+	err := ssh.DeleteKeysFromFileIfPresent(testSSHUser, alternativeKeysFile2, []string{
+		sshtesting.ValidKeyOne.Fingerprint,
+	})
+	c.Assert(err, jc.ErrorIsNil)
+
+	keys, err := ssh.ListKeysFromFile(testSSHUser, alternativeKeysFile2, ssh.FullKeys)
+	c.Assert(err, jc.ErrorIsNil)
+	c.Assert(keys, gc.HasLen, 0)
+}

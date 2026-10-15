@@ -211,7 +211,7 @@ func DeleteKeys(user string, keyIds ...string) error {
 	if err != nil {
 		return err
 	}
-	return deleteKeys(user, defaultAuthKeysFile, existingKeys, keyIds, false)
+	return deleteKeys(user, defaultAuthKeysFile, existingKeys, keyIds, false, false)
 }
 
 // ReplaceKeys writes the specified ssh keys to the authorized_keys file for user,
@@ -294,7 +294,22 @@ func DeleteKeysFromFile(user, file string, keyIds []string) error {
 	if err != nil {
 		return err
 	}
-	return deleteKeys(user, file, existingKeys, keyIds, true)
+	return deleteKeys(user, file, existingKeys, keyIds, true, false)
+}
+
+// DeleteKeysFromFileIfPresent removes the specified ssh keys from the authorized
+// ssh keys file for user. keyIds may be either key comments or fingerprints.
+// Keys that are not in the file are skipped rather than reported as an error.
+//
+// Unlike DeleteKeys, this version can delete ALL keys from the target file.
+func DeleteKeysFromFileIfPresent(user, file string, keyIds []string) error {
+	keysMutex.Lock()
+	defer keysMutex.Unlock()
+	existingKeys, err := readAuthorisedKeys(user, file)
+	if err != nil {
+		return err
+	}
+	return deleteKeys(user, file, existingKeys, keyIds, true, true)
 }
 
 // ListKeys returns either the full keys or key comments from the authorized ssh keys file for user.
@@ -338,7 +353,7 @@ func addKeys(user, file string, newKeys, existingKeys []string) error {
 	return writeAuthorisedKeys(user, file, sshKeys)
 }
 
-func deleteKeys(user, file string, existingKeys, keyIdsToDelete []string, deleteAll bool) error {
+func deleteKeys(user, file string, existingKeys, keyIdsToDelete []string, deleteAll, ignoreMissing bool) error {
 	// Build up a map of keys indexed by fingerprint, and fingerprints indexed by comment
 	// so we can easily get the key represented by each keyId, which may be either a fingerprint
 	// or comment.
@@ -357,6 +372,7 @@ func deleteKeys(user, file string, existingKeys, keyIdsToDelete []string, delete
 			keyComments[comment] = fingerprint
 		}
 	}
+	var deleted bool
 	for _, keyId := range keyIdsToDelete {
 		// assume keyId may be a fingerprint
 		fingerprint := keyId
@@ -366,15 +382,25 @@ func deleteKeys(user, file string, existingKeys, keyIdsToDelete []string, delete
 			fingerprint, ok = keyComments[keyId]
 		}
 		if !ok {
+			if ignoreMissing {
+				logger.Debugf("skipping non existent ssh key %q", keyId)
+				continue
+			}
 			return errors.Errorf("cannot delete non existent key: %v", keyId)
 		}
 		delete(sshKeys, fingerprint)
+		deleted = true
 	}
 	for _, key := range sshKeys {
 		keysToWrite = append(keysToWrite, key)
 	}
 	if len(keysToWrite) == 0 && !deleteAll {
 		return errors.Errorf("cannot delete all keys")
+	}
+	if !deleted {
+		// Nothing was removed, so avoid needlessly rewriting
+		// (and chowning) the authorised keys file.
+		return nil
 	}
 	return writeAuthorisedKeys(user, file, keysToWrite)
 }
